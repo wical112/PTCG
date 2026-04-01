@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0e27">
+    <title>PTCG Tournament Manager</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+</head>
+<body>
+    <header id="app-header">
+        <h1 class="logo">PTCG Tournament Manager</h1>
+        <div id="breadcrumb" class="breadcrumb"></div>
+    </header>
+
+    <main id="app">
+        <!-- HOME VIEW -->
+        <section id="view-home" class="view active">
+            <div class="home-container">
+                <h2>Welcome, Trainer!</h2>
+                <p class="subtitle">Choose your path</p>
+                <div class="home-buttons">
+                    <button class="btn btn-primary btn-large" onclick="app.navigateTo('registration')">
+                        <span class="btn-icon">&#9876;</span>
+                        Tournament
+                    </button>
+                    <button class="btn btn-accent btn-large" onclick="app.navigateTo('wheel')">
+                        <span class="btn-icon">&#10026;</span>
+                        Lucky Wheel
+                    </button>
+                </div>
+                <div id="resume-section" class="resume-section" style="display:none;">
+                    <hr class="divider">
+                    <p>You have a tournament in progress.</p>
+                    <button class="btn btn-secondary" onclick="app.resumeTournament()">Resume Tournament</button>
+                    <button class="btn btn-danger btn-small" onclick="app.resetTournament()">Reset</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- REGISTRATION VIEW -->
+        <section id="view-registration" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Player Registration</h2>
+                    <span id="player-count" class="badge">0 players</span>
+                </div>
+                <div class="registration-grid">
+                    <div class="reg-input-area">
+                        <label for="bulk-input">Add players (one name per line):</label>
+                        <textarea id="bulk-input" rows="8" placeholder="Fox&#10;Henry&#10;hoho&#10;ming&#10;sk&#10;nam&#10;carey&#10;dicky&#10;henry2&#10;wical"></textarea>
+                        <button class="btn btn-primary" onclick="app.bulkAddPlayers()">Add Players</button>
+                    </div>
+                    <div class="reg-list-area">
+                        <h3>Registered Players</h3>
+                        <ul id="player-list" class="player-list"></ul>
+                    </div>
+                </div>
+                <div class="reg-footer">
+                    <span id="recommended-rounds" class="info-text"></span>
+                    <div class="reg-actions">
+                        <button class="btn btn-secondary" onclick="app.navigateTo('home')">Back</button>
+                        <button id="btn-start-tournament" class="btn btn-primary" disabled onclick="app.startTournament()">Start Tournament</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ROUND VIEW -->
+        <section id="view-round" class="view">
+            <div class="panel">
+                <div class="round-header">
+                    <h2 id="round-title">Round 1</h2>
+                    <div id="timer-display" class="timer">25:00</div>
+                    <div class="timer-controls">
+                        <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(-60)">-1m</button>
+                        <button id="btn-timer-toggle" class="btn btn-small btn-primary" onclick="app.timerToggle()">Start</button>
+                        <button class="btn btn-small btn-secondary" onclick="app.timerReset()">Reset</button>
+                        <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(60)">+1m</button>
+                        <button id="btn-timer-mute" class="btn btn-small btn-secondary" onclick="app.toggleTimerMute()">Mute</button>
+                        <button id="btn-projector" class="btn btn-small btn-accent" onclick="app.toggleProjectorMode()">Projector Mode</button>
+                    </div>
+                </div>
+                <div id="pairings-container" class="pairings-container"></div>
+                <div class="round-footer">
+                    <button class="btn btn-secondary" onclick="app.goBackFromRound()">Previous Round</button>
+                    <button id="btn-submit-results" class="btn btn-primary" disabled onclick="app.submitResults()">Submit Results &amp; Next Round</button>
+                    <button class="btn btn-accent" onclick="app.endTournament()">End Tournament</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STANDINGS VIEW -->
+        <section id="view-standings" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 id="standings-title">Final Standings</h2>
+                    <button class="btn btn-small btn-accent" onclick="app.downloadStandings()">Download as Image</button>
+                </div>
+                <div id="standings-table-wrapper">
+                    <table id="standings-table" class="standings-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Record</th>
+                                <th>Points</th>
+                                <th>OWP%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body"></tbody>
+                    </table>
+                </div>
+                <div class="standings-footer">
+                    <button class="btn btn-secondary" onclick="app.navigateTo('home')">Home</button>
+                    <button class="btn btn-primary" onclick="app.backToLastRound()">Back to Round</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- LUCKY WHEEL VIEW -->
+        <section id="view-wheel" class="view">
+            <div class="panel">
+                <h2>Lucky Wheel</h2>
+                <div class="wheel-layout">
+                    <div class="wheel-input-area">
+                        <label for="wheel-names">Names (one per line):</label>
+                        <textarea id="wheel-names" rows="6" placeholder="Enter names..."></textarea>
+                        <div class="wheel-input-buttons">
+                            <button class="btn btn-primary btn-small" onclick="app.wheelSetNames()">Set Names</button>
+                            <button class="btn btn-secondary btn-small" onclick="app.wheelSyncFromTournament()">Sync from Tournament</button>
+                        </div>
+                        <div class="wheel-option">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="wheel-remove-winner" checked>
+                                <span class="toggle-slider"></span>
+                                Remove Winner After Spin
+                            </label>
+                        </div>
+                    </div>
+                    <div class="wheel-canvas-area">
+                        <div class="wheel-pointer"></div>
+                        <canvas id="wheel-canvas" width="400" height="400"></canvas>
+                        <button id="btn-spin" class="btn btn-primary btn-large" onclick="app.spinWheel()" disabled>SPIN!</button>
+                    </div>
+                    <div class="wheel-history-area">
+                        <h3>Winners</h3>
+                        <ol id="wheel-history" class="wheel-history"></ol>
+                        <button class="btn btn-small btn-danger" style="margin-top:0.8rem" onclick="app.wheelReset()">Reset Wheel</button>
+                    </div>
+                </div>
+                <div class="wheel-footer">
+                    <button class="btn btn-secondary" onclick="app.navigateTo('home')">Back</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- TRAINER CARD MODAL -->
+    <div id="modal-overlay" class="modal-overlay" onclick="app.closeModal()">
+        <div class="modal-content trainer-card" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.closeModal()">&times;</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- WINNER MODAL -->
+    <div id="winner-overlay" class="modal-overlay winner-overlay" onclick="app.closeWinnerModal()">
+        <div class="modal-content winner-modal" onclick="event.stopPropagation()">
+            <div class="winner-text">
+                <span class="winner-label">Winner!</span>
+                <span id="winner-name" class="winner-name"></span>
+            </div>
+            <button class="btn btn-primary" onclick="app.closeWinnerModal()">OK</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
