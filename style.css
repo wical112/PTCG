@@ -1448,3 +1448,210 @@ body.projector-mode .timer-controls {
         -webkit-overflow-scrolling: touch;
     }
 }
+
+/* ===== ADVANCED RECOVERY ===== */
+.adv-step {
+    background: rgba(10, 14, 39, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.adv-step-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+    color: var(--text);
+}
+
+.adv-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    color: var(--bg-deep);
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.adv-step label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+.adv-step textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 0.6rem;
+    font-family: var(--font);
+    font-size: 0.95rem;
+    resize: vertical;
+}
+
+.adv-step textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.adv-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.adv-round-block {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+
+.adv-round-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.adv-round-header h4 {
+    color: var(--yellow);
+    font-size: 1rem;
+}
+
+.adv-pairing-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(26, 31, 78, 0.5);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.adv-table-label {
+    font-weight: 700;
+    color: var(--blue);
+    min-width: 2.5rem;
+    font-size: 0.85rem;
+}
+
+.adv-result-label {
+    color: var(--green);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.adv-player-select {
+    flex: 1 1 140px;
+    min-width: 120px;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--text);
+    border: 1px solid var(--border-subtle);
+    border-radius: 5px;
+    padding: 0.4rem 0.5rem;
+    font-family: var(--font);
+    font-size: 0.9rem;
+}
+
+.adv-player-select:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.adv-result-buttons {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.adv-result-buttons .result-btn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.adv-round-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.adv-preview-area {
+    margin-top: 0.8rem;
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.adv-validation-messages {
+    margin-bottom: 0.8rem;
+}
+
+.adv-errors,
+.adv-warnings,
+.adv-ok {
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.88rem;
+}
+
+.adv-errors {
+    background: rgba(230, 57, 70, 0.15);
+    border: 1px solid var(--red);
+    color: #ffb3b9;
+}
+
+.adv-warnings {
+    background: rgba(255, 214, 10, 0.12);
+    border: 1px solid var(--yellow);
+    color: #ffe78a;
+}
+
+.adv-ok {
+    background: rgba(46, 196, 182, 0.12);
+    border: 1px solid var(--green);
+    color: #9bebdf;
+}
+
+.adv-errors ul,
+.adv-warnings ul {
+    margin-top: 0.3rem;
+    padding-left: 1.2rem;
+}
+
+.adv-footer {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 700px) {
+    .adv-pairing-row {
+        gap: 0.4rem;
+    }
+    .adv-player-select {
+        flex: 1 1 100%;
+    }
+    .adv-result-buttons {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+}

@@ -32,6 +32,10 @@
                         <span class="btn-icon">&#10026;</span>
                         Lucky Wheel
                     </button>
+                    <button class="btn btn-secondary btn-large" onclick="app.navigateTo('advanced')">
+                        <span class="btn-icon">&#9881;</span>
+                        Advanced
+                    </button>
                 </div>
                 <div id="resume-section" class="resume-section" style="display:none;">
                     <hr class="divider">
@@ -159,6 +163,64 @@
             </div>
         </section>
     </main>
+
+        <!-- ADVANCED RECOVERY VIEW -->
+        <section id="view-advanced" class="view">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>Advanced &mdash; Recover Tournament</h2>
+                    <span class="badge">Rebuild from past results</span>
+                </div>
+                <p class="info-text" style="margin-bottom:1rem">
+                    Lost your tournament data? Enter the roster and every completed round's results here,
+                    then generate the next round's pairings to continue playing.
+                </p>
+
+                <!-- STEP 1: ROSTER -->
+                <div class="adv-step">
+                    <h3 class="adv-step-title"><span class="adv-step-num">1</span> Player Roster</h3>
+                    <label for="adv-roster-input">Enter all players (one name per line):</label>
+                    <textarea id="adv-roster-input" rows="6" placeholder="Fox&#10;Henry&#10;ming&#10;sk&#10;wical&#10;szto"></textarea>
+                    <div class="adv-row-actions">
+                        <button class="btn btn-primary btn-small" onclick="app.advancedSetRoster()">Save Roster</button>
+                        <span id="adv-roster-count" class="info-text"></span>
+                    </div>
+                </div>
+
+                <!-- STEP 2: ROUNDS -->
+                <div class="adv-step">
+                    <h3 class="adv-step-title"><span class="adv-step-num">2</span> Past Rounds</h3>
+                    <div id="adv-rounds-container"></div>
+                    <div class="adv-row-actions">
+                        <button class="btn btn-secondary btn-small" onclick="app.advancedAddRound()">+ Add Round</button>
+                        <span id="adv-rounds-info" class="info-text"></span>
+                    </div>
+                </div>
+
+                <!-- STEP 3: PREVIEW -->
+                <div class="adv-step">
+                    <h3 class="adv-step-title"><span class="adv-step-num">3</span> Preview Reconstructed Standings</h3>
+                    <button class="btn btn-secondary btn-small" onclick="app.advancedPreview()">Refresh Preview</button>
+                    <div id="adv-preview-area" class="adv-preview-area">
+                        <p class="info-text">Click "Refresh Preview" after entering roster and round results.</p>
+                    </div>
+                </div>
+
+                <!-- STEP 4: COMMIT -->
+                <div class="adv-step">
+                    <h3 class="adv-step-title"><span class="adv-step-num">4</span> Generate Next Round &amp; Continue</h3>
+                    <div id="adv-validation-messages" class="adv-validation-messages"></div>
+                    <div class="adv-row-actions">
+                        <button id="btn-adv-commit" class="btn btn-primary" onclick="app.advancedCommit()">Reconstruct &amp; Continue Tournament</button>
+                        <button class="btn btn-danger btn-small" onclick="app.advancedDiscard()">Discard Recovery</button>
+                    </div>
+                </div>
+
+                <div class="adv-footer">
+                    <button class="btn btn-secondary" onclick="app.navigateTo('home')">Back to Home</button>
+                </div>
+            </div>
+        </section>
 
     <!-- TRAINER CARD MODAL -->
     <div id="modal-overlay" class="modal-overlay" onclick="app.closeModal()">

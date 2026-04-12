@@ -100,6 +100,8 @@ const app = (() => {
             crumbs.push('<span class="bc-active">Standings</span>');
         } else if (viewName === 'wheel') {
             crumbs.push('<span class="bc-active">Lucky Wheel</span>');
+        } else if (viewName === 'advanced') {
+            crumbs.push('<span class="bc-active">Advanced Recovery</span>');
         }
 
         bc.innerHTML = crumbs.join(' <span>&rsaquo;</span> ');
@@ -117,6 +119,7 @@ const app = (() => {
         if (view === 'round') renderRound();
         if (view === 'standings') renderStandings();
         if (view === 'wheel') renderWheel();
+        if (view === 'advanced') renderAdvanced();
         showView(view);
     }
 
@@ -1171,6 +1174,550 @@ const app = (() => {
         document.getElementById('winner-overlay').classList.remove('open');
     }
 
+    // ---- ADVANCED RECOVERY ----
+    // Staging state — kept completely separate from the live tournament state
+    // until the user explicitly commits. Persisted so a mid-recovery tab close
+    // isn't a second disaster.
+    let advancedStaging = {
+        players: [], // [{ name, tempId }]
+        rounds: []   // [{ pairings: [{ tempA, tempB|null, result: 'a'|'b'|'draw'|'bye' }] }]
+    };
+
+    function saveAdvancedStaging() {
+        localStorage.setItem('ptcg_advanced_staging', JSON.stringify(advancedStaging));
+    }
+
+    function loadAdvancedStaging() {
+        const saved = localStorage.getItem('ptcg_advanced_staging');
+        if (saved) {
+            try {
+                advancedStaging = JSON.parse(saved);
+            } catch (e) {
+                advancedStaging = { players: [], rounds: [] };
+            }
+        }
+    }
+
+    function clearAdvancedStaging() {
+        advancedStaging = { players: [], rounds: [] };
+        localStorage.removeItem('ptcg_advanced_staging');
+    }
+
+    function newTempId() {
+        return 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    }
+
+    function renderAdvanced() {
+        // Restore roster textarea if staging has names
+        const rosterInput = document.getElementById('adv-roster-input');
+        if (rosterInput && advancedStaging.players.length > 0 && rosterInput.value.trim() === '') {
+            rosterInput.value = advancedStaging.players.map(p => p.name).join('\n');
+        }
+        renderAdvancedRosterCount();
+        renderAdvancedRounds();
+        renderAdvancedValidation();
+    }
+
+    function renderAdvancedRosterCount() {
+        const el = document.getElementById('adv-roster-count');
+        if (!el) return;
+        const n = advancedStaging.players.length;
+        el.textContent = n > 0 ? `${n} player${n !== 1 ? 's' : ''} in roster` : '';
+    }
+
+    function advancedSetRoster() {
+        const textarea = document.getElementById('adv-roster-input');
+        const lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l);
+        // Preserve existing tempIds where the name already matches, so rounds keep working
+        const existingByName = {};
+        advancedStaging.players.forEach(p => { existingByName[p.name.toLowerCase()] = p.tempId; });
+
+        const seen = new Set();
+        const next = [];
+        lines.forEach(name => {
+            const key = name.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            next.push({
+                name,
+                tempId: existingByName[key] || newTempId()
+            });
+        });
+
+        // If names were removed, drop any round pairing referencing a gone tempId
+        const validIds = new Set(next.map(p => p.tempId));
+        advancedStaging.rounds.forEach(round => {
+            round.pairings = round.pairings.filter(p =>
+                validIds.has(p.tempA) && (p.tempB === null || validIds.has(p.tempB))
+            );
+        });
+
+        advancedStaging.players = next;
+        saveAdvancedStaging();
+        renderAdvanced();
+        showToast(`Roster set: ${next.length} player${next.length !== 1 ? 's' : ''}`);
+    }
+
+    function advancedAddRound() {
+        if (advancedStaging.players.length < 2) {
+            alert('Save a roster of at least 2 players first.');
+            return;
+        }
+        advancedStaging.rounds.push({ pairings: [] });
+        saveAdvancedStaging();
+        renderAdvancedRounds();
+        renderAdvancedValidation();
+    }
+
+    function advancedRemoveRound(roundIdx) {
+        if (!confirm(`Remove Round ${roundIdx + 1} and all its pairings?`)) return;
+        advancedStaging.rounds.splice(roundIdx, 1);
+        saveAdvancedStaging();
+        renderAdvancedRounds();
+        renderAdvancedValidation();
+    }
+
+    function advancedAddPairing(roundIdx) {
+        const round = advancedStaging.rounds[roundIdx];
+        if (!round) return;
+        round.pairings.push({ tempA: '', tempB: '', result: null });
+        saveAdvancedStaging();
+        renderAdvancedRounds();
+    }
+
+    function advancedAddBye(roundIdx) {
+        const round = advancedStaging.rounds[roundIdx];
+        if (!round) return;
+        round.pairings.push({ tempA: '', tempB: null, result: 'bye' });
+        saveAdvancedStaging();
+        renderAdvancedRounds();
+    }
+
+    function advancedRemovePairing(roundIdx, pIdx) {
+        const round = advancedStaging.rounds[roundIdx];
+        if (!round) return;
+        round.pairings.splice(pIdx, 1);
+        saveAdvancedStaging();
+        renderAdvancedRounds();
+        renderAdvancedValidation();
+    }
+
+    function advancedUpdatePairing(roundIdx, pIdx, field, value) {
+        const round = advancedStaging.rounds[roundIdx];
+        if (!round) return;
+        const pairing = round.pairings[pIdx];
+        if (!pairing) return;
+        pairing[field] = value === '' ? (field === 'result' ? null : '') : value;
+        saveAdvancedStaging();
+        renderAdvancedValidation();
+    }
+
+    function advancedSetPairingResult(roundIdx, pIdx, result) {
+        const round = advancedStaging.rounds[roundIdx];
+        if (!round) return;
+        const pairing = round.pairings[pIdx];
+        if (!pairing || pairing.result === 'bye') return;
+        pairing.result = pairing.result === result ? null : result;
+        saveAdvancedStaging();
+        renderAdvancedRounds();
+        renderAdvancedValidation();
+    }
+
+    function renderAdvancedRounds() {
+        const container = document.getElementById('adv-rounds-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (advancedStaging.rounds.length === 0) {
+            container.innerHTML = '<p class="info-text">No rounds added yet. Click "+ Add Round" to begin entering past round results.</p>';
+            document.getElementById('adv-rounds-info').textContent = '';
+            return;
+        }
+
+        advancedStaging.rounds.forEach((round, rIdx) => {
+            const rDiv = document.createElement('div');
+            rDiv.className = 'adv-round-block';
+
+            const header = document.createElement('div');
+            header.className = 'adv-round-header';
+            header.innerHTML = `
+                <h4>Round ${rIdx + 1}</h4>
+                <button class="btn btn-danger btn-small" onclick="app.advancedRemoveRound(${rIdx})">Remove Round</button>
+            `;
+            rDiv.appendChild(header);
+
+            if (round.pairings.length === 0) {
+                const empty = document.createElement('p');
+                empty.className = 'info-text';
+                empty.textContent = 'No pairings yet.';
+                rDiv.appendChild(empty);
+            }
+
+            round.pairings.forEach((pairing, pIdx) => {
+                const row = document.createElement('div');
+                row.className = 'adv-pairing-row';
+
+                if (pairing.result === 'bye') {
+                    row.innerHTML = `
+                        <div class="adv-table-label">BYE</div>
+                        ${playerSelectHtml(rIdx, pIdx, 'tempA', pairing.tempA)}
+                        <div class="adv-result-label">Auto Win</div>
+                        <button class="btn-delete" onclick="app.advancedRemovePairing(${rIdx}, ${pIdx})" title="Remove">&times;</button>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <div class="adv-table-label">T${pIdx + 1}</div>
+                        ${playerSelectHtml(rIdx, pIdx, 'tempA', pairing.tempA)}
+                        <div class="adv-result-buttons">
+                            <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'a')">A Wins</button>
+                            <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'draw')">Draw</button>
+                            <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'b')">B Wins</button>
+                        </div>
+                        ${playerSelectHtml(rIdx, pIdx, 'tempB', pairing.tempB)}
+                        <button class="btn-delete" onclick="app.advancedRemovePairing(${rIdx}, ${pIdx})" title="Remove">&times;</button>
+                    `;
+                }
+                rDiv.appendChild(row);
+            });
+
+            const actions = document.createElement('div');
+            actions.className = 'adv-round-actions';
+            actions.innerHTML = `
+                <button class="btn btn-secondary btn-small" onclick="app.advancedAddPairing(${rIdx})">+ Add Pairing</button>
+                <button class="btn btn-secondary btn-small" onclick="app.advancedAddBye(${rIdx})">+ Add Bye</button>
+            `;
+            rDiv.appendChild(actions);
+
+            container.appendChild(rDiv);
+        });
+
+        document.getElementById('adv-rounds-info').textContent =
+            `${advancedStaging.rounds.length} round${advancedStaging.rounds.length !== 1 ? 's' : ''} entered`;
+    }
+
+    function playerSelectHtml(roundIdx, pIdx, field, currentVal) {
+        let opts = '<option value="">-- select --</option>';
+        advancedStaging.players.forEach(p => {
+            const sel = p.tempId === currentVal ? 'selected' : '';
+            opts += `<option value="${p.tempId}" ${sel}>${escapeHtml(p.name)}</option>`;
+        });
+        return `<select class="adv-player-select" onchange="app.advancedUpdatePairing(${roundIdx}, ${pIdx}, '${field}', this.value)">${opts}</select>`;
+    }
+
+    // Run full validation across staging. Returns { errors: [], warnings: [] }.
+    function advancedValidate() {
+        const errors = [];
+        const warnings = [];
+
+        if (advancedStaging.players.length < 2) {
+            errors.push('Roster needs at least 2 players.');
+        }
+
+        // Duplicate name check
+        const nameCounts = {};
+        advancedStaging.players.forEach(p => {
+            const k = p.name.toLowerCase();
+            nameCounts[k] = (nameCounts[k] || 0) + 1;
+        });
+        Object.entries(nameCounts).forEach(([k, c]) => {
+            if (c > 1) errors.push(`Duplicate player name: "${k}"`);
+        });
+
+        // Track opponents across rounds for rematch warnings
+        const opponentMap = {}; // tempId -> Set of tempIds
+        const byeCount = {};    // tempId -> count
+
+        advancedStaging.rounds.forEach((round, rIdx) => {
+            const label = `Round ${rIdx + 1}`;
+            const usedThisRound = new Set();
+            let byesThisRound = 0;
+
+            if (round.pairings.length === 0) {
+                errors.push(`${label}: no pairings entered.`);
+            }
+
+            round.pairings.forEach((pairing, pIdx) => {
+                const tag = `${label} pairing ${pIdx + 1}`;
+
+                if (pairing.result === 'bye') {
+                    if (!pairing.tempA) {
+                        errors.push(`${tag}: bye player not selected.`);
+                        return;
+                    }
+                    if (usedThisRound.has(pairing.tempA)) {
+                        errors.push(`${tag}: player appears more than once in this round.`);
+                    }
+                    usedThisRound.add(pairing.tempA);
+                    byesThisRound++;
+                    byeCount[pairing.tempA] = (byeCount[pairing.tempA] || 0) + 1;
+                    return;
+                }
+
+                if (!pairing.tempA || !pairing.tempB) {
+                    errors.push(`${tag}: both players must be selected.`);
+                    return;
+                }
+                if (pairing.tempA === pairing.tempB) {
+                    errors.push(`${tag}: player A and B must be different.`);
+                    return;
+                }
+                if (usedThisRound.has(pairing.tempA) || usedThisRound.has(pairing.tempB)) {
+                    errors.push(`${tag}: a player appears more than once in this round.`);
+                }
+                usedThisRound.add(pairing.tempA);
+                usedThisRound.add(pairing.tempB);
+
+                if (pairing.result === null) {
+                    errors.push(`${tag}: result not set.`);
+                }
+
+                // Rematch warning
+                if (!opponentMap[pairing.tempA]) opponentMap[pairing.tempA] = new Set();
+                if (!opponentMap[pairing.tempB]) opponentMap[pairing.tempB] = new Set();
+                if (opponentMap[pairing.tempA].has(pairing.tempB)) {
+                    const a = advancedStaging.players.find(p => p.tempId === pairing.tempA);
+                    const b = advancedStaging.players.find(p => p.tempId === pairing.tempB);
+                    warnings.push(`${tag}: rematch of ${a ? a.name : '?'} vs ${b ? b.name : '?'}.`);
+                }
+                opponentMap[pairing.tempA].add(pairing.tempB);
+                opponentMap[pairing.tempB].add(pairing.tempA);
+            });
+
+            // Bye count / roster size consistency
+            const rosterSize = advancedStaging.players.length;
+            if (rosterSize > 0 && round.pairings.length > 0) {
+                if (rosterSize % 2 === 1 && byesThisRound !== 1) {
+                    errors.push(`${label}: odd roster (${rosterSize}) needs exactly 1 bye, found ${byesThisRound}.`);
+                }
+                if (rosterSize % 2 === 0 && byesThisRound !== 0) {
+                    errors.push(`${label}: even roster should have no byes, found ${byesThisRound}.`);
+                }
+                if (usedThisRound.size !== rosterSize && round.pairings.length > 0) {
+                    errors.push(`${label}: only ${usedThisRound.size} of ${rosterSize} players accounted for.`);
+                }
+            }
+        });
+
+        // Multiple byes warning
+        Object.entries(byeCount).forEach(([tempId, c]) => {
+            if (c > 1) {
+                const p = advancedStaging.players.find(pp => pp.tempId === tempId);
+                warnings.push(`${p ? p.name : '?'} was given a bye ${c} times.`);
+            }
+        });
+
+        return { errors, warnings };
+    }
+
+    function renderAdvancedValidation() {
+        const box = document.getElementById('adv-validation-messages');
+        if (!box) return;
+        const { errors, warnings } = advancedValidate();
+        let html = '';
+        if (errors.length > 0) {
+            html += '<div class="adv-errors"><strong>Errors (must fix):</strong><ul>' +
+                errors.map(e => `<li>${escapeHtml(e)}</li>`).join('') + '</ul></div>';
+        }
+        if (warnings.length > 0) {
+            html += '<div class="adv-warnings"><strong>Warnings (allowed):</strong><ul>' +
+                warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('') + '</ul></div>';
+        }
+        if (html === '') {
+            html = '<div class="adv-ok">No issues detected. Ready to commit.</div>';
+        }
+        box.innerHTML = html;
+
+        const btn = document.getElementById('btn-adv-commit');
+        if (btn) btn.disabled = errors.length > 0;
+    }
+
+    // Build a throwaway preview of players + their reconstructed stats
+    // without touching real state. Returns array of player-like objects.
+    function advancedBuildPreviewPlayers() {
+        // Clone staging players into real player shape
+        const previewPlayers = advancedStaging.players.map(sp => ({
+            name: sp.name,
+            tempId: sp.tempId,
+            matchPoints: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            opponents: [],
+            hadBye: false
+        }));
+        const byTempId = {};
+        previewPlayers.forEach(p => { byTempId[p.tempId] = p; });
+
+        advancedStaging.rounds.forEach(round => {
+            round.pairings.forEach(pairing => {
+                if (pairing.result === 'bye') {
+                    const p = byTempId[pairing.tempA];
+                    if (!p) return;
+                    p.matchPoints += 3;
+                    p.wins += 1;
+                    p.hadBye = true;
+                    return;
+                }
+                const pA = byTempId[pairing.tempA];
+                const pB = byTempId[pairing.tempB];
+                if (!pA || !pB || pairing.result === null) return;
+                pA.opponents.push(pairing.tempB);
+                pB.opponents.push(pairing.tempA);
+                if (pairing.result === 'a') {
+                    pA.matchPoints += 3; pA.wins += 1; pB.losses += 1;
+                } else if (pairing.result === 'b') {
+                    pB.matchPoints += 3; pB.wins += 1; pA.losses += 1;
+                } else if (pairing.result === 'draw') {
+                    pA.matchPoints += 1; pB.matchPoints += 1;
+                    pA.draws += 1; pB.draws += 1;
+                }
+            });
+        });
+
+        return previewPlayers;
+    }
+
+    function advancedPreview() {
+        const area = document.getElementById('adv-preview-area');
+        if (!area) return;
+        renderAdvancedValidation();
+
+        if (advancedStaging.players.length < 2) {
+            area.innerHTML = '<p class="info-text">Save a roster first.</p>';
+            return;
+        }
+
+        const previewPlayers = advancedBuildPreviewPlayers();
+        const byTempId = {};
+        previewPlayers.forEach(p => { byTempId[p.tempId] = p; });
+
+        // Compute OWP the same way calculateOWP does, but against preview data
+        function previewOWP(p) {
+            if (p.opponents.length === 0) return 0;
+            let total = 0, count = 0;
+            p.opponents.forEach(oppId => {
+                const opp = byTempId[oppId];
+                if (!opp) return;
+                const games = opp.wins + opp.losses + opp.draws;
+                if (games === 0) {
+                    total += 0.25;
+                } else {
+                    const winPct = opp.matchPoints / (games * 3);
+                    total += Math.max(0.25, winPct);
+                }
+                count++;
+            });
+            return count > 0 ? total / count : 0;
+        }
+
+        const rows = previewPlayers.map(p => ({
+            name: p.name,
+            record: `${p.wins}-${p.losses}-${p.draws}`,
+            points: p.matchPoints,
+            owp: previewOWP(p)
+        }));
+        rows.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            return b.owp - a.owp;
+        });
+
+        let html = '<table class="standings-table"><thead><tr>' +
+            '<th>Rank</th><th>Player</th><th>Record</th><th>Points</th><th>OWP%</th>' +
+            '</tr></thead><tbody>';
+        rows.forEach((r, i) => {
+            html += `<tr><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>${r.record}</td><td>${r.points}</td><td>${(r.owp * 100).toFixed(1)}%</td></tr>`;
+        });
+        html += '</tbody></table>';
+        area.innerHTML = html;
+    }
+
+    // Replay staging into real state, then generate the next round and navigate.
+    function advancedCommit() {
+        const { errors } = advancedValidate();
+        if (errors.length > 0) {
+            alert('Cannot commit — please fix the errors listed in Step 4.');
+            return;
+        }
+        if (state.tournamentStarted) {
+            if (!confirm('This will REPLACE your current tournament state. Continue?')) return;
+        } else {
+            if (!confirm('Reconstruct tournament from entered results and generate next round pairings?')) return;
+        }
+
+        // Clear any old per-round snapshots
+        for (let i = 0; i < 50; i++) {
+            localStorage.removeItem(`ptcg_round_${i}`);
+        }
+
+        // 1. Build fresh real players from staging
+        const tempIdToRealId = {};
+        state.players = advancedStaging.players.map(sp => {
+            const real = createPlayer(sp.name);
+            tempIdToRealId[sp.tempId] = real.id;
+            return real;
+        });
+
+        // 2. Build real rounds from staging, replay each with applyResults
+        state.rounds = [];
+        advancedStaging.rounds.forEach((stagingRound, rIdx) => {
+            const realPairings = [];
+            let tableNum = 1;
+            stagingRound.pairings.forEach(sp => {
+                if (sp.result === 'bye') {
+                    realPairings.push({
+                        table: 0,
+                        playerA: tempIdToRealId[sp.tempA],
+                        playerB: null,
+                        result: 'bye',
+                        isBye: true
+                    });
+                } else {
+                    realPairings.push({
+                        table: tableNum++,
+                        playerA: tempIdToRealId[sp.tempA],
+                        playerB: tempIdToRealId[sp.tempB],
+                        result: sp.result
+                    });
+                }
+            });
+            const realRound = { pairings: realPairings, resultsSubmitted: false };
+            applyResults(realRound);
+            realRound.resultsSubmitted = true;
+            state.rounds.push(realRound);
+            saveRoundSnapshot(rIdx);
+        });
+
+        // 3. Generate the next round's pairings using the existing algorithm
+        const nextRoundIndex = state.rounds.length;
+        const nextPairings = generatePairings(nextRoundIndex);
+        state.rounds.push({ pairings: nextPairings, resultsSubmitted: false });
+        state.currentRound = nextRoundIndex;
+
+        // 4. Mark tournament as live and navigate to round view
+        state.tournamentStarted = true;
+        state.tournamentEnded = false;
+        resetTimerValue();
+        saveState();
+
+        clearAdvancedStaging();
+        showToast(`Reconstructed — Round ${nextRoundIndex + 1} pairings ready!`);
+        navigateTo('round');
+    }
+
+    function advancedDiscard() {
+        if (advancedStaging.players.length === 0 && advancedStaging.rounds.length === 0) {
+            navigateTo('home');
+            return;
+        }
+        if (!confirm('Discard all recovery data entered so far?')) return;
+        clearAdvancedStaging();
+        const rosterInput = document.getElementById('adv-roster-input');
+        if (rosterInput) rosterInput.value = '';
+        const preview = document.getElementById('adv-preview-area');
+        if (preview) preview.innerHTML = '<p class="info-text">Click "Refresh Preview" after entering roster and round results.</p>';
+        renderAdvanced();
+    }
+
     // ---- TOAST NOTIFICATION ----
     function showToast(message, duration = 2500) {
         let toast = document.getElementById('toast');
@@ -1224,6 +1771,7 @@ const app = (() => {
     // ---- INIT ----
     function init() {
         loadState();
+        loadAdvancedStaging();
 
         // Keyboard events
         document.addEventListener('keydown', handleKeydown);
@@ -1275,6 +1823,17 @@ const app = (() => {
         wheelSetNames,
         wheelSyncFromTournament,
         wheelReset,
-        spinWheel
+        spinWheel,
+        advancedSetRoster,
+        advancedAddRound,
+        advancedRemoveRound,
+        advancedAddPairing,
+        advancedAddBye,
+        advancedRemovePairing,
+        advancedUpdatePairing,
+        advancedSetPairingResult,
+        advancedPreview,
+        advancedCommit,
+        advancedDiscard
     };
 })();
