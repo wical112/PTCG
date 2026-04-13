@@ -247,7 +247,7 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
 
 ### AdSense readiness — privacy + contact
 - **`privacy.html` rewritten** for AdSense compliance: now discloses Firebase Authentication + Firestore (Section 3), hosting-provider request logs (4), Google AdSense + opt-out links (6), EEA/UK/CH consent + DPA rights (7), CCPA/CPRA (8), COPPA (9), retention (10). Date stamp 14 April 2026.
-- **`contact.html` created** — visible email channel + privacy-request guidance + feature-request invitation + shop-owner CTA. Email currently set to `tcgtm.support@gmail.com` (placeholder — user to replace with real address).
+- **`contact.html` created** — Telegram contact channel ([@develop_sup](https://t.me/develop_sup)) + privacy-request guidance + feature-request invitation + shop-owner CTA. (Originally drafted with a placeholder email; user opted for Telegram instead.)
 - **Footer updated across all 7 pages** (`index, landing, about, faq, contact, privacy, terms`) to include `Contact` link between FAQ and Privacy.
 - **About page** "Contact" section now points to `contact.html` instead of "project repository".
 - **Still blocking AdSense application**:
