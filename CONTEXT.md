@@ -236,6 +236,16 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
 ### `.gitignore` added
 - Excludes `.firebase/`, `firebase-debug.log`, `*.log`, `.DS_Store`, `node_modules/`.
 
+### AdSense readiness — privacy + contact
+- **`privacy.html` rewritten** for AdSense compliance: now discloses Firebase Authentication + Firestore (Section 3), hosting-provider request logs (4), Google AdSense + opt-out links (6), EEA/UK/CH consent + DPA rights (7), CCPA/CPRA (8), COPPA (9), retention (10). Date stamp 14 April 2026.
+- **`contact.html` created** — visible email channel + privacy-request guidance + feature-request invitation + shop-owner CTA. Email currently set to `tcgtm.support@gmail.com` (placeholder — user to replace with real address).
+- **Footer updated across all 7 pages** (`index, landing, about, faq, contact, privacy, terms`) to include `Contact` link between FAQ and Privacy.
+- **About page** "Contact" section now points to `contact.html` instead of "project repository".
+- **Still blocking AdSense application**:
+  1. Custom domain (cannot apply with `*.web.app`).
+  2. Google-certified Consent Management Platform banner for EEA/UK traffic (e.g. Funding Choices).
+  3. Optional but recommended: 3–5 substantive blog/help articles to thicken content.
+
 ## Next candidate tasks
 - Update `privacy.html` to disclose Firebase storage when published (required before broad launch).
 - Knockout v2: hide Draw button, manual/drag seeding, Bo3 mode, proper bracket-tree visualization for desktop.

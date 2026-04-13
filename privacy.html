@@ -16,52 +16,86 @@
         <nav class="static-nav">
             <a href="landing.html">Home</a>
             <a href="index.html">Launch App</a>
+            <a href="faq.html">FAQ</a>
+            <a href="contact.html">Contact</a>
         </nav>
     </header>
 
     <main class="static-page">
         <h1>Privacy Policy</h1>
-        <p class="doc-meta">Last updated: April 2026</p>
+        <p class="doc-meta">Last updated: 14 April 2026</p>
 
         <h2>1. Overview</h2>
-        <p>TCG Tournament Manager (the &ldquo;Service&rdquo;) is a free, browser-based tool. We believe in keeping things simple: your tournament data is yours, and it stays on your device.</p>
+        <p>TCG Tournament Manager (the &ldquo;Service&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) is a free, browser-based tournament tool. This policy explains what data we and our service providers collect, how it is used, and the choices you have. By using the Service you agree to this policy.</p>
 
-        <h2>2. What we store</h2>
+        <h2>2. Data we store on your device</h2>
+        <p>The Service uses your browser&rsquo;s <code>localStorage</code> to save:</p>
         <ul>
-            <li><strong>Local storage (on your device only).</strong> Player names, round results, timer state, wheel history, language preference, and per-round snapshots are saved using your browser&rsquo;s <code>localStorage</code>. This data never leaves your device unless you intentionally export or share it (for example, by downloading the standings image).</li>
-            <li><strong>No accounts.</strong> We do not collect names, email addresses, phone numbers, or any personal identifiers.</li>
-            <li><strong>No server storage.</strong> The Service is fully static. There is no backend database receiving your tournament data.</li>
+            <li>Player names you enter, pairings, results, standings.</li>
+            <li>Round snapshots (so you can resume after a refresh).</li>
+            <li>Timer state, tournament name, tournament date.</li>
+            <li>Lucky-wheel entries and history.</li>
+            <li>Language preference (English / Traditional Chinese).</li>
+            <li>The last view you were on.</li>
+        </ul>
+        <p>This data lives only in your browser. We have no account system. You can clear it any time using the in-app <em>Reset</em> button or by clearing site data in your browser settings.</p>
+
+        <h2>3. Data sent to Firebase when you publish a tournament</h2>
+        <p>The Service offers an optional <strong>Publish</strong> feature that creates a public, read-only mirror of your tournament so players can view it via QR code. When you click <em>Publish</em>:</p>
+        <ul>
+            <li>Your browser signs in anonymously to <strong>Google Firebase Authentication</strong>. An anonymous user identifier is generated; we do not collect your name or email.</li>
+            <li>A document containing your tournament state (player names, pairings, results, tournament name and date) is written to <strong>Google Cloud Firestore</strong> in the Singapore region.</li>
+            <li>The document is publicly readable by anyone holding the 6-character tournament ID or QR link. It is editable only by the anonymous identifier that created it.</li>
+            <li>The document is automatically deleted approximately 24&ndash;48 hours after you stop syncing (via Firestore TTL). You can also delete it immediately using the in-app <em>Stop Sharing</em> button.</li>
+        </ul>
+        <p><strong>Do not publish tournaments containing data you consider private.</strong> Anything you put into a published tournament can be read by anyone with the link. If your players use real names you should obtain their consent before publishing.</p>
+        <p>Firebase is a service of Google LLC. See the <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Firebase Privacy and Security</a> page and the <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a> for details on how Google processes this data.</p>
+
+        <h2>4. Information collected automatically by hosting providers</h2>
+        <p>The Service is hosted on <strong>Firebase Hosting</strong>. Like any web host, Google may automatically receive and log standard request metadata (IP address, user-agent, referrer, timestamp) when you visit any page. This information is used by Google for security, abuse prevention, and aggregate analytics. We do not maintain our own server-side request logs.</p>
+
+        <h2>5. Cookies and similar technologies</h2>
+        <p>The Service itself does not set first-party tracking cookies. We use <code>localStorage</code> (described in Section 2), which is a similar technology but stored only on your device.</p>
+        <p>Third-party services we use (Firebase Authentication, Google Fonts, Google AdSense if enabled) may set cookies or read existing identifiers as described in their own privacy policies.</p>
+
+        <h2>6. Advertising</h2>
+        <p>We may display advertisements on the Service through <strong>Google AdSense</strong> and other Google advertising products to keep the Service free.</p>
+        <ul>
+            <li>Google and its partners use cookies, web beacons, device identifiers and similar technologies to serve ads based on your prior visits to this site or other sites on the internet.</li>
+            <li>Google&rsquo;s use of advertising cookies enables it and its partners to serve ads based on your visit to our Service and/or other sites on the internet.</li>
+            <li>You may opt out of personalised advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google Ads Settings</a>. You may also opt out of a third-party vendor&rsquo;s use of cookies for personalised advertising by visiting <a href="https://optout.aboutads.info/" target="_blank" rel="noopener">aboutads.info</a> or <a href="https://www.youronlinechoices.com/" target="_blank" rel="noopener">youronlinechoices.com</a> (EEA / UK).</li>
+            <li>For more information on how Google uses data when you use partners&rsquo; sites or apps, see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses information from sites or apps that use our services</a>.</li>
         </ul>
 
-        <h2>3. Cookies</h2>
-        <p>The Service itself does not set tracking cookies. If advertising is enabled in the future (see Section 5), third-party ad providers may set their own cookies, as disclosed in their own privacy policies.</p>
+        <h2>7. EEA, United Kingdom and Switzerland users</h2>
+        <p>If you visit the Service from the European Economic Area, the United Kingdom, or Switzerland, we (and our advertising partners) rely on your consent for non-essential cookies and personalised advertising. A consent banner is presented on your first visit. You can withdraw or change your consent at any time via the &ldquo;Manage cookie preferences&rdquo; link in the footer.</p>
+        <p>You have the right to access, correct, or request deletion of any personal data processed about you, to object to processing, and to lodge a complaint with your local data-protection authority. Because the tournament data the Service stores is on your own device, exercising these rights is mostly a matter of clearing your browser storage. For data held by Firebase or Google AdSense, please contact those providers directly using the links above, or contact us at the address in Section 11 and we will assist.</p>
 
-        <h2>4. Analytics</h2>
-        <p>We may use privacy-respecting analytics (for example, aggregated pageview counts) to understand general usage. Any analytics tool used will be disclosed here and configured to avoid collecting personal data where possible.</p>
+        <h2>8. California users (CCPA / CPRA)</h2>
+        <p>We do not &ldquo;sell&rdquo; personal information as defined under the CCPA / CPRA. Use of personalised advertising via Google AdSense may, depending on interpretation, be considered &ldquo;sharing&rdquo; for cross-context behavioural advertising. California residents may opt out using the controls described in Section 6.</p>
 
-        <h2>5. Third-party advertising</h2>
-        <p>If we enable third-party advertising (such as Google AdSense), those providers may use cookies or similar technologies to serve ads based on your prior visits to this or other websites. You can opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google Ads Settings</a> or <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">aboutads.info</a>.</p>
+        <h2>9. Children&rsquo;s privacy</h2>
+        <p>The Service is not directed at children under 13 and we do not knowingly collect personal information from children. If you believe a child has provided personal information through the Service, please contact us (Section 11) and we will take steps to delete it.</p>
 
-        <h2>6. Children&rsquo;s privacy</h2>
-        <p>The Service is not directed at children under 13. We do not knowingly collect personal information from children.</p>
+        <h2>10. Data retention and deletion</h2>
+        <ul>
+            <li><strong>Local data:</strong> retained until you clear it. Use the in-app <em>Reset</em> button or your browser&rsquo;s &ldquo;Clear site data&rdquo; setting.</li>
+            <li><strong>Published tournament documents:</strong> auto-deleted ~24&ndash;48 hours after you stop syncing. You can delete immediately via <em>Stop Sharing</em>.</li>
+            <li><strong>Hosting / advertising logs:</strong> retained by Google according to their own retention policies.</li>
+        </ul>
 
-        <h2>7. Data deletion</h2>
-        <p>To delete all tournament data, use the <em>Reset</em> button inside the app, or clear site data for this domain in your browser&rsquo;s settings.</p>
+        <h2>11. Contact</h2>
+        <p>Questions, requests, or complaints about this policy can be sent to the address listed on our <a href="contact.html">Contact page</a>.</p>
 
-        <h2>8. International users</h2>
-        <p>Because all data stays in your browser, no international data transfer occurs. If you are in the EU, UK, or other regions with data-protection laws, you retain full control of your data at all times.</p>
-
-        <h2>9. Changes to this policy</h2>
-        <p>We may update this policy from time to time. Material changes will be reflected by the &ldquo;Last updated&rdquo; date above.</p>
-
-        <h2>10. Contact</h2>
-        <p>Questions about this policy can be sent via the contact method listed on the <a href="about.html">About page</a>.</p>
+        <h2>12. Changes to this policy</h2>
+        <p>We may update this policy from time to time. Material changes will be reflected by the &ldquo;Last updated&rdquo; date above. Continued use of the Service after a change constitutes acceptance of the updated policy.</p>
     </main>
 
     <footer class="site-footer">
         <div class="footer-links">
             <a href="about.html">About</a>
             <a href="faq.html">FAQ</a>
+            <a href="contact.html">Contact</a>
             <a href="privacy.html">Privacy</a>
             <a href="terms.html">Terms</a>
         </div>
