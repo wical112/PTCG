@@ -1,0 +1,18 @@
+{
+  "hosting": {
+    "target": "tcgtm",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/node_modules/**",
+      "*.md",
+      "firestore.rules",
+      "firebase-debug.log"
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

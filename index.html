@@ -6,20 +6,38 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0a0e27">
-    <title>PTCG Tournament Manager</title>
+    <title>TCG Tournament Manager</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=20260413a">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
+    <script src="firebase-config.js" defer></script>
+    <script src="cloud.js" defer></script>
 </head>
 <body>
+    <div id="view-mode-banner" class="view-mode-banner" style="display:none;">
+        <span class="live-dot"></span>
+        <span data-i18n="cloud.live">LIVE</span>
+        <span class="view-mode-text" data-i18n="cloud.viewBanner">You are viewing this tournament live. Updates appear automatically.</span>
+    </div>
+
     <header id="app-header">
         <button id="lang-toggle" class="lang-toggle" onclick="app.toggleLang()" title="Language">中文</button>
-        <h1 class="logo" data-i18n="header.title">PTCG Tournament Manager</h1>
+        <h1 class="logo" data-i18n="header.title">TCG Tournament Manager</h1>
         <div id="breadcrumb" class="breadcrumb"></div>
     </header>
+
+    <!-- Ad slot — visible in viewer/player mode only. Drop ad markup inside .ad-slot-inner. -->
+    <div id="viewer-ad-slot" class="viewer-ad-slot">
+        <div class="ad-slot-inner">
+            <span class="ad-slot-label">Advertisement</span>
+        </div>
+    </div>
 
     <main id="app">
         <!-- HOME VIEW -->
@@ -28,9 +46,13 @@
                 <h2 data-i18n="home.welcome">Welcome, Trainer!</h2>
                 <p class="subtitle" data-i18n="home.subtitle">Choose your path</p>
                 <div class="home-buttons">
-                    <button class="btn btn-primary btn-large" onclick="app.navigateTo('registration')">
+                    <button class="btn btn-primary btn-large" onclick="app.startNewTournament('swiss')">
                         <span class="btn-icon">&#9876;</span>
-                        <span data-i18n="home.tournament">Tournament</span>
+                        <span data-i18n="home.swiss">Swiss Tournament</span>
+                    </button>
+                    <button class="btn btn-primary btn-large" onclick="app.startNewTournament('knockout')">
+                        <span class="btn-icon">&#9885;</span>
+                        <span data-i18n="home.knockout">Knockout Tournament</span>
                     </button>
                     <button class="btn btn-accent btn-large" onclick="app.navigateTo('wheel')">
                         <span class="btn-icon">&#10026;</span>
@@ -57,10 +79,20 @@
                     <h2 data-i18n="reg.title">Player Registration</h2>
                     <span id="player-count" class="badge">0 players</span>
                 </div>
+                <div class="reg-meta">
+                    <div class="reg-meta-field">
+                        <label for="tournament-name" data-i18n="reg.tournamentName">Tournament Name</label>
+                        <input id="tournament-name" type="text" data-i18n-placeholder="reg.tournamentNamePlaceholder" placeholder="e.g. AAB Shop Gym Battle" oninput="app.updateTournamentMeta()" />
+                    </div>
+                    <div class="reg-meta-field">
+                        <label for="tournament-date" data-i18n="reg.tournamentDate">Tournament Date</label>
+                        <input id="tournament-date" type="date" oninput="app.updateTournamentMeta()" />
+                    </div>
+                </div>
                 <div class="registration-grid">
                     <div class="reg-input-area">
                         <label for="bulk-input" data-i18n="reg.bulkLabel">Add players (one name per line):</label>
-                        <textarea id="bulk-input" rows="8" data-i18n-placeholder="reg.bulkPlaceholder" placeholder="...please input player&#10;Fox&#10;Henry&#10;hoho&#10;ming&#10;sk&#10;nam&#10;carey&#10;dicky&#10;henry2&#10;wical&#10;szto&#10;ting&#10;hugo&#10;jason"></textarea>
+                        <textarea id="bulk-input" rows="8" data-i18n-placeholder="reg.bulkPlaceholder" placeholder="Enter one player name per line…&#10;Player 1&#10;Player 2&#10;Player 3"></textarea>
                         <button class="btn btn-primary" onclick="app.bulkAddPlayers()" data-i18n="reg.addBtn">Add Players</button>
                     </div>
                     <div class="reg-list-area">
@@ -83,6 +115,14 @@
             <div id="round-panel" class="panel">
                 <div class="round-header">
                     <h2 id="round-title">Round 1</h2>
+                    <button id="btn-viewer-share" class="viewer-share-btn" type="button" onclick="app.viewerShareOpen()" aria-label="Share" title="Share">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                            <path d="M14 14h3v3h-3zM20 14v3M14 20h3M17 17v4M20 20h1"/>
+                        </svg>
+                    </button>
                     <div id="timer-display" class="timer">25:00</div>
                     <div class="timer-controls">
                         <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(-60)">-1m</button>
@@ -92,7 +132,44 @@
                         <button id="btn-timer-mute" class="btn btn-small btn-secondary" onclick="app.toggleTimerMute()" data-i18n="timer.mute">Mute</button>
                         <button id="btn-compact" class="btn btn-small btn-secondary" onclick="app.toggleCompactMode()" data-i18n="timer.compact">Compact</button>
                         <button id="btn-projector" class="btn btn-small btn-accent" onclick="app.toggleProjectorMode()" data-i18n="timer.projector">Projector Mode</button>
+                        <button id="btn-publish" class="btn btn-small btn-primary edit-only" onclick="app.cloudPublishToggle()" data-i18n="cloud.publish">Publish</button>
                     </div>
+                </div>
+                <div id="share-panel" class="share-panel" style="display:none;">
+                    <button type="button" class="share-panel-header" onclick="app.toggleSharePanel()">
+                        <span class="live-dot"></span>
+                        <span class="share-panel-live" data-i18n="cloud.live">LIVE</span>
+                        <span class="share-panel-id"><span data-i18n="cloud.tournamentId">Tournament ID</span>: <strong id="share-panel-id-value"></strong></span>
+                        <span class="share-panel-chevron" aria-hidden="true">&#x25BC;</span>
+                    </button>
+                    <div class="share-panel-body">
+                        <div class="share-panel-grid">
+                            <div class="share-qr-wrap">
+                                <img id="share-qr" alt="QR code" width="220" height="220">
+                            </div>
+                            <div class="share-panel-info">
+                                <p class="info-text" data-i18n="cloud.shareHint">Players can scan this QR code or open the link below to view the tournament live.</p>
+                                <div class="share-link-row">
+                                    <input id="share-link-input" type="text" readonly>
+                                    <button class="btn btn-small btn-primary" onclick="app.copyShareLink()" data-i18n="cloud.copyLink">Copy Link</button>
+                                </div>
+                                <button class="btn btn-small btn-danger" onclick="app.cloudUnpublish()" data-i18n="cloud.unpublish">Stop Sharing</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="viewer-pin" class="viewer-pin" style="display:none;">
+                    <div class="viewer-pin-search">
+                        <input id="viewer-pin-input" type="text"
+                            placeholder="Enter your name to pin your match"
+                            data-i18n-placeholder="viewer.placeholder"
+                            list="viewer-pin-names"
+                            oninput="app.viewerPinSearch(this.value)"
+                            autocomplete="off" />
+                        <datalist id="viewer-pin-names"></datalist>
+                        <button class="btn btn-small btn-secondary" type="button" onclick="app.viewerPinClear()" data-i18n="common.reset">Reset</button>
+                    </div>
+                    <div id="viewer-pin-result" class="viewer-pin-result"></div>
                 </div>
                 <div id="pairings-container" class="pairings-container"></div>
                 <div class="round-footer">
@@ -185,7 +262,7 @@
                 <div class="adv-step">
                     <h3 class="adv-step-title"><span class="adv-step-num">1</span> <span data-i18n="adv.step1">Player Roster</span></h3>
                     <label for="adv-roster-input" data-i18n="adv.rosterLabel">Enter all players (one name per line):</label>
-                    <textarea id="adv-roster-input" rows="6" data-i18n-placeholder="adv.rosterPlaceholder" placeholder="Fox&#10;Henry&#10;ming&#10;sk&#10;wical&#10;szto"></textarea>
+                    <textarea id="adv-roster-input" rows="6" data-i18n-placeholder="adv.rosterPlaceholder" placeholder="Player 1&#10;Player 2&#10;Player 3"></textarea>
                     <div class="adv-row-actions">
                         <button class="btn btn-primary btn-small" onclick="app.advancedSetRoster()" data-i18n="adv.saveRoster">Save Roster</button>
                         <span id="adv-roster-count" class="info-text"></span>
@@ -227,6 +304,22 @@
             </div>
         </section>
 
+    <!-- VIEWER SHARE QR MODAL -->
+    <div id="viewer-share-overlay" class="modal-overlay" onclick="app.viewerShareClose()">
+        <div class="modal-content viewer-share-modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.viewerShareClose()">&times;</button>
+            <h3 data-i18n="viewer.shareTitle">Share this view</h3>
+            <p class="info-text" data-i18n="viewer.shareHint">Scan or copy the link to share with other players.</p>
+            <div class="viewer-share-qr-wrap">
+                <img id="viewer-share-qr" alt="QR code" width="240" height="240">
+            </div>
+            <div class="share-link-row">
+                <input id="viewer-share-link" type="text" readonly>
+                <button class="btn btn-small btn-primary" type="button" onclick="app.viewerShareCopy()" data-i18n="cloud.copyLink">Copy Link</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TRAINER CARD MODAL -->
     <div id="modal-overlay" class="modal-overlay" onclick="app.closeModal()">
         <div class="modal-content trainer-card" onclick="event.stopPropagation()">
@@ -264,6 +357,18 @@
             <button class="btn btn-primary" onclick="app.closeWinnerModal()" data-i18n="common.ok">OK</button>
         </div>
     </div>
+
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="landing.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="faq.html">FAQ</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+            <button id="btn-no-ads" type="button" class="no-ads-btn" onclick="app.toggleNoAds()" title="Hide advertisements">noAds</button>
+        </div>
+        <p class="footer-note">&copy; 2026 TCG Tournament Manager</p>
+    </footer>
 
     <script src="app.js"></script>
 </body>

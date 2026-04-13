@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="About TCG Tournament Manager — a free, privacy-first Swiss tournament tool for card-game communities.">
+    <meta name="theme-color" content="#1A1A1A">
+    <title>About — TCG Tournament Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header id="app-header">
+        <h1 class="logo">TCG Tournament Manager</h1>
+        <nav class="static-nav">
+            <a href="landing.html">Home</a>
+            <a href="index.html">Launch App</a>
+            <a href="faq.html">FAQ</a>
+        </nav>
+    </header>
+
+    <main class="static-page">
+        <h1>About</h1>
+
+        <h2>What it is</h2>
+        <p>TCG Tournament Manager is a free, browser-based tool for running Swiss-system tournaments and related events. It handles player registration, pairing generation, round timing, result entry, standings with OWP tie-breaks, trainer-card match history, a lucky-draw wheel, and recovery from lost data.</p>
+
+        <h2>Who it&rsquo;s for</h2>
+        <p>Card-game judges, local card shops, community organizers, and anyone who needs to run an event without wrestling with spreadsheets or paying for an account.</p>
+
+        <h2>Design principles</h2>
+        <ul>
+            <li><strong>Privacy first.</strong> Your data stays in your browser. No sign-up, no cloud, no tracking of tournament content.</li>
+            <li><strong>Fast at the table.</strong> Designed to be operated with one hand on a phone or laptop while running a real event.</li>
+            <li><strong>No lock-in.</strong> You can reset, export, or walk away at any time.</li>
+            <li><strong>Bilingual.</strong> Every screen is available in English and Traditional Chinese.</li>
+        </ul>
+
+        <h2>How tie-breaks are calculated</h2>
+        <p>The primary ranking is match points (3 for a win, 1 for a draw, 0 for a loss). Ties are broken using <strong>Opponent Win Percentage (OWP)</strong> with a 25% floor per opponent, consistent with common TCG conventions. Byes grant 3 match points but do not count toward OWP.</p>
+
+        <h2>Disclaimer</h2>
+        <p>This Service is an independent, generic tournament tool. It is not affiliated with any trading-card-game publisher. Any third-party trademarks mentioned by users belong to their respective owners.</p>
+
+        <h2>Contact</h2>
+        <p>For questions, feature requests, or bug reports, please use the project&rsquo;s issue tracker or the contact channel listed on the project repository.</p>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="about.html">About</a>
+            <a href="faq.html">FAQ</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+        </div>
+        <p class="footer-note">&copy; 2026 TCG Tournament Manager.</p>
+    </footer>
+</body>
+</html>

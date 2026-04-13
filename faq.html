@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Frequently asked questions about TCG Tournament Manager — pairings, data storage, language, projector mode, recovery, and more.">
+    <meta name="theme-color" content="#1A1A1A">
+    <title>FAQ — TCG Tournament Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header id="app-header">
+        <h1 class="logo">TCG Tournament Manager</h1>
+        <nav class="static-nav">
+            <a href="landing.html">Home</a>
+            <a href="index.html">Launch App</a>
+            <a href="about.html">About</a>
+        </nav>
+    </header>
+
+    <main class="static-page">
+        <h1>Frequently Asked Questions</h1>
+
+        <h2>Is it really free?</h2>
+        <p>Yes. The Service is free to use, with no account required. We may show limited advertising in the future to cover hosting costs.</p>
+
+        <h2>Do I need to sign up?</h2>
+        <p>No. Open the app and start adding players immediately.</p>
+
+        <h2>Where is my tournament data stored?</h2>
+        <p>Entirely in your browser, using <code>localStorage</code>. Nothing is uploaded. If you clear your browser storage or switch browsers/devices, the data will not carry over.</p>
+
+        <h2>What if I close the tab by accident?</h2>
+        <p>Your data is saved automatically after every change. Reopen the app and click <em>Resume Tournament</em>. The app will also warn you before closing if a tournament is in progress.</p>
+
+        <h2>How are pairings generated?</h2>
+        <p>Round 1 uses a random shuffle. Subsequent rounds pair players with similar match-point totals while trying to avoid rematches. Odd-player counts are handled with an automatic bye to a player who has not yet received one.</p>
+
+        <h2>How are tie-breaks calculated?</h2>
+        <p>Players are ranked first by match points (3 for a win, 1 for a draw, 0 for a loss), then by Opponent Win Percentage (OWP) with a 25% floor per opponent. This matches common TCG tournament conventions.</p>
+
+        <h2>Can I edit a result after submitting?</h2>
+        <p>Yes. Use the <em>Previous Round</em> button in the round view. The app will rewind to the previous round with its results pre-filled so you can correct and re-submit.</p>
+
+        <h2>I lost my data. Can I recover it?</h2>
+        <p>The <em>Advanced Recovery</em> view lets you rebuild a tournament by re-entering the roster and the results of each completed round. The app then recomputes match points, OWP, and generates the next round&rsquo;s pairings so you can resume play.</p>
+
+        <h2>Can I run it on a phone?</h2>
+        <p>Yes, the layout is responsive. For a large venue, we recommend <em>Projector Mode</em> (giant timer, high-contrast pairings) on a laptop or TV. For quick score entry at multiple tables, use <em>Compact Mode</em> — it fits up to 16 tables on a single screen.</p>
+
+        <h2>Can I download the final standings?</h2>
+        <p>Yes. The standings view has a <em>Download as Image</em> button that captures a PNG you can share.</p>
+
+        <h2>What about the Lucky Wheel?</h2>
+        <p>The wheel is for prize draws. You can type names manually or sync from your tournament roster, then un-check the top 3 (or anyone else) before spinning. Winners can be automatically removed so nobody wins twice.</p>
+
+        <h2>Is it available in Chinese?</h2>
+        <p>Yes. The language toggle in the top-right switches every screen between English and Traditional Chinese (繁體中文).</p>
+
+        <h2>Does it track or share my tournament data?</h2>
+        <p>No. Tournament data never leaves your browser. See our <a href="privacy.html">Privacy Policy</a> for details.</p>
+
+        <h2>Can I use it offline?</h2>
+        <p>Once the page has loaded, the core app runs entirely client-side and continues to function if your connection drops. External libraries (confetti, screenshot) require the page to have loaded successfully first.</p>
+
+        <h2>How many players / tables can it handle?</h2>
+        <p>Tested comfortably up to several dozen players. Compact mode is designed to display up to 16 tables on one fullscreen browser window.</p>
+
+        <h2>Is it affiliated with any game publisher?</h2>
+        <p>No. This is an independent, generic tournament tool. See our <a href="about.html">About page</a> for details.</p>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="about.html">About</a>
+            <a href="faq.html">FAQ</a>
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+        </div>
+        <p class="footer-note">&copy; 2026 TCG Tournament Manager.</p>
+    </footer>
+</body>
+</html>

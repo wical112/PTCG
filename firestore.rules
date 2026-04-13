@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tournaments/{tid} {
+      // Anyone can read a published tournament (view-only QR users).
+      allow read: if true;
+
+      // Anyone signed in (anonymous auth ok) can create a tournament,
+      // but the document MUST claim them as the owner.
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.state is map;
+
+      // Only the owner can update or delete their tournament.
+      // The ownerUid field cannot be changed.
+      allow update: if request.auth != null
+                    && request.auth.uid == resource.data.ownerUid
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.ownerUid;
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "ptcgstm"
+  },
+  "targets": {
+    "ptcgstm": {
+      "hosting": {
+        "tcgtm": [
+          "tcgtm"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

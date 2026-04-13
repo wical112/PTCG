@@ -1,12 +1,12 @@
 /* ============================================================
-   PTCG Tournament Manager - Complete Application Logic
+   TCG Tournament Manager - Complete Application Logic
    ============================================================ */
 
 const app = (() => {
     // ---- I18N ----
     const I18N = {
         en: {
-            'header.title': 'PTCG Tournament Manager',
+            'header.title': 'TCG Tournament Manager',
             'common.back': 'Back',
             'common.home': 'Home',
             'common.reset': 'Reset',
@@ -19,8 +19,11 @@ const app = (() => {
             'home.inProgress': 'You have a tournament in progress.',
             'home.resume': 'Resume Tournament',
             'reg.title': 'Player Registration',
+            'reg.tournamentName': 'Tournament Name',
+            'reg.tournamentNamePlaceholder': 'e.g. AAB Shop Gym Battle',
+            'reg.tournamentDate': 'Tournament Date',
             'reg.bulkLabel': 'Add players (one name per line):',
-            'reg.bulkPlaceholder': '...please input player\nFox\nHenry\nhoho\nming\nsk\nnam\ncarey\ndicky\nhenry2\nwical\nszto\nting\nhugo\njason',
+            'reg.bulkPlaceholder': 'Enter one player name per line…\nPlayer 1\nPlayer 2\nPlayer 3',
             'reg.addBtn': 'Add Players',
             'reg.registered': 'Registered Players',
             'reg.start': 'Start Tournament',
@@ -38,8 +41,8 @@ const app = (() => {
             'round.titleOf': 'Round {n} of {m}',
             'round.bye': 'BYE',
             'round.byeWin': ' - Automatic Win (3 pts)',
-            'round.aWins': 'A Wins',
-            'round.bWins': 'B Wins',
+            'round.aWins': 'Wins',
+            'round.bWins': 'Wins',
             'round.draw': 'Draw',
             'round.submitNext': 'Submit Results & Next Round',
             'round.submitted': 'Results Submitted',
@@ -83,6 +86,24 @@ const app = (() => {
             'trainer.byeWin': 'BYE (Win)',
             'trainer.vs': 'vs',
             'trainer.round': 'Round {n}:',
+            'trainer.drop': 'Drop Player',
+            'trainer.undoDrop': 'Undo Drop',
+            'trainer.confirmDrop': 'Drop {name} from the tournament? They will be removed from future pairings. Past results are kept.',
+            'trainer.droppedTag': 'DROPPED',
+            'home.swiss': 'Swiss Tournament',
+            'home.knockout': 'Knockout Tournament',
+            'ko.final': 'FINAL',
+            'ko.semi': 'SEMIFINAL',
+            'ko.quarter': 'QUARTERFINAL',
+            'ko.roundN': 'Round of {n}',
+            'ko.title': 'Knockout — {label}',
+            'ko.bye': 'BYE',
+            'ko.byeAdvance': 'Auto-advance',
+            'ko.tbd': 'TBD',
+            'ko.next': 'Submit Results & Next Round',
+            'ko.champion': 'Champion',
+            'ko.champConfirm': '{name} is the champion! End tournament?',
+            'reg.startKO': 'Start Knockout',
             'wheel.title': 'Lucky Wheel',
             'wheel.namesLabel': 'Names (one per line):',
             'wheel.placeholder': 'Enter names...',
@@ -111,7 +132,7 @@ const app = (() => {
             'adv.intro': 'Lost your tournament data? Enter the roster and every completed round\'s results here, then generate the next round\'s pairings to continue playing.',
             'adv.step1': 'Player Roster',
             'adv.rosterLabel': 'Enter all players (one name per line):',
-            'adv.rosterPlaceholder': 'Fox\nHenry\nming\nsk\nwical\nszto',
+            'adv.rosterPlaceholder': 'Player 1\nPlayer 2\nPlayer 3',
             'adv.saveRoster': 'Save Roster',
             'adv.rosterCount': '{n} player in roster',
             'adv.rosterCount_plural': '{n} players in roster',
@@ -166,10 +187,37 @@ const app = (() => {
             'bc.reg': 'Registration',
             'bc.standings': 'Standings',
             'bc.wheel': 'Lucky Wheel',
-            'bc.advRecovery': 'Advanced Recovery'
+            'bc.advRecovery': 'Advanced Recovery',
+            'cloud.publish': 'Publish',
+            'cloud.published': 'Published',
+            'cloud.unpublish': 'Stop Sharing',
+            'cloud.live': 'LIVE',
+            'cloud.viewMode': 'View Mode',
+            'cloud.viewBanner': 'You are viewing this tournament live. Updates appear automatically.',
+            'cloud.shareTitle': 'Share Tournament',
+            'cloud.shareHint': 'Players can scan this QR code or open the link below to view the tournament live.',
+            'cloud.copyLink': 'Copy Link',
+            'cloud.copied': 'Link copied!',
+            'cloud.tournamentId': 'Tournament ID',
+            'cloud.unpublishConfirm': 'Stop sharing this tournament? Viewers will lose access.',
+            'cloud.publishFail': 'Could not publish — check your Firebase setup or internet connection.',
+            'cloud.notConfigured': 'Cloud sharing is not set up. See CLOUD_SETUP.md.',
+            'cloud.viewNotFound': 'This tournament is no longer available.',
+            'cloud.viewLoading': 'Connecting…',
+            'cloud.close': 'Close',
+            'cloud.publishing': 'Publishing…',
+            'viewer.placeholder': 'Enter your name to pin your match',
+            'viewer.yourMatch': 'Your match',
+            'viewer.notFound': 'No player matches that name.',
+            'viewer.noPairing': 'You have no pairing in this round.',
+            'viewer.bye': 'You have a BYE this round.',
+            'viewer.share': 'Share',
+            'viewer.shareTitle': 'Share this view',
+            'viewer.shareHint': 'Scan the QR code or copy the link to share with other players.',
+            'viewer.linkCopied': 'Link copied!'
         },
         zh: {
-            'header.title': 'PTCG 賽事管理',
+            'header.title': 'TCG 賽事管理',
             'common.back': '返回',
             'common.home': '首頁',
             'common.reset': '重設',
@@ -182,8 +230,11 @@ const app = (() => {
             'home.inProgress': '你有一場進行中的賽事。',
             'home.resume': '繼續賽事',
             'reg.title': '玩家登記',
+            'reg.tournamentName': '賽事名稱',
+            'reg.tournamentNamePlaceholder': '例:AAB 店舖道館戰',
+            'reg.tournamentDate': '賽事日期',
             'reg.bulkLabel': '新增玩家(每行一個名字):',
-            'reg.bulkPlaceholder': '...請輸入玩家\nFox\nHenry\nhoho\nming\nsk\nnam\ncarey\ndicky\nhenry2\nwical\nszto\nting\nhugo\njason',
+            'reg.bulkPlaceholder': '每行輸入一位玩家名稱⋯\n玩家 1\n玩家 2\n玩家 3',
             'reg.addBtn': '新增玩家',
             'reg.registered': '已登記玩家',
             'reg.start': '開始賽事',
@@ -201,8 +252,8 @@ const app = (() => {
             'round.titleOf': '第 {n} / {m} 輪',
             'round.bye': '輪空',
             'round.byeWin': ' - 自動勝利(3 分)',
-            'round.aWins': 'A 勝',
-            'round.bWins': 'B 勝',
+            'round.aWins': '勝',
+            'round.bWins': '勝',
             'round.draw': '平手',
             'round.submitNext': '提交結果並進入下一輪',
             'round.submitted': '結果已提交',
@@ -246,6 +297,24 @@ const app = (() => {
             'trainer.byeWin': '輪空(勝)',
             'trainer.vs': '對',
             'trainer.round': '第 {n} 輪:',
+            'trainer.drop': '退賽',
+            'trainer.undoDrop': '取消退賽',
+            'trainer.confirmDrop': '確定讓 {name} 退賽？該玩家將不再參與後續配對，過往成績保留。',
+            'trainer.droppedTag': '已退賽',
+            'home.swiss': '瑞士制賽事',
+            'home.knockout': '淘汰制賽事',
+            'ko.final': '決賽',
+            'ko.semi': '準決賽',
+            'ko.quarter': '半準決賽',
+            'ko.roundN': '{n} 強',
+            'ko.title': '淘汰賽 — {label}',
+            'ko.bye': '輪空',
+            'ko.byeAdvance': '自動晉級',
+            'ko.tbd': '待定',
+            'ko.next': '提交結果並進入下一輪',
+            'ko.champion': '冠軍',
+            'ko.champConfirm': '{name} 為冠軍！結束賽事？',
+            'reg.startKO': '開始淘汰賽',
             'wheel.title': '幸運轉盤',
             'wheel.namesLabel': '名單(每行一個):',
             'wheel.placeholder': '請輸入名字...',
@@ -274,7 +343,7 @@ const app = (() => {
             'adv.intro': '遺失了賽事資料?在此輸入名單與每一輪已完成的結果,然後重新產生下一輪對戰繼續比賽。',
             'adv.step1': '玩家名單',
             'adv.rosterLabel': '輸入所有玩家(每行一個名字):',
-            'adv.rosterPlaceholder': 'Fox\nHenry\nming\nsk\nwical\nszto',
+            'adv.rosterPlaceholder': '玩家 1\n玩家 2\n玩家 3',
             'adv.saveRoster': '儲存名單',
             'adv.rosterCount': '名單中有 {n} 位玩家',
             'adv.rosterCount_plural': '名單中有 {n} 位玩家',
@@ -329,7 +398,34 @@ const app = (() => {
             'bc.reg': '登記',
             'bc.standings': '排名',
             'bc.wheel': '幸運轉盤',
-            'bc.advRecovery': '進階還原'
+            'bc.advRecovery': '進階還原',
+            'cloud.publish': '發佈',
+            'cloud.published': '已發佈',
+            'cloud.unpublish': '停止分享',
+            'cloud.live': '直播中',
+            'cloud.viewMode': '觀看模式',
+            'cloud.viewBanner': '你正在即時觀看此賽事,更新會自動顯示。',
+            'cloud.shareTitle': '分享賽事',
+            'cloud.shareHint': '玩家可掃描此 QR Code 或開啟下方連結即時觀看賽事。',
+            'cloud.copyLink': '複製連結',
+            'cloud.copied': '已複製連結!',
+            'cloud.tournamentId': '賽事編號',
+            'cloud.unpublishConfirm': '停止分享此賽事?觀看者將失去存取權限。',
+            'cloud.publishFail': '發佈失敗 — 請檢查 Firebase 設定或網路連線。',
+            'cloud.notConfigured': '尚未設定雲端分享功能(請參閱 CLOUD_SETUP.md)。',
+            'cloud.viewNotFound': '此賽事已不再開放。',
+            'cloud.viewLoading': '連線中⋯',
+            'cloud.close': '關閉',
+            'cloud.publishing': '發佈中⋯',
+            'viewer.placeholder': '輸入你的名字以置頂你的對戰',
+            'viewer.yourMatch': '你的對戰',
+            'viewer.notFound': '找不到符合的玩家。',
+            'viewer.noPairing': '本輪沒有你的對戰。',
+            'viewer.bye': '你本輪輪空。',
+            'viewer.share': '分享',
+            'viewer.shareTitle': '分享此頁面',
+            'viewer.shareHint': '掃描 QR Code 或複製連結與其他玩家分享。',
+            'viewer.linkCopied': '已複製連結!'
         }
     };
 
@@ -373,24 +469,43 @@ const app = (() => {
         updateMuteButton();
         updateProjectorMode();
         applyCompactMode();
+        updatePublishButton();
+        renderSharePanel();
+    }
+
+    // ---- CLOUD / VIEW MODE ----
+    let viewOnly = false;            // true when this tab is a read-only viewer
+    let viewTournamentId = null;     // tid from ?t=... when in view mode
+
+    function getUrlTournamentId() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('t');
+        } catch (_) { return null; }
     }
 
     // ---- STATE ----
     const DEFAULT_STATE = {
+        tournamentName: '',
+        tournamentDate: '',
+        noAds: true,
         players: [],
         rounds: [],
         currentRound: 0,
         timerSeconds: 1500,
         timerRunning: false,
+        timerEndsAt: null,
         timerDefault: 1500,
         timerMuted: false,
         wheelNames: [],
         wheelHistory: [],
         currentView: 'home',
+        tournamentType: 'swiss',
         tournamentStarted: false,
         tournamentEnded: false,
         projectorMode: false,
-        compactMode: false
+        compactMode: false,
+        publishedTournamentId: null
     };
 
     let state = { ...DEFAULT_STATE };
@@ -401,7 +516,12 @@ const app = (() => {
 
     // ---- PERSISTENCE ----
     function saveState() {
+        if (viewOnly) return; // viewers never write
         localStorage.setItem('ptcg_state', JSON.stringify(state));
+        // Mirror to cloud if this tournament is published
+        if (state.publishedTournamentId && window.cloud && window.cloud.isReady()) {
+            window.cloud.syncState(state);
+        }
     }
 
     function loadState() {
@@ -409,7 +529,7 @@ const app = (() => {
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                state = { ...DEFAULT_STATE, ...parsed };
+                state = { ...DEFAULT_STATE, ...parsed, noAds: true };
             } catch (e) {
                 console.warn('Failed to load state', e);
             }
@@ -565,7 +685,8 @@ const app = (() => {
             losses: 0,
             draws: 0,
             opponents: [],
-            hadBye: false
+            hadBye: false,
+            dropped: false
         };
     }
 
@@ -604,6 +725,18 @@ const app = (() => {
         const inputArea = document.querySelector('.reg-input-area');
         if (inputArea) inputArea.style.display = locked ? 'none' : '';
 
+        // Sync tournament meta inputs from state, and lock them once started
+        const nameInput = document.getElementById('tournament-name');
+        const dateInput = document.getElementById('tournament-date');
+        if (nameInput) {
+            if (nameInput.value !== (state.tournamentName || '')) nameInput.value = state.tournamentName || '';
+            nameInput.disabled = locked;
+        }
+        if (dateInput) {
+            if (dateInput.value !== (state.tournamentDate || '')) dateInput.value = state.tournamentDate || '';
+            dateInput.disabled = locked;
+        }
+
         list.innerHTML = '';
         state.players.forEach((p, i) => {
             const li = document.createElement('li');
@@ -630,13 +763,42 @@ const app = (() => {
             startBtn.disabled = true;
             startBtn.textContent = t('reg.inProgress');
         } else {
-            startBtn.textContent = t('reg.start');
+            startBtn.textContent = state.tournamentType === 'knockout'
+                ? t('reg.startKO')
+                : t('reg.start');
         }
+    }
+
+    // ---- TOURNAMENT MODE PICKER ----
+    function startNewTournament(type) {
+        // Coming from home: clear any prior tournament state and go to registration
+        // tagged with the chosen type. Don't clear players if user just picked a type
+        // change while the registration list already has entries — instead confirm.
+        if (state.tournamentStarted) {
+            if (!confirm(t('reset.confirm'))) return;
+            for (let i = 0; i < 50; i++) {
+                localStorage.removeItem(`ptcg_round_${i}`);
+            }
+            state = {
+                ...DEFAULT_STATE,
+                players: [],
+                rounds: [],
+                wheelNames: state.wheelNames,
+                wheelHistory: state.wheelHistory
+            };
+            stopTimer();
+        }
+        state.tournamentType = type;
+        saveState();
+        navigateTo('registration');
     }
 
     // ---- SWISS TOURNAMENT ----
     function startTournament() {
         if (state.players.length < 2) return;
+        if (state.tournamentType === 'knockout') {
+            return startKnockoutTournament();
+        }
         if (!confirm(t('reg.confirmStart', { n: state.players.length }))) return;
 
         state.players.forEach(p => {
@@ -661,8 +823,158 @@ const app = (() => {
         navigateTo('round');
     }
 
+    // ---- KNOCKOUT TOURNAMENT ----
+    function startKnockoutTournament() {
+        if (state.players.length < 2) return;
+        if (!confirm(t('reg.confirmStart', { n: state.players.length }))) return;
+
+        state.players.forEach(p => {
+            p.matchPoints = 0;
+            p.wins = 0;
+            p.losses = 0;
+            p.draws = 0;
+            p.opponents = [];
+            p.hadBye = false;
+        });
+
+        state.tournamentStarted = true;
+        state.tournamentEnded = false;
+        state.currentRound = 0;
+        state.rounds = [buildKnockoutFirstRound(state.players)];
+        saveRoundSnapshot(0);
+        saveState();
+        resetTimerValue();
+        navigateTo('round');
+    }
+
+    // Standard seed order for a bracket of size N: 1 vs N, 8 vs 9, 5 vs 12, ...
+    function bracketSeedOrder(size) {
+        let order = [1, 2];
+        while (order.length < size) {
+            const next = [];
+            const sum = order.length * 2 + 1;
+            for (const seed of order) {
+                next.push(seed);
+                next.push(sum - seed);
+            }
+            order = next;
+        }
+        return order; // 1-indexed seed numbers in slot order
+    }
+
+    function buildKnockoutFirstRound(players) {
+        const active = players.filter(p => !p.dropped);
+        const n = active.length;
+        const seeds = [...active];
+        shuffleArray(seeds); // random initial seeding
+        const bracketSize = Math.pow(2, Math.ceil(Math.log2(Math.max(2, n))));
+        const order = bracketSeedOrder(bracketSize); // length = bracketSize, 1-indexed
+        const pairings = [];
+        let tableNum = 1;
+        for (let i = 0; i < bracketSize; i += 2) {
+            const seedA = order[i];
+            const seedB = order[i + 1];
+            const playerA = seeds[seedA - 1] || null; // null = bye slot
+            const playerB = seeds[seedB - 1] || null;
+            // If either side is null, the other auto-advances
+            if (!playerA && !playerB) continue;
+            if (!playerA) {
+                pairings.push({
+                    table: 0, playerA: playerB.id, playerB: null,
+                    result: 'bye', isBye: true
+                });
+            } else if (!playerB) {
+                pairings.push({
+                    table: 0, playerA: playerA.id, playerB: null,
+                    result: 'bye', isBye: true
+                });
+            } else {
+                pairings.push({
+                    table: tableNum++, playerA: playerA.id, playerB: playerB.id, result: null
+                });
+            }
+        }
+        return { pairings, resultsSubmitted: false, knockout: true };
+    }
+
+    function buildKnockoutNextRound(prevRound) {
+        // Winners of prevRound, in pairing order, become next-round players.
+        // Pair adjacent winners: (w0,w1), (w2,w3), ...
+        const winners = [];
+        prevRound.pairings.forEach(p => {
+            if (p.isBye) {
+                winners.push(p.playerA);
+            } else if (p.result === 'a') {
+                winners.push(p.playerA);
+            } else if (p.result === 'b') {
+                winners.push(p.playerB);
+            } else {
+                winners.push(null);
+            }
+        });
+        const pairings = [];
+        let tableNum = 1;
+        for (let i = 0; i < winners.length; i += 2) {
+            const a = winners[i];
+            const b = winners[i + 1];
+            if (!a && !b) continue;
+            if (!a || !b) {
+                pairings.push({
+                    table: 0, playerA: (a || b), playerB: null,
+                    result: 'bye', isBye: true
+                });
+            } else {
+                pairings.push({
+                    table: tableNum++, playerA: a, playerB: b, result: null
+                });
+            }
+        }
+        return { pairings, resultsSubmitted: false, knockout: true };
+    }
+
+    function knockoutRoundLabel(remaining) {
+        if (remaining === 2) return t('ko.final');
+        if (remaining === 4) return t('ko.semi');
+        if (remaining === 8) return t('ko.quarter');
+        return t('ko.roundN', { n: remaining });
+    }
+
+    // Backtracking pairing: returns a flat [a1,b1,a2,b2,...] array with no rematches,
+    // or null if impossible. Partners are tried in input order so the closest-ranked
+    // rematch-free opponent is preferred.
+    function pairUpNoRematch(players) {
+        if (players.length === 0) return [];
+        if (players.length % 2 !== 0) return null;
+        const used = new Array(players.length).fill(false);
+        const result = [];
+
+        function backtrack() {
+            let firstIdx = -1;
+            for (let i = 0; i < players.length; i++) {
+                if (!used[i]) { firstIdx = i; break; }
+            }
+            if (firstIdx === -1) return true;
+            const a = players[firstIdx];
+            used[firstIdx] = true;
+            for (let j = firstIdx + 1; j < players.length; j++) {
+                if (used[j]) continue;
+                const b = players[j];
+                if (a.opponents.includes(b.id)) continue;
+                used[j] = true;
+                result.push(a, b);
+                if (backtrack()) return true;
+                result.pop(); result.pop();
+                used[j] = false;
+            }
+            used[firstIdx] = false;
+            return false;
+        }
+
+        return backtrack() ? result : null;
+    }
+
     function generatePairings(roundIndex) {
-        let players = [...state.players];
+        let players = state.players.filter(p => !p.dropped);
         const pairings = [];
         let bye = null;
 
@@ -677,20 +989,17 @@ const app = (() => {
             shuffleArray(players);
         } else {
             players.sort((a, b) => b.matchPoints - a.matchPoints);
+        }
 
-            // Try to avoid repeat matchups
-            for (let i = 0; i < players.length - 1; i += 2) {
-                const a = players[i];
-                const b = players[i + 1];
-                if (a.opponents.includes(b.id)) {
-                    for (let j = i + 2; j < players.length; j++) {
-                        if (!a.opponents.includes(players[j].id)) {
-                            [players[i + 1], players[j]] = [players[j], players[i + 1]];
-                            break;
-                        }
-                    }
-                }
-            }
+        // Backtracking: strictly avoid rematches when possible.
+        // Players are visited in their current order (sorted by MP for round > 0),
+        // so the first valid pairing kept is the closest-ranked rematch-free option.
+        const ordered = pairUpNoRematch(players);
+        if (ordered) {
+            players = ordered;
+        } else {
+            // Mathematically impossible to fully avoid rematches; fall back and warn.
+            console.warn('No rematch-free pairing exists for this round; allowing rematches as a fallback.');
         }
 
         let tableNum = 1;
@@ -720,10 +1029,16 @@ const app = (() => {
         const round = state.rounds[state.currentRound];
         if (!round) return;
 
-        const recRounds = getRecommendedRounds();
-        const roundLabel = recRounds
-            ? t('round.titleOf', { n: state.currentRound + 1, m: recRounds })
-            : t('round.title', { n: state.currentRound + 1 });
+        let roundLabel;
+        if (state.tournamentType === 'knockout') {
+            const remaining = round.pairings.reduce((n, p) => n + (p.isBye ? 1 : 2), 0);
+            roundLabel = t('ko.title', { label: knockoutRoundLabel(remaining) });
+        } else {
+            const recRounds = getRecommendedRounds();
+            roundLabel = recRounds
+                ? t('round.titleOf', { n: state.currentRound + 1, m: recRounds })
+                : t('round.title', { n: state.currentRound + 1 });
+        }
         document.getElementById('round-title').textContent = roundLabel;
 
         const container = document.getElementById('pairings-container');
@@ -760,7 +1075,7 @@ const app = (() => {
 
             row.innerHTML = `
                 <div class="table-number">T${pairing.table}</div>
-                <div class="pairing-player ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')">${escapeHtml(playerA.name)}</div>
+                <div class="pairing-player side-a ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')"><span class="pairing-player-name">${escapeHtml(playerA.name)}</span></div>
                 <div class="result-buttons" ${disabled}>
                     <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}"
                         onclick="app.setResult(${pIdx}, 'a')">${t('round.aWins')}</button>
@@ -769,7 +1084,7 @@ const app = (() => {
                     <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}"
                         onclick="app.setResult(${pIdx}, 'b')">${t('round.bWins')}</button>
                 </div>
-                <div class="pairing-player ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right">${escapeHtml(playerB.name)}</div>
+                <div class="pairing-player side-b ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right"><span class="pairing-player-name">${escapeHtml(playerB.name)}</span></div>
             `;
             container.appendChild(row);
         });
@@ -779,7 +1094,93 @@ const app = (() => {
         // Timer mute button
         updateMuteButton();
         applyCompactMode();
+        updatePublishButton();
+        renderSharePanel();
         updateSubmitButton();
+        if (viewOnly) renderViewerPin();
+        applyNoAds();
+    }
+
+    // ---- VIEWER PIN (player searches their own pairing in view-only mode) ----
+    let viewerPinName = '';
+
+    function viewerPinSearch(name) {
+        viewerPinName = (name || '').trim();
+        try { localStorage.setItem('ptcg_viewer_pin', viewerPinName); } catch (e) {}
+        renderViewerPin();
+    }
+
+    function viewerPinClear() {
+        viewerPinName = '';
+        try { localStorage.removeItem('ptcg_viewer_pin'); } catch (e) {}
+        const input = document.getElementById('viewer-pin-input');
+        if (input) input.value = '';
+        renderViewerPin();
+    }
+
+    function renderViewerPin() {
+        if (!viewOnly) return;
+        const wrap = document.getElementById('viewer-pin');
+        if (!wrap) return;
+        wrap.style.display = '';
+
+        const input = document.getElementById('viewer-pin-input');
+        if (input && input.value !== viewerPinName) input.value = viewerPinName;
+
+        const dl = document.getElementById('viewer-pin-names');
+        if (dl) {
+            dl.innerHTML = (state.players || [])
+                .map(p => `<option value="${escapeHtml(p.name)}"></option>`)
+                .join('');
+        }
+
+        const result = document.getElementById('viewer-pin-result');
+        if (!result) return;
+
+        if (!viewerPinName) { result.innerHTML = ''; return; }
+
+        const round = state.rounds[state.currentRound];
+        const lc = viewerPinName.toLowerCase();
+        const me = (state.players || []).find(p => p.name.toLowerCase() === lc);
+        if (!me || !round) {
+            result.innerHTML = `<div class="viewer-pin-empty">${escapeHtml(t('viewer.notFound'))}</div>`;
+            return;
+        }
+        const pairing = round.pairings.find(p => p.playerA === me.id || p.playerB === me.id);
+        if (!pairing) {
+            result.innerHTML = `<div class="viewer-pin-empty">${escapeHtml(t('viewer.noPairing'))}</div>`;
+            return;
+        }
+
+        const pa = getPlayer(pairing.playerA);
+        const pb = pairing.playerB ? getPlayer(pairing.playerB) : null;
+        let html = `<div class="viewer-pin-label">${escapeHtml(t('viewer.yourMatch'))}</div>`;
+
+        if (pairing.isBye) {
+            html += `<div class="pairing-row bye-row pinned">
+                <div class="table-number">${t('round.bye')}</div>
+                <div>
+                    <span class="pairing-player">${escapeHtml(pa.name)}</span>
+                    <span class="bye-tag">${t('round.byeWin')}</span>
+                </div>
+            </div>`;
+        } else {
+            let aClass = '', bClass = '';
+            if (pairing.result === 'a') { aClass = 'winner'; bClass = 'loser'; }
+            else if (pairing.result === 'b') { aClass = 'loser'; bClass = 'winner'; }
+            else if (pairing.result === 'draw') { aClass = 'draw'; bClass = 'draw'; }
+            html += `<div class="pairing-row pinned">
+                <div class="table-number">T${pairing.table}</div>
+                <div class="pairing-player side-a ${aClass}">${escapeHtml(pa.name)}</div>
+                <div class="result-buttons" style="pointer-events:none;opacity:0.85">
+                    <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}">${t('round.aWins')}</button>
+                    <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}">${t('round.draw')}</button>
+                    <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}">${t('round.bWins')}</button>
+                </div>
+                <div class="pairing-player side-b ${bClass}" style="text-align:right">${escapeHtml(pb.name)}</div>
+            </div>`;
+        }
+        result.innerHTML = html;
     }
 
     function setResult(pairingIndex, result) {
@@ -851,6 +1252,41 @@ const app = (() => {
         applyResults(round);
         round.resultsSubmitted = true;
         saveRoundSnapshot(state.currentRound);
+
+        if (state.tournamentType === 'knockout') {
+            // Count winners advancing from this round.
+            const winners = round.pairings.map(p => {
+                if (p.isBye) return p.playerA;
+                if (p.result === 'a') return p.playerA;
+                if (p.result === 'b') return p.playerB;
+                return null;
+            }).filter(Boolean);
+
+            if (winners.length <= 1) {
+                // Champion reached.
+                const champ = winners.length === 1 ? getPlayer(winners[0]) : null;
+                if (champ && confirm(t('ko.champConfirm', { name: champ.name }))) {
+                    state.tournamentEnded = true;
+                    stopTimer();
+                    saveState();
+                    navigateTo('standings');
+                    return;
+                }
+                // User cancelled — leave them on the final round so they can adjust.
+                round.resultsSubmitted = false;
+                saveState();
+                renderRound();
+                return;
+            }
+
+            const nextRound = buildKnockoutNextRound(round);
+            state.rounds.push(nextRound);
+            state.currentRound++;
+            saveState();
+            resetTimerValue();
+            navigateTo('round');
+            return;
+        }
 
         const nextRoundIndex = state.currentRound + 1;
         const pairings = generatePairings(nextRoundIndex);
@@ -1042,23 +1478,58 @@ const app = (() => {
         return standings;
     }
 
+    function updateTournamentMeta() {
+        if (viewOnly || state.tournamentStarted) return;
+        const nameInput = document.getElementById('tournament-name');
+        const dateInput = document.getElementById('tournament-date');
+        if (nameInput) state.tournamentName = nameInput.value.trim();
+        if (dateInput) state.tournamentDate = dateInput.value;
+        saveState();
+    }
+
+    function formatTournamentDate(iso) {
+        if (!iso) return '';
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+        if (!m) return iso;
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const monthIdx = parseInt(m[2], 10) - 1;
+        const day = parseInt(m[3], 10);
+        return `${m[1]}${months[monthIdx]}${day}`;
+    }
+
+    function tournamentTitlePrefix() {
+        const parts = [];
+        if (state.tournamentName) parts.push(state.tournamentName);
+        const d = formatTournamentDate(state.tournamentDate);
+        if (d) parts.push(d);
+        return parts.join(' ');
+    }
+
     function renderStandings() {
         const standings = getStandings();
         const tbody = document.getElementById('standings-body');
         const title = document.getElementById('standings-title');
 
         const lastSubmitted = state.rounds.filter(r => r.resultsSubmitted).length;
-        title.textContent = state.tournamentEnded
+        const baseTitle = state.tournamentEnded
             ? t('standings.final', { n: lastSubmitted })
             : t('standings.afterRound', { n: lastSubmitted });
+        const prefix = tournamentTitlePrefix();
+        title.textContent = prefix ? `${prefix} ${baseTitle}` : baseTitle;
 
         tbody.innerHTML = '';
         standings.forEach((p, i) => {
             const tr = document.createElement('tr');
             tr.onclick = () => showTrainerCard(p.id);
+            const playerObj = getPlayer(p.id);
+            const isDropped = playerObj && playerObj.dropped;
+            if (isDropped) tr.classList.add('player-dropped');
+            const nameCell = isDropped
+                ? `${escapeHtml(p.name)} <span class="dropped-tag">${t('trainer.droppedTag')}</span>`
+                : escapeHtml(p.name);
             tr.innerHTML = `
                 <td>${i + 1}</td>
-                <td>${escapeHtml(p.name)}</td>
+                <td>${nameCell}</td>
                 <td>${p.record}</td>
                 <td>${p.matchPoints}</td>
                 <td>${(p.owp * 100).toFixed(1)}%</td>
@@ -1079,7 +1550,7 @@ const app = (() => {
         }).then(canvas => {
             const link = document.createElement('a');
             const roundNum = state.rounds.filter(r => r.resultsSubmitted).length;
-            link.download = `PTCG_Standings_Round${roundNum}.png`;
+            link.download = `Standings_Round${roundNum}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
         }).catch(err => {
@@ -1159,9 +1630,41 @@ const app = (() => {
                 </div>
             </div>
             ${timeline ? `<h4 style="margin-bottom:0.5rem;color:var(--text-dim)">${t('trainer.history')}</h4><div class="trainer-timeline">${timeline}</div>` : `<p style="color:var(--text-dim)">${t('trainer.none')}</p>`}
+            ${(!viewOnly && state.tournamentStarted && !state.tournamentEnded) ? `
+                <div class="trainer-actions">
+                    <button class="btn ${player.dropped ? 'btn-secondary' : 'btn-danger'}" onclick="app.toggleDrop('${player.id}')">
+                        ${player.dropped ? t('trainer.undoDrop') : t('trainer.drop')}
+                    </button>
+                </div>` : ''}
         `;
 
         document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function toggleDrop(playerId) {
+        const player = getPlayer(playerId);
+        if (!player) return;
+        if (!player.dropped) {
+            if (!confirm(t('trainer.confirmDrop', { name: player.name }))) return;
+            player.dropped = true;
+            // In knockout, auto-award the current-round match to their opponent.
+            if (state.tournamentType === 'knockout') {
+                const round = state.rounds[state.currentRound];
+                if (round && !round.resultsSubmitted) {
+                    round.pairings.forEach(p => {
+                        if (p.isBye) return;
+                        if (p.playerA === playerId && p.result === null) p.result = 'b';
+                        else if (p.playerB === playerId && p.result === null) p.result = 'a';
+                    });
+                }
+            }
+        } else {
+            player.dropped = false;
+        }
+        saveState();
+        closeModal();
+        renderRound();
+        renderStandings();
     }
 
     function closeModal() {
@@ -1172,6 +1675,7 @@ const app = (() => {
     function resetTimerValue() {
         state.timerSeconds = state.timerDefault;
         state.timerRunning = false;
+        state.timerEndsAt = null;
         stopTimer();
         renderTimer();
     }
@@ -1209,22 +1713,26 @@ const app = (() => {
     // FIX #1: Timer auto-stops at 0, saves state periodically
     function startTimer() {
         state.timerRunning = true;
+        state.timerEndsAt = Date.now() + state.timerSeconds * 1000;
+        saveState(); // push endsAt to cloud immediately so viewers can sync
         if (timerInterval) clearInterval(timerInterval);
         timerSaveCounter = 0;
         timerInterval = setInterval(() => {
-            state.timerSeconds--;
+            const remaining = state.timerEndsAt
+                ? Math.max(0, Math.ceil((state.timerEndsAt - Date.now()) / 1000))
+                : 0;
+            state.timerSeconds = remaining;
 
-            if (state.timerSeconds === 0) {
+            if (remaining === 0) {
                 if (!state.timerMuted) playBeep();
-                // Auto-stop at 0
                 stopTimer();
                 showToast(t('timer.up'));
                 return;
             }
 
-            // Save timer state every 10 seconds for crash recovery
+            // Periodic save for crash recovery (deadline already in cloud)
             timerSaveCounter++;
-            if (timerSaveCounter >= 10) {
+            if (timerSaveCounter >= 30) {
                 timerSaveCounter = 0;
                 saveState();
             }
@@ -1235,7 +1743,11 @@ const app = (() => {
     }
 
     function stopTimer() {
+        if (state.timerEndsAt) {
+            state.timerSeconds = Math.max(0, Math.ceil((state.timerEndsAt - Date.now()) / 1000));
+        }
         state.timerRunning = false;
+        state.timerEndsAt = null;
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
@@ -1247,12 +1759,18 @@ const app = (() => {
     function timerReset() {
         stopTimer();
         state.timerSeconds = state.timerDefault;
+        state.timerEndsAt = null;
         saveState();
         renderTimer();
     }
 
     function timerAdjust(seconds) {
-        state.timerSeconds = Math.max(0, state.timerSeconds + seconds);
+        if (state.timerRunning && state.timerEndsAt) {
+            state.timerEndsAt = Math.max(Date.now(), state.timerEndsAt + seconds * 1000);
+            state.timerSeconds = Math.max(0, Math.ceil((state.timerEndsAt - Date.now()) / 1000));
+        } else {
+            state.timerSeconds = Math.max(0, state.timerSeconds + seconds);
+        }
         saveState();
         renderTimer();
     }
@@ -1395,6 +1913,241 @@ const app = (() => {
 
     function closeWheelPicker() {
         document.getElementById('wheel-pick-overlay').classList.remove('open');
+    }
+
+    // ---- CLOUD: publish / inline share panel / view-only ----
+    let shareExpanded = false;
+
+    async function cloudPublishToggle() {
+        if (viewOnly) return;
+        if (state.publishedTournamentId) {
+            // Already published — toggle the inline panel
+            toggleSharePanel();
+            return;
+        }
+        if (!window.cloud || !window.cloud.isConfigured()) {
+            alert(t('cloud.notConfigured'));
+            return;
+        }
+        const btn = document.getElementById('btn-publish');
+        const originalLabel = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.textContent = t('cloud.publishing'); }
+        try {
+            if (!window.cloud.isReady()) await window.cloud.init();
+            if (!window.cloud.isReady()) throw new Error('init failed');
+            const tid = await window.cloud.publish(state);
+            state.publishedTournamentId = tid;
+            saveState();
+            updatePublishButton();
+            shareExpanded = true;
+            renderSharePanel();
+            showToast(t('cloud.published'));
+        } catch (e) {
+            console.error(e);
+            alert(t('cloud.publishFail'));
+        } finally {
+            if (btn) { btn.disabled = false; if (!state.publishedTournamentId) btn.textContent = originalLabel; }
+        }
+    }
+
+    async function cloudUnpublish() {
+        if (!state.publishedTournamentId) return;
+        if (!confirm(t('cloud.unpublishConfirm'))) return;
+        try {
+            if (window.cloud) await window.cloud.unpublish();
+        } catch (_) { /* ignore */ }
+        state.publishedTournamentId = null;
+        shareExpanded = false;
+        saveState();
+        renderSharePanel();
+        updatePublishButton();
+    }
+
+    function toggleSharePanel() {
+        if (!state.publishedTournamentId) return;
+        shareExpanded = !shareExpanded;
+        renderSharePanel();
+    }
+
+    function renderSharePanel() {
+        const panel = document.getElementById('share-panel');
+        if (!panel) return;
+        const tid = state.publishedTournamentId;
+        if (!tid || viewOnly) {
+            panel.style.display = 'none';
+            return;
+        }
+        panel.style.display = '';
+        panel.classList.toggle('expanded', shareExpanded);
+        panel.classList.toggle('collapsed', !shareExpanded);
+
+        const idEl = document.getElementById('share-panel-id-value');
+        if (idEl) idEl.textContent = tid;
+
+        if (shareExpanded) {
+            const url = window.cloud ? window.cloud.buildViewUrl(tid) : '';
+            const linkEl = document.getElementById('share-link-input');
+            if (linkEl) linkEl.value = url;
+            const img = document.getElementById('share-qr');
+            if (img && url && img.dataset.srcUrl !== url) {
+                img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=' + encodeURIComponent(url);
+                img.dataset.srcUrl = url;
+            }
+        }
+    }
+
+    // Back-compat no-ops (modal removed)
+    function closeShareModal() {}
+
+    // ---- VIEWER SHARE QR (player-to-player link sharing in view-only mode) ----
+    function viewerShareOpen() {
+        const overlay = document.getElementById('viewer-share-overlay');
+        if (!overlay) return;
+        const url = window.location.href;
+        const img = document.getElementById('viewer-share-qr');
+        if (img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=' + encodeURIComponent(url);
+        const linkEl = document.getElementById('viewer-share-link');
+        if (linkEl) linkEl.value = url;
+        overlay.classList.add('open');
+    }
+
+    function viewerShareClose() {
+        const overlay = document.getElementById('viewer-share-overlay');
+        if (overlay) overlay.classList.remove('open');
+    }
+
+    function viewerShareCopy() {
+        const linkEl = document.getElementById('viewer-share-link');
+        if (!linkEl) return;
+        linkEl.select();
+        linkEl.setSelectionRange(0, 99999);
+        try {
+            document.execCommand('copy');
+            showToast(t('viewer.linkCopied'));
+        } catch (_) {
+            navigator.clipboard && navigator.clipboard.writeText(linkEl.value)
+                .then(() => showToast(t('viewer.linkCopied')));
+        }
+    }
+
+    function copyShareLink() {
+        const linkEl = document.getElementById('share-link-input');
+        if (!linkEl) return;
+        linkEl.select();
+        linkEl.setSelectionRange(0, 99999);
+        try {
+            document.execCommand('copy');
+            showToast(t('cloud.copied'));
+        } catch (_) {
+            navigator.clipboard && navigator.clipboard.writeText(linkEl.value)
+                .then(() => showToast(t('cloud.copied')));
+        }
+    }
+
+    function updatePublishButton() {
+        const btn = document.getElementById('btn-publish');
+        if (!btn) return;
+        if (viewOnly) { btn.style.display = 'none'; return; }
+        btn.style.display = '';
+        btn.disabled = false;
+        if (state.publishedTournamentId) {
+            btn.textContent = t('cloud.published');
+            btn.classList.add('btn-active');
+        } else {
+            btn.textContent = t('cloud.publish');
+            btn.classList.remove('btn-active');
+        }
+    }
+
+    function showViewerStatus(message) {
+        // Replace the app main area with a centered status message
+        let overlay = document.getElementById('viewer-status');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'viewer-status';
+            overlay.className = 'viewer-status';
+            const main = document.getElementById('app');
+            if (main) main.parentNode.insertBefore(overlay, main);
+        }
+        overlay.innerHTML = `<div class="viewer-status-box">
+            <div class="viewer-status-dot"></div>
+            <p>${escapeHtml(message)}</p>
+            <p class="info-text viewer-status-id">${t('cloud.tournamentId')}: <strong>${escapeHtml(viewTournamentId || '')}</strong></p>
+        </div>`;
+        overlay.style.display = '';
+    }
+
+    function hideViewerStatus() {
+        const overlay = document.getElementById('viewer-status');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    function enterViewMode(tid) {
+        viewOnly = true;
+        viewTournamentId = tid;
+        try { viewerPinName = localStorage.getItem('ptcg_viewer_pin') || ''; } catch (e) {}
+        document.body.classList.add('view-only');
+        const banner = document.getElementById('view-mode-banner');
+        if (banner) banner.style.display = '';
+        // Stop any local admin ticker; viewer ticks from synced timerEndsAt instead.
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        showViewerStatus(t('cloud.viewLoading'));
+
+        // Local 1Hz ticker that derives timerSeconds from the synced deadline.
+        if (!window._viewerTimerInterval) {
+            window._viewerTimerInterval = setInterval(() => {
+                if (!viewOnly) return;
+                if (state.timerRunning && state.timerEndsAt) {
+                    const remaining = Math.max(0, Math.ceil((state.timerEndsAt - Date.now()) / 1000));
+                    state.timerSeconds = remaining;
+                    renderTimer();
+                }
+            }, 1000);
+        }
+
+        const apply = (remoteState) => {
+            if (!remoteState) return;
+            // Viewers get a locked-down preset: no projector, no compact, always muted.
+            // Timer fields (timerRunning, timerEndsAt, timerSeconds) come from admin so countdown stays in sync.
+            const viewerLock = {
+                projectorMode: false,
+                compactMode: false,
+                timerMuted: true,
+                currentView: state.currentView
+            };
+            state = { ...DEFAULT_STATE, ...remoteState, ...viewerLock, publishedTournamentId: tid };
+            hideViewerStatus();
+            const view = state.tournamentEnded ? 'standings'
+                       : state.tournamentStarted ? 'round'
+                       : 'registration';
+            navigateTo(view);
+            renderTimer();
+            applyNoAds();
+        };
+
+        const onErr = (err) => {
+            console.warn('[view] subscribe error', err);
+            if (err && err.message === 'not_found') {
+                showViewerStatus(t('cloud.viewNotFound'));
+            } else {
+                showViewerStatus((err && err.message) || 'Connection error');
+            }
+        };
+
+        const start = async () => {
+            if (!window.cloud) { onErr(new Error('cloud unavailable')); return; }
+            if (!window.cloud.isConfigured()) {
+                showViewerStatus(t('cloud.notConfigured'));
+                return;
+            }
+            const ok = await window.cloud.init();
+            if (!ok) {
+                showViewerStatus('Firebase init failed — check console.');
+                return;
+            }
+            window.cloud.subscribeView(tid, apply, onErr);
+        };
+        start();
     }
 
     function wheelPickSetAll(checked) {
@@ -2216,13 +2969,47 @@ const app = (() => {
     }
 
     // ---- INIT ----
+    function applyNoAds() {
+        const on = !!state.noAds;
+        document.body.classList.toggle('no-ads', on);
+        const btn = document.getElementById('btn-no-ads');
+        if (btn) btn.classList.toggle('active', on);
+    }
+
+    function toggleNoAds() {
+        if (viewOnly) return; // only admins toggle; players inherit via synced state
+        state.noAds = !state.noAds;
+        saveState(); // persists locally + mirrors to cloud → players see it
+        applyNoAds();
+    }
+
     function init() {
         loadState();
         loadAdvancedStaging();
         applyI18n();
+        applyNoAds();
 
         // Keyboard events
         document.addEventListener('keydown', handleKeydown);
+
+        // Detect view-mode (URL has ?t=<id>) — but only if we're not the owner
+        const urlTid = getUrlTournamentId();
+        if (urlTid && state.publishedTournamentId !== urlTid) {
+            enterViewMode(urlTid);
+            return;
+        }
+
+        // Re-attach to a previously-published tournament after reload
+        if (state.publishedTournamentId && window.cloud && window.cloud.isConfigured()) {
+            (async () => {
+                await window.cloud.init();
+                if (window.cloud.isReady()) {
+                    window.cloud.attachExisting(state.publishedTournamentId);
+                    // Push current state in case viewers missed updates while offline
+                    window.cloud.syncState(state);
+                }
+            })();
+        }
 
         // Restore view
         if (state.currentView && state.currentView !== 'home') {
@@ -2232,6 +3019,7 @@ const app = (() => {
         }
 
         renderTimer();
+        updatePublishButton();
 
         if (state.timerRunning) {
             startTimer();
@@ -2269,12 +3057,14 @@ const app = (() => {
         deletePlayer,
         editPlayerName,
         startTournament,
+        startNewTournament,
         setResult,
         submitResults,
         endTournament,
         goBackFromRound,
         backToLastRound,
         showTrainerCard,
+        toggleDrop,
         closeModal,
         closeWinnerModal,
         downloadStandings,
@@ -2287,9 +3077,21 @@ const app = (() => {
         wheelSetNames,
         wheelSyncFromTournament,
         closeWheelPicker,
+        cloudPublishToggle,
+        cloudUnpublish,
+        toggleSharePanel,
+        closeShareModal,
+        copyShareLink,
         wheelPickSetAll,
         wheelPickExcludeTop3,
         wheelPickApply,
+        viewerPinSearch,
+        viewerPinClear,
+        viewerShareOpen,
+        viewerShareClose,
+        viewerShareCopy,
+        updateTournamentMeta,
+        toggleNoAds,
         wheelReset,
         spinWheel,
         advancedSetRoster,
