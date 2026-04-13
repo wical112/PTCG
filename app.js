@@ -3,6 +3,378 @@
    ============================================================ */
 
 const app = (() => {
+    // ---- I18N ----
+    const I18N = {
+        en: {
+            'header.title': 'PTCG Tournament Manager',
+            'common.back': 'Back',
+            'common.home': 'Home',
+            'common.reset': 'Reset',
+            'common.ok': 'OK',
+            'home.welcome': 'Welcome, Trainer!',
+            'home.subtitle': 'Choose your path',
+            'home.tournament': 'Tournament',
+            'home.wheel': 'Lucky Wheel',
+            'home.advanced': 'Advanced',
+            'home.inProgress': 'You have a tournament in progress.',
+            'home.resume': 'Resume Tournament',
+            'reg.title': 'Player Registration',
+            'reg.bulkLabel': 'Add players (one name per line):',
+            'reg.bulkPlaceholder': '...please input player\nFox\nHenry\nhoho\nming\nsk\nnam\ncarey\ndicky\nhenry2\nwical\nszto\nting\nhugo\njason',
+            'reg.addBtn': 'Add Players',
+            'reg.registered': 'Registered Players',
+            'reg.start': 'Start Tournament',
+            'reg.inProgress': 'Tournament In Progress',
+            'reg.players': '{n} player',
+            'reg.players_plural': '{n} players',
+            'reg.recommended': 'Recommended rounds: {n}',
+            'reg.needTwo': 'Need at least 2 players',
+            'reg.added': 'Added {n} player',
+            'reg.added_plural': 'Added {n} players',
+            'reg.editPrompt': 'Edit player name:',
+            'reg.dupName': 'A player with that name already exists.',
+            'reg.confirmStart': 'Start tournament with {n} players?',
+            'round.title': 'Round {n}',
+            'round.titleOf': 'Round {n} of {m}',
+            'round.bye': 'BYE',
+            'round.byeWin': ' - Automatic Win (3 pts)',
+            'round.aWins': 'A Wins',
+            'round.bWins': 'B Wins',
+            'round.draw': 'Draw',
+            'round.submitNext': 'Submit Results & Next Round',
+            'round.submitted': 'Results Submitted',
+            'round.prev': 'Previous Round',
+            'round.end': 'End Tournament',
+            'round.confirmSubmit': 'Submit results and proceed to next round? This cannot be undone.',
+            'round.confirmSubmitBeforeEnd': 'Submit current round results before ending?',
+            'round.confirmDiscardEnd': 'Current round has incomplete results. Discard this round and end tournament?',
+            'round.confirmGoBack': 'Go back to previous round to edit results?',
+            'round.editResubmit': 'Edit results and re-submit',
+            'timer.start': 'Start',
+            'timer.pause': 'Pause',
+            'timer.mute': 'Mute',
+            'timer.unmute': 'Unmute',
+            'timer.projector': 'Projector Mode',
+            'timer.exitProjector': 'Exit Projector',
+            'timer.up': 'Time is up!',
+            'timer.compact': 'Compact',
+            'timer.expand': 'Expand',
+            'standings.final': 'Final Standings (After {n} Round)',
+            'standings.final_plural': 'Final Standings (After {n} Rounds)',
+            'standings.afterRound': 'Standings After Round {n}',
+            'standings.download': 'Download as Image',
+            'standings.rank': 'Rank',
+            'standings.player': 'Player',
+            'standings.record': 'Record',
+            'standings.points': 'Points',
+            'standings.owp': 'OWP%',
+            'standings.backRound': 'Back to Round',
+            'standings.htmlMissing': 'html2canvas not loaded yet. Please try again.',
+            'standings.snapFail': 'Failed to capture standings. Try again.',
+            'trainer.points': 'Points',
+            'trainer.owp': 'OWP',
+            'trainer.record': 'Record',
+            'trainer.games': 'Games',
+            'trainer.history': 'Match History',
+            'trainer.none': 'No matches played yet.',
+            'trainer.win': 'Win',
+            'trainer.loss': 'Loss',
+            'trainer.draw': 'Draw',
+            'trainer.byeWin': 'BYE (Win)',
+            'trainer.vs': 'vs',
+            'trainer.round': 'Round {n}:',
+            'wheel.title': 'Lucky Wheel',
+            'wheel.namesLabel': 'Names (one per line):',
+            'wheel.placeholder': 'Enter names...',
+            'wheel.setNames': 'Set Names',
+            'wheel.sync': 'Sync from Tournament',
+            'wheel.pickTitle': 'Select Participants for the Wheel',
+            'wheel.pickHint': 'Uncheck the players you want to exclude (e.g. champion, 2nd, 3rd).',
+            'wheel.pickAll': 'Select All',
+            'wheel.pickNone': 'Clear All',
+            'wheel.pickExcludeTop3': 'Exclude Top 3',
+            'wheel.pickApply': 'Add to Wheel',
+            'wheel.pickCancel': 'Cancel',
+            'wheel.pickRank': '#{n}',
+            'wheel.pickAdded': 'Added {n} to the wheel',
+            'wheel.remove': 'Remove Winner After Spin',
+            'wheel.spin': 'SPIN!',
+            'wheel.winners': 'Winners',
+            'wheel.resetBtn': 'Reset Wheel',
+            'wheel.empty': 'Add names to spin!',
+            'wheel.winner': 'Winner!',
+            'wheel.noPlayers': 'No tournament players registered.',
+            'wheel.confirmReset': 'Clear all winners and reset the wheel?',
+            'reset.confirm': 'Are you sure you want to reset everything? This cannot be undone.',
+            'adv.title': 'Advanced — Recover Tournament',
+            'adv.tag': 'Rebuild from past results',
+            'adv.intro': 'Lost your tournament data? Enter the roster and every completed round\'s results here, then generate the next round\'s pairings to continue playing.',
+            'adv.step1': 'Player Roster',
+            'adv.rosterLabel': 'Enter all players (one name per line):',
+            'adv.rosterPlaceholder': 'Fox\nHenry\nming\nsk\nwical\nszto',
+            'adv.saveRoster': 'Save Roster',
+            'adv.rosterCount': '{n} player in roster',
+            'adv.rosterCount_plural': '{n} players in roster',
+            'adv.step2': 'Past Rounds',
+            'adv.addRound': '+ Add Round',
+            'adv.roundsInfo': '{n} round entered',
+            'adv.roundsInfo_plural': '{n} rounds entered',
+            'adv.step3': 'Preview Reconstructed Standings',
+            'adv.refreshPreview': 'Refresh Preview',
+            'adv.previewHint': 'Click "Refresh Preview" after entering roster and round results.',
+            'adv.previewRosterFirst': 'Save a roster first.',
+            'adv.step4': 'Generate Next Round & Continue',
+            'adv.commit': 'Reconstruct & Continue Tournament',
+            'adv.discard': 'Discard Recovery',
+            'adv.backHome': 'Back to Home',
+            'adv.bye': 'BYE',
+            'adv.autoWin': 'Auto Win',
+            'adv.addPairing': '+ Add Pairing',
+            'adv.addBye': '+ Add Bye',
+            'adv.removeRound': 'Remove Round',
+            'adv.removeRoundConfirm': 'Remove Round {n} and all its pairings?',
+            'adv.select': '-- select --',
+            'adv.noRounds': 'No rounds added yet. Click "+ Add Round" to begin entering past round results.',
+            'adv.noPairings': 'No pairings yet.',
+            'adv.roundLabel': 'Round {n}',
+            'adv.rosterSet': 'Roster set: {n} player',
+            'adv.rosterSet_plural': 'Roster set: {n} players',
+            'adv.commitFail': 'Cannot commit — please fix the errors listed in Step 4.',
+            'adv.commitConfirm': 'Reconstruct tournament from entered results and generate next round pairings?',
+            'adv.replaceConfirm': 'This will REPLACE your current tournament state. Continue?',
+            'adv.reconstructed': 'Reconstructed — Round {n} pairings ready!',
+            'adv.discardConfirm': 'Discard all recovery data entered so far?',
+            'adv.errors': 'Errors (must fix):',
+            'adv.warnings': 'Warnings (allowed):',
+            'adv.ok': 'No issues detected. Ready to commit.',
+            'adv.needRoster': 'Save a roster of at least 2 players first.',
+            'val.minRoster': 'Roster needs at least 2 players.',
+            'val.duplicate': 'Duplicate player name: "{name}"',
+            'val.byeNotSelected': '{tag}: bye player not selected.',
+            'val.dupInRound': '{tag}: player appears more than once in this round.',
+            'val.bothNeeded': '{tag}: both players must be selected.',
+            'val.sameAB': '{tag}: player A and B must be different.',
+            'val.dupInRound2': '{tag}: a player appears more than once in this round.',
+            'val.resultNotSet': '{tag}: result not set.',
+            'val.rematch': '{tag}: rematch of {a} vs {b}.',
+            'val.oddBye': '{label}: odd roster ({n}) needs exactly 1 bye, found {found}.',
+            'val.evenBye': '{label}: even roster should have no byes, found {found}.',
+            'val.notAccounted': '{label}: only {used} of {total} players accounted for.',
+            'val.tooManyByes': '{name} was given a bye {n} times.',
+            'val.noPairings': '{label}: no pairings entered.',
+            'bc.home': 'Home',
+            'bc.reg': 'Registration',
+            'bc.standings': 'Standings',
+            'bc.wheel': 'Lucky Wheel',
+            'bc.advRecovery': 'Advanced Recovery'
+        },
+        zh: {
+            'header.title': 'PTCG 賽事管理',
+            'common.back': '返回',
+            'common.home': '首頁',
+            'common.reset': '重設',
+            'common.ok': '確定',
+            'home.welcome': '歡迎,訓練家!',
+            'home.subtitle': '請選擇',
+            'home.tournament': '賽事',
+            'home.wheel': '幸運轉盤',
+            'home.advanced': '進階',
+            'home.inProgress': '你有一場進行中的賽事。',
+            'home.resume': '繼續賽事',
+            'reg.title': '玩家登記',
+            'reg.bulkLabel': '新增玩家(每行一個名字):',
+            'reg.bulkPlaceholder': '...請輸入玩家\nFox\nHenry\nhoho\nming\nsk\nnam\ncarey\ndicky\nhenry2\nwical\nszto\nting\nhugo\njason',
+            'reg.addBtn': '新增玩家',
+            'reg.registered': '已登記玩家',
+            'reg.start': '開始賽事',
+            'reg.inProgress': '賽事進行中',
+            'reg.players': '{n} 位玩家',
+            'reg.players_plural': '{n} 位玩家',
+            'reg.recommended': '建議輪數:{n}',
+            'reg.needTwo': '至少需要 2 位玩家',
+            'reg.added': '已新增 {n} 位玩家',
+            'reg.added_plural': '已新增 {n} 位玩家',
+            'reg.editPrompt': '編輯玩家名稱:',
+            'reg.dupName': '已有同名玩家。',
+            'reg.confirmStart': '以 {n} 位玩家開始賽事?',
+            'round.title': '第 {n} 輪',
+            'round.titleOf': '第 {n} / {m} 輪',
+            'round.bye': '輪空',
+            'round.byeWin': ' - 自動勝利(3 分)',
+            'round.aWins': 'A 勝',
+            'round.bWins': 'B 勝',
+            'round.draw': '平手',
+            'round.submitNext': '提交結果並進入下一輪',
+            'round.submitted': '結果已提交',
+            'round.prev': '上一輪',
+            'round.end': '結束賽事',
+            'round.confirmSubmit': '提交結果並進入下一輪?此操作無法復原。',
+            'round.confirmSubmitBeforeEnd': '結束前是否提交本輪結果?',
+            'round.confirmDiscardEnd': '本輪結果尚未完成。捨棄本輪並結束賽事?',
+            'round.confirmGoBack': '返回上一輪以修改結果?',
+            'round.editResubmit': '修改結果後重新提交',
+            'timer.start': '開始',
+            'timer.pause': '暫停',
+            'timer.mute': '靜音',
+            'timer.unmute': '取消靜音',
+            'timer.projector': '投影模式',
+            'timer.exitProjector': '退出投影',
+            'timer.up': '時間到!',
+            'timer.compact': '精簡',
+            'timer.expand': '放大',
+            'standings.final': '最終排名(共 {n} 輪)',
+            'standings.final_plural': '最終排名(共 {n} 輪)',
+            'standings.afterRound': '第 {n} 輪後排名',
+            'standings.download': '下載為圖片',
+            'standings.rank': '名次',
+            'standings.player': '玩家',
+            'standings.record': '戰績',
+            'standings.points': '積分',
+            'standings.owp': '對手勝率%',
+            'standings.backRound': '返回對戰',
+            'standings.htmlMissing': 'html2canvas 尚未載入,請稍後再試。',
+            'standings.snapFail': '截圖失敗,請再試一次。',
+            'trainer.points': '積分',
+            'trainer.owp': '對手勝率',
+            'trainer.record': '戰績',
+            'trainer.games': '場數',
+            'trainer.history': '對戰紀錄',
+            'trainer.none': '尚未開始對戰。',
+            'trainer.win': '勝',
+            'trainer.loss': '負',
+            'trainer.draw': '平',
+            'trainer.byeWin': '輪空(勝)',
+            'trainer.vs': '對',
+            'trainer.round': '第 {n} 輪:',
+            'wheel.title': '幸運轉盤',
+            'wheel.namesLabel': '名單(每行一個):',
+            'wheel.placeholder': '請輸入名字...',
+            'wheel.setNames': '設定名單',
+            'wheel.sync': '從賽事同步',
+            'wheel.pickTitle': '選擇參與抽獎的玩家',
+            'wheel.pickHint': '取消勾選想要排除的玩家(例如冠、亞、季軍)。',
+            'wheel.pickAll': '全選',
+            'wheel.pickNone': '全部取消',
+            'wheel.pickExcludeTop3': '排除前三名',
+            'wheel.pickApply': '加入轉盤',
+            'wheel.pickCancel': '取消',
+            'wheel.pickRank': '第 {n} 名',
+            'wheel.pickAdded': '已加入 {n} 位玩家到轉盤',
+            'wheel.remove': '抽中後移除',
+            'wheel.spin': '開始抽!',
+            'wheel.winners': '得獎者',
+            'wheel.resetBtn': '重設轉盤',
+            'wheel.empty': '請新增名單以開始抽獎!',
+            'wheel.winner': '得獎者!',
+            'wheel.noPlayers': '尚未登記任何賽事玩家。',
+            'wheel.confirmReset': '清除所有得獎者並重設轉盤?',
+            'reset.confirm': '確定要重設所有資料?此操作無法復原。',
+            'adv.title': '進階 — 還原賽事',
+            'adv.tag': '由過往結果重建',
+            'adv.intro': '遺失了賽事資料?在此輸入名單與每一輪已完成的結果,然後重新產生下一輪對戰繼續比賽。',
+            'adv.step1': '玩家名單',
+            'adv.rosterLabel': '輸入所有玩家(每行一個名字):',
+            'adv.rosterPlaceholder': 'Fox\nHenry\nming\nsk\nwical\nszto',
+            'adv.saveRoster': '儲存名單',
+            'adv.rosterCount': '名單中有 {n} 位玩家',
+            'adv.rosterCount_plural': '名單中有 {n} 位玩家',
+            'adv.step2': '過往輪次',
+            'adv.addRound': '+ 新增輪次',
+            'adv.roundsInfo': '已輸入 {n} 輪',
+            'adv.roundsInfo_plural': '已輸入 {n} 輪',
+            'adv.step3': '預覽重建排名',
+            'adv.refreshPreview': '更新預覽',
+            'adv.previewHint': '輸入名單與輪次結果後,點擊「更新預覽」。',
+            'adv.previewRosterFirst': '請先儲存名單。',
+            'adv.step4': '產生下一輪並繼續',
+            'adv.commit': '重建並繼續賽事',
+            'adv.discard': '捨棄還原',
+            'adv.backHome': '返回首頁',
+            'adv.bye': '輪空',
+            'adv.autoWin': '自動勝',
+            'adv.addPairing': '+ 新增對戰',
+            'adv.addBye': '+ 新增輪空',
+            'adv.removeRound': '移除本輪',
+            'adv.removeRoundConfirm': '移除第 {n} 輪及其所有對戰?',
+            'adv.select': '-- 請選擇 --',
+            'adv.noRounds': '尚未新增輪次。請點擊「+ 新增輪次」開始輸入過往結果。',
+            'adv.noPairings': '尚未有對戰。',
+            'adv.roundLabel': '第 {n} 輪',
+            'adv.rosterSet': '名單已設定:{n} 位玩家',
+            'adv.rosterSet_plural': '名單已設定:{n} 位玩家',
+            'adv.commitFail': '無法重建 — 請先修正第 4 步顯示的錯誤。',
+            'adv.commitConfirm': '由輸入的結果重建賽事並產生下一輪對戰?',
+            'adv.replaceConfirm': '此操作將取代目前的賽事狀態,是否繼續?',
+            'adv.reconstructed': '已重建 — 第 {n} 輪對戰已就緒!',
+            'adv.discardConfirm': '捨棄目前所有已輸入的還原資料?',
+            'adv.errors': '錯誤(必須修正):',
+            'adv.warnings': '警告(可允許):',
+            'adv.ok': '未發現問題,可以重建。',
+            'adv.needRoster': '請先儲存至少 2 位玩家的名單。',
+            'val.minRoster': '名單至少需要 2 位玩家。',
+            'val.duplicate': '玩家名稱重複:「{name}」',
+            'val.byeNotSelected': '{tag}:未選擇輪空玩家。',
+            'val.dupInRound': '{tag}:該玩家在本輪出現多次。',
+            'val.bothNeeded': '{tag}:必須選擇雙方玩家。',
+            'val.sameAB': '{tag}:A 與 B 不可為同一玩家。',
+            'val.dupInRound2': '{tag}:有玩家在本輪出現多次。',
+            'val.resultNotSet': '{tag}:尚未設定結果。',
+            'val.rematch': '{tag}:{a} 與 {b} 為再戰。',
+            'val.oddBye': '{label}:奇數人數({n})需正好 1 個輪空,實際 {found} 個。',
+            'val.evenBye': '{label}:偶數人數不應有輪空,實際 {found} 個。',
+            'val.notAccounted': '{label}:僅 {used} / {total} 位玩家被列入。',
+            'val.tooManyByes': '{name} 共獲得 {n} 次輪空。',
+            'val.noPairings': '{label}:尚未輸入任何對戰。',
+            'bc.home': '首頁',
+            'bc.reg': '登記',
+            'bc.standings': '排名',
+            'bc.wheel': '幸運轉盤',
+            'bc.advRecovery': '進階還原'
+        }
+    };
+
+    let currentLang = localStorage.getItem('ptcg_lang') || 'en';
+
+    function t(key, params) {
+        let str = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+        if (params) {
+            if (params.n !== undefined && params.n !== 1) {
+                const pluralKey = key + '_plural';
+                const pluralStr = (I18N[currentLang] && I18N[currentLang][pluralKey]) || I18N.en[pluralKey];
+                if (pluralStr) str = pluralStr;
+            }
+            Object.keys(params).forEach(k => {
+                str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), params[k]);
+            });
+        }
+        return str;
+    }
+
+    function applyI18n() {
+        document.documentElement.lang = currentLang === 'zh' ? 'zh-Hant' : 'en';
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            el.textContent = t(el.getAttribute('data-i18n'));
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+        });
+        const langBtn = document.getElementById('lang-toggle');
+        if (langBtn) langBtn.textContent = currentLang === 'en' ? '中文' : 'EN';
+    }
+
+    function toggleLang() {
+        currentLang = currentLang === 'en' ? 'zh' : 'en';
+        localStorage.setItem('ptcg_lang', currentLang);
+        applyI18n();
+        // Re-render dynamic views so JS-generated text picks up new language
+        if (state.currentView) navigateTo(state.currentView);
+        updateBreadcrumb(state.currentView);
+        renderTimer();
+        updateMuteButton();
+        updateProjectorMode();
+        applyCompactMode();
+    }
+
     // ---- STATE ----
     const DEFAULT_STATE = {
         players: [],
@@ -17,7 +389,8 @@ const app = (() => {
         currentView: 'home',
         tournamentStarted: false,
         tournamentEnded: false,
-        projectorMode: false
+        projectorMode: false,
+        compactMode: false
     };
 
     let state = { ...DEFAULT_STATE };
@@ -88,20 +461,23 @@ const app = (() => {
             return;
         }
 
-        crumbs.push('<span class="bc-link" onclick="app.navigateTo(\'home\')">Home</span>');
+        crumbs.push(`<span class="bc-link" onclick="app.navigateTo('home')">${t('bc.home')}</span>`);
 
         if (viewName === 'registration') {
-            crumbs.push('<span class="bc-active">Registration</span>');
+            crumbs.push(`<span class="bc-active">${t('bc.reg')}</span>`);
         } else if (viewName === 'round') {
-            crumbs.push('<span class="bc-link" onclick="app.navigateTo(\'registration\')">Registration</span>');
+            crumbs.push(`<span class="bc-link" onclick="app.navigateTo('registration')">${t('bc.reg')}</span>`);
             const recRounds = getRecommendedRounds();
-            crumbs.push(`<span class="bc-active">Round ${state.currentRound + 1}${recRounds ? ` of ${recRounds}` : ''}</span>`);
+            const roundLabel = recRounds
+                ? t('round.titleOf', { n: state.currentRound + 1, m: recRounds })
+                : t('round.title', { n: state.currentRound + 1 });
+            crumbs.push(`<span class="bc-active">${roundLabel}</span>`);
         } else if (viewName === 'standings') {
-            crumbs.push('<span class="bc-active">Standings</span>');
+            crumbs.push(`<span class="bc-active">${t('bc.standings')}</span>`);
         } else if (viewName === 'wheel') {
-            crumbs.push('<span class="bc-active">Lucky Wheel</span>');
+            crumbs.push(`<span class="bc-active">${t('bc.wheel')}</span>`);
         } else if (viewName === 'advanced') {
-            crumbs.push('<span class="bc-active">Advanced Recovery</span>');
+            crumbs.push(`<span class="bc-active">${t('bc.advRecovery')}</span>`);
         }
 
         bc.innerHTML = crumbs.join(' <span>&rsaquo;</span> ');
@@ -143,7 +519,7 @@ const app = (() => {
     }
 
     function resetTournament() {
-        if (!confirm('Are you sure you want to reset everything? This cannot be undone.')) return;
+        if (!confirm(t('reset.confirm'))) return;
         for (let i = 0; i < 50; i++) {
             localStorage.removeItem(`ptcg_round_${i}`);
         }
@@ -176,14 +552,14 @@ const app = (() => {
         saveState();
         renderPlayerList();
         if (added > 0) {
-            showToast(`Added ${added} player${added !== 1 ? 's' : ''}`);
+            showToast(t('reg.added', { n: added }));
         }
     }
 
     function createPlayer(name) {
         return {
             name,
-            id: name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            id: name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             matchPoints: 0,
             wins: 0,
             losses: 0,
@@ -203,12 +579,12 @@ const app = (() => {
     function editPlayerName(index) {
         if (state.tournamentStarted) return;
         const player = state.players[index];
-        const newName = prompt('Edit player name:', player.name);
+        const newName = prompt(t('reg.editPrompt'), player.name);
         if (newName && newName.trim()) {
             const trimmed = newName.trim();
             // Check for duplicate
             if (state.players.some((p, i) => i !== index && p.name.toLowerCase() === trimmed.toLowerCase())) {
-                alert('A player with that name already exists.');
+                alert(t('reg.dupName'));
                 return;
             }
             player.name = trimmed;
@@ -239,29 +615,29 @@ const app = (() => {
         });
 
         const n = state.players.length;
-        countEl.textContent = `${n} player${n !== 1 ? 's' : ''}`;
+        countEl.textContent = t('reg.players', { n });
 
         if (n >= 2) {
             const rec = getRecommendedRounds();
-            recEl.textContent = `Recommended rounds: ${rec}`;
+            recEl.textContent = t('reg.recommended', { n: rec });
             startBtn.disabled = false;
         } else {
-            recEl.textContent = n === 1 ? 'Need at least 2 players' : '';
+            recEl.textContent = n === 1 ? t('reg.needTwo') : '';
             startBtn.disabled = true;
         }
 
         if (locked) {
             startBtn.disabled = true;
-            startBtn.textContent = 'Tournament In Progress';
+            startBtn.textContent = t('reg.inProgress');
         } else {
-            startBtn.textContent = 'Start Tournament';
+            startBtn.textContent = t('reg.start');
         }
     }
 
     // ---- SWISS TOURNAMENT ----
     function startTournament() {
         if (state.players.length < 2) return;
-        if (!confirm(`Start tournament with ${state.players.length} players?`)) return;
+        if (!confirm(t('reg.confirmStart', { n: state.players.length }))) return;
 
         state.players.forEach(p => {
             p.matchPoints = 0;
@@ -345,7 +721,9 @@ const app = (() => {
         if (!round) return;
 
         const recRounds = getRecommendedRounds();
-        const roundLabel = `Round ${state.currentRound + 1}${recRounds ? ` of ${recRounds}` : ''}`;
+        const roundLabel = recRounds
+            ? t('round.titleOf', { n: state.currentRound + 1, m: recRounds })
+            : t('round.title', { n: state.currentRound + 1 });
         document.getElementById('round-title').textContent = roundLabel;
 
         const container = document.getElementById('pairings-container');
@@ -359,10 +737,10 @@ const app = (() => {
                 const row = document.createElement('div');
                 row.className = 'pairing-row bye-row';
                 row.innerHTML = `
-                    <div class="table-number">BYE</div>
+                    <div class="table-number">${t('round.bye')}</div>
                     <div>
                         <span class="pairing-player" onclick="app.showTrainerCard('${pairing.playerA}')">${escapeHtml(playerA.name)}</span>
-                        <span class="bye-tag"> - Automatic Win (3 pts)</span>
+                        <span class="bye-tag">${t('round.byeWin')}</span>
                     </div>
                 `;
                 container.appendChild(row);
@@ -385,11 +763,11 @@ const app = (() => {
                 <div class="pairing-player ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')">${escapeHtml(playerA.name)}</div>
                 <div class="result-buttons" ${disabled}>
                     <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}"
-                        onclick="app.setResult(${pIdx}, 'a')">A Wins</button>
+                        onclick="app.setResult(${pIdx}, 'a')">${t('round.aWins')}</button>
                     <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}"
-                        onclick="app.setResult(${pIdx}, 'draw')">Draw</button>
+                        onclick="app.setResult(${pIdx}, 'draw')">${t('round.draw')}</button>
                     <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}"
-                        onclick="app.setResult(${pIdx}, 'b')">B Wins</button>
+                        onclick="app.setResult(${pIdx}, 'b')">${t('round.bWins')}</button>
                 </div>
                 <div class="pairing-player ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right">${escapeHtml(playerB.name)}</div>
             `;
@@ -400,6 +778,7 @@ const app = (() => {
         updateProjectorMode();
         // Timer mute button
         updateMuteButton();
+        applyCompactMode();
         updateSubmitButton();
     }
 
@@ -429,9 +808,9 @@ const app = (() => {
         btn.disabled = !allSet || round.resultsSubmitted;
 
         if (round.resultsSubmitted) {
-            btn.textContent = 'Results Submitted';
+            btn.textContent = t('round.submitted');
         } else {
-            btn.textContent = 'Submit Results & Next Round';
+            btn.textContent = t('round.submitNext');
         }
     }
 
@@ -467,7 +846,7 @@ const app = (() => {
     function submitResults() {
         const round = state.rounds[state.currentRound];
         if (!round) return;
-        if (!confirm('Submit results and proceed to next round? This cannot be undone.')) return;
+        if (!confirm(t('round.confirmSubmit'))) return;
 
         applyResults(round);
         round.resultsSubmitted = true;
@@ -488,7 +867,7 @@ const app = (() => {
         if (round && !round.resultsSubmitted) {
             const allSet = round.pairings.every(p => p.isBye || p.result !== null);
             if (allSet) {
-                if (confirm('Submit current round results before ending?')) {
+                if (confirm(t('round.confirmSubmitBeforeEnd'))) {
                     applyResults(round);
                     round.resultsSubmitted = true;
                     saveRoundSnapshot(state.currentRound);
@@ -496,7 +875,7 @@ const app = (() => {
                 }
             } else {
                 // Some results missing — don't allow ending without submitting
-                if (!confirm('Current round has incomplete results. Discard this round and end tournament?')) {
+                if (!confirm(t('round.confirmDiscardEnd'))) {
                     return;
                 }
                 // Remove the incomplete round entirely so standings are clean
@@ -517,7 +896,7 @@ const app = (() => {
             return;
         }
 
-        if (!confirm('Go back to previous round to edit results?')) return;
+        if (!confirm(t('round.confirmGoBack'))) return;
 
         // The previous round (already submitted) — we want to re-open it for editing
         const prevIndex = state.currentRound - 1;
@@ -569,7 +948,7 @@ const app = (() => {
         resetTimerValue();
         renderRound();
         navigateTo('round');
-        showToast('Edit results and re-submit');
+        showToast(t('round.editResubmit'));
     }
 
     // Reverse the stat changes from a submitted round (fallback if no snapshot)
@@ -581,7 +960,12 @@ const app = (() => {
             if (pairing.isBye) {
                 pA.matchPoints -= 3;
                 pA.wins -= 1;
-                pA.hadBye = false;
+                // Only clear hadBye if no other (still-applied) round granted this player a bye
+                const stillHasBye = state.rounds.some(r =>
+                    r !== round && r.resultsSubmitted &&
+                    r.pairings.some(pp => pp.isBye && pp.playerA === pA.id)
+                );
+                if (!stillHasBye) pA.hadBye = false;
                 return;
             }
 
@@ -665,8 +1049,8 @@ const app = (() => {
 
         const lastSubmitted = state.rounds.filter(r => r.resultsSubmitted).length;
         title.textContent = state.tournamentEnded
-            ? `Final Standings (After ${lastSubmitted} Round${lastSubmitted !== 1 ? 's' : ''})`
-            : `Standings After Round ${lastSubmitted}`;
+            ? t('standings.final', { n: lastSubmitted })
+            : t('standings.afterRound', { n: lastSubmitted });
 
         tbody.innerHTML = '';
         standings.forEach((p, i) => {
@@ -686,7 +1070,7 @@ const app = (() => {
     function downloadStandings() {
         const wrapper = document.getElementById('standings-table-wrapper');
         if (typeof html2canvas === 'undefined') {
-            alert('html2canvas not loaded yet. Please try again.');
+            alert(t('standings.htmlMissing'));
             return;
         }
         html2canvas(wrapper, {
@@ -700,7 +1084,7 @@ const app = (() => {
             link.click();
         }).catch(err => {
             console.error('Screenshot failed:', err);
-            alert('Failed to capture standings. Try again.');
+            alert(t('standings.snapFail'));
         });
     }
 
@@ -721,8 +1105,8 @@ const app = (() => {
                 if (pairing.isBye && pairing.playerA === playerId) {
                     timeline += `
                         <div class="timeline-item">
-                            <span class="timeline-round">Round ${rIdx + 1}:</span>
-                            <span class="timeline-result-bye">BYE (Win)</span>
+                            <span class="timeline-round">${t('trainer.round', { n: rIdx + 1 })}</span>
+                            <span class="timeline-result-bye">${t('trainer.byeWin')}</span>
                         </div>`;
                     return;
                 }
@@ -735,20 +1119,20 @@ const app = (() => {
                 let resultText = '';
                 let resultClass = '';
                 if (pairing.result === 'draw') {
-                    resultText = 'Draw';
+                    resultText = t('trainer.draw');
                     resultClass = 'timeline-result-draw';
                 } else if ((pairing.result === 'a' && isA) || (pairing.result === 'b' && !isA)) {
-                    resultText = 'Win';
+                    resultText = t('trainer.win');
                     resultClass = 'timeline-result-win';
                 } else {
-                    resultText = 'Loss';
+                    resultText = t('trainer.loss');
                     resultClass = 'timeline-result-loss';
                 }
 
                 timeline += `
                     <div class="timeline-item">
-                        <span class="timeline-round">Round ${rIdx + 1}:</span>
-                        vs ${escapeHtml(oppName)} -
+                        <span class="timeline-round">${t('trainer.round', { n: rIdx + 1 })}</span>
+                        ${t('trainer.vs')} ${escapeHtml(oppName)} -
                         <span class="${resultClass}">${resultText}</span>
                     </div>`;
             });
@@ -758,23 +1142,23 @@ const app = (() => {
             <h3>${escapeHtml(player.name)}</h3>
             <div class="trainer-stats">
                 <div class="stat-box">
-                    <div class="stat-label">Points</div>
+                    <div class="stat-label">${t('trainer.points')}</div>
                     <div class="stat-value">${player.matchPoints}</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">OWP</div>
+                    <div class="stat-label">${t('trainer.owp')}</div>
                     <div class="stat-value">${(owp * 100).toFixed(1)}%</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">Record</div>
+                    <div class="stat-label">${t('trainer.record')}</div>
                     <div class="stat-value">${player.wins}-${player.losses}-${player.draws}</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">Games</div>
+                    <div class="stat-label">${t('trainer.games')}</div>
                     <div class="stat-value">${player.wins + player.losses + player.draws}</div>
                 </div>
             </div>
-            ${timeline ? `<h4 style="margin-bottom:0.5rem;color:var(--text-dim)">Match History</h4><div class="trainer-timeline">${timeline}</div>` : '<p style="color:var(--text-dim)">No matches played yet.</p>'}
+            ${timeline ? `<h4 style="margin-bottom:0.5rem;color:var(--text-dim)">${t('trainer.history')}</h4><div class="trainer-timeline">${timeline}</div>` : `<p style="color:var(--text-dim)">${t('trainer.none')}</p>`}
         `;
 
         document.getElementById('modal-overlay').classList.add('open');
@@ -810,7 +1194,7 @@ const app = (() => {
 
         const toggleBtn = document.getElementById('btn-timer-toggle');
         if (toggleBtn) {
-            toggleBtn.textContent = state.timerRunning ? 'Pause' : 'Start';
+            toggleBtn.textContent = state.timerRunning ? t('timer.pause') : t('timer.start');
         }
     }
 
@@ -834,7 +1218,7 @@ const app = (() => {
                 if (!state.timerMuted) playBeep();
                 // Auto-stop at 0
                 stopTimer();
-                showToast('Time is up!');
+                showToast(t('timer.up'));
                 return;
             }
 
@@ -883,8 +1267,24 @@ const app = (() => {
     function updateMuteButton() {
         const btn = document.getElementById('btn-timer-mute');
         if (btn) {
-            btn.textContent = state.timerMuted ? 'Unmute' : 'Mute';
+            btn.textContent = state.timerMuted ? t('timer.unmute') : t('timer.mute');
             btn.classList.toggle('btn-active', state.timerMuted);
+        }
+    }
+
+    function toggleCompactMode() {
+        state.compactMode = !state.compactMode;
+        applyCompactMode();
+        saveState();
+    }
+
+    function applyCompactMode() {
+        const panel = document.getElementById('round-panel');
+        if (panel) panel.classList.toggle('compact-mode', state.compactMode);
+        const btn = document.getElementById('btn-compact');
+        if (btn) {
+            btn.textContent = state.compactMode ? t('timer.expand') : t('timer.compact');
+            btn.classList.toggle('btn-active', state.compactMode);
         }
     }
 
@@ -899,7 +1299,7 @@ const app = (() => {
     function updateProjectorMode() {
         const btn = document.getElementById('btn-projector');
         if (btn) {
-            btn.textContent = state.projectorMode ? 'Exit Projector' : 'Projector Mode';
+            btn.textContent = state.projectorMode ? t('timer.exitProjector') : t('timer.projector');
         }
         document.body.classList.toggle('projector-mode', state.projectorMode);
     }
@@ -967,18 +1367,63 @@ const app = (() => {
 
     function wheelSyncFromTournament() {
         if (state.players.length === 0) {
-            alert('No tournament players registered.');
+            alert(t('wheel.noPlayers'));
             return;
         }
-        state.wheelNames = state.players.map(p => p.name);
-        document.getElementById('wheel-names').value = state.wheelNames.join('\n');
+        openWheelPicker();
+    }
+
+    // Picker modal — choose which tournament players go onto the wheel.
+    // Sorted by standings so champion / runners-up are obvious.
+    function openWheelPicker() {
+        const standings = getStandings();
+        const list = document.getElementById('wheel-pick-list');
+        list.innerHTML = '';
+        standings.forEach((p, i) => {
+            const row = document.createElement('label');
+            row.className = 'wheel-pick-row';
+            row.innerHTML = `
+                <input type="checkbox" class="wheel-pick-cb" data-name="${escapeHtml(p.name)}" checked>
+                <span class="wheel-pick-rank">${t('wheel.pickRank', { n: i + 1 })}</span>
+                <span class="wheel-pick-name">${escapeHtml(p.name)}</span>
+                <span class="wheel-pick-record">${p.record}</span>
+            `;
+            list.appendChild(row);
+        });
+        document.getElementById('wheel-pick-overlay').classList.add('open');
+    }
+
+    function closeWheelPicker() {
+        document.getElementById('wheel-pick-overlay').classList.remove('open');
+    }
+
+    function wheelPickSetAll(checked) {
+        document.querySelectorAll('#wheel-pick-list .wheel-pick-cb').forEach(cb => {
+            cb.checked = checked;
+        });
+    }
+
+    function wheelPickExcludeTop3() {
+        const cbs = document.querySelectorAll('#wheel-pick-list .wheel-pick-cb');
+        cbs.forEach((cb, i) => { cb.checked = i >= 3; });
+    }
+
+    function wheelPickApply() {
+        const names = [];
+        document.querySelectorAll('#wheel-pick-list .wheel-pick-cb').forEach(cb => {
+            if (cb.checked) names.push(cb.getAttribute('data-name'));
+        });
+        state.wheelNames = names;
+        document.getElementById('wheel-names').value = names.join('\n');
         saveState();
         renderWheel();
+        closeWheelPicker();
+        showToast(t('wheel.pickAdded', { n: names.length }));
     }
 
     // Enhancement: Reset wheel history and clear names for fresh start
     function wheelReset() {
-        if (!confirm('Clear all winners and reset the wheel?')) return;
+        if (!confirm(t('wheel.confirmReset'))) return;
         state.wheelHistory = [];
         state.wheelNames = [];
         document.getElementById('wheel-names').value = '';
@@ -1026,7 +1471,7 @@ const app = (() => {
             ctx.font = '16px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('Add names to spin!', cx, cy);
+            ctx.fillText(t('wheel.empty'), cx, cy);
             return;
         }
 
@@ -1222,7 +1667,7 @@ const app = (() => {
         const el = document.getElementById('adv-roster-count');
         if (!el) return;
         const n = advancedStaging.players.length;
-        el.textContent = n > 0 ? `${n} player${n !== 1 ? 's' : ''} in roster` : '';
+        el.textContent = n > 0 ? t('adv.rosterCount', { n }) : '';
     }
 
     function advancedSetRoster() {
@@ -1255,12 +1700,12 @@ const app = (() => {
         advancedStaging.players = next;
         saveAdvancedStaging();
         renderAdvanced();
-        showToast(`Roster set: ${next.length} player${next.length !== 1 ? 's' : ''}`);
+        showToast(t('adv.rosterSet', { n: next.length }));
     }
 
     function advancedAddRound() {
         if (advancedStaging.players.length < 2) {
-            alert('Save a roster of at least 2 players first.');
+            alert(t('adv.needRoster'));
             return;
         }
         advancedStaging.rounds.push({ pairings: [] });
@@ -1270,7 +1715,7 @@ const app = (() => {
     }
 
     function advancedRemoveRound(roundIdx) {
-        if (!confirm(`Remove Round ${roundIdx + 1} and all its pairings?`)) return;
+        if (!confirm(t('adv.removeRoundConfirm', { n: roundIdx + 1 }))) return;
         advancedStaging.rounds.splice(roundIdx, 1);
         saveAdvancedStaging();
         renderAdvancedRounds();
@@ -1329,7 +1774,7 @@ const app = (() => {
         container.innerHTML = '';
 
         if (advancedStaging.rounds.length === 0) {
-            container.innerHTML = '<p class="info-text">No rounds added yet. Click "+ Add Round" to begin entering past round results.</p>';
+            container.innerHTML = `<p class="info-text">${t('adv.noRounds')}</p>`;
             document.getElementById('adv-rounds-info').textContent = '';
             return;
         }
@@ -1341,15 +1786,15 @@ const app = (() => {
             const header = document.createElement('div');
             header.className = 'adv-round-header';
             header.innerHTML = `
-                <h4>Round ${rIdx + 1}</h4>
-                <button class="btn btn-danger btn-small" onclick="app.advancedRemoveRound(${rIdx})">Remove Round</button>
+                <h4>${t('adv.roundLabel', { n: rIdx + 1 })}</h4>
+                <button class="btn btn-danger btn-small" onclick="app.advancedRemoveRound(${rIdx})">${t('adv.removeRound')}</button>
             `;
             rDiv.appendChild(header);
 
             if (round.pairings.length === 0) {
                 const empty = document.createElement('p');
                 empty.className = 'info-text';
-                empty.textContent = 'No pairings yet.';
+                empty.textContent = t('adv.noPairings');
                 rDiv.appendChild(empty);
             }
 
@@ -1359,9 +1804,9 @@ const app = (() => {
 
                 if (pairing.result === 'bye') {
                     row.innerHTML = `
-                        <div class="adv-table-label">BYE</div>
+                        <div class="adv-table-label">${t('adv.bye')}</div>
                         ${playerSelectHtml(rIdx, pIdx, 'tempA', pairing.tempA)}
-                        <div class="adv-result-label">Auto Win</div>
+                        <div class="adv-result-label">${t('adv.autoWin')}</div>
                         <button class="btn-delete" onclick="app.advancedRemovePairing(${rIdx}, ${pIdx})" title="Remove">&times;</button>
                     `;
                 } else {
@@ -1369,9 +1814,9 @@ const app = (() => {
                         <div class="adv-table-label">T${pIdx + 1}</div>
                         ${playerSelectHtml(rIdx, pIdx, 'tempA', pairing.tempA)}
                         <div class="adv-result-buttons">
-                            <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'a')">A Wins</button>
-                            <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'draw')">Draw</button>
-                            <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'b')">B Wins</button>
+                            <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'a')">${t('round.aWins')}</button>
+                            <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'draw')">${t('round.draw')}</button>
+                            <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}" onclick="app.advancedSetPairingResult(${rIdx}, ${pIdx}, 'b')">${t('round.bWins')}</button>
                         </div>
                         ${playerSelectHtml(rIdx, pIdx, 'tempB', pairing.tempB)}
                         <button class="btn-delete" onclick="app.advancedRemovePairing(${rIdx}, ${pIdx})" title="Remove">&times;</button>
@@ -1383,8 +1828,8 @@ const app = (() => {
             const actions = document.createElement('div');
             actions.className = 'adv-round-actions';
             actions.innerHTML = `
-                <button class="btn btn-secondary btn-small" onclick="app.advancedAddPairing(${rIdx})">+ Add Pairing</button>
-                <button class="btn btn-secondary btn-small" onclick="app.advancedAddBye(${rIdx})">+ Add Bye</button>
+                <button class="btn btn-secondary btn-small" onclick="app.advancedAddPairing(${rIdx})">${t('adv.addPairing')}</button>
+                <button class="btn btn-secondary btn-small" onclick="app.advancedAddBye(${rIdx})">${t('adv.addBye')}</button>
             `;
             rDiv.appendChild(actions);
 
@@ -1392,11 +1837,11 @@ const app = (() => {
         });
 
         document.getElementById('adv-rounds-info').textContent =
-            `${advancedStaging.rounds.length} round${advancedStaging.rounds.length !== 1 ? 's' : ''} entered`;
+            t('adv.roundsInfo', { n: advancedStaging.rounds.length });
     }
 
     function playerSelectHtml(roundIdx, pIdx, field, currentVal) {
-        let opts = '<option value="">-- select --</option>';
+        let opts = `<option value="">${t('adv.select')}</option>`;
         advancedStaging.players.forEach(p => {
             const sel = p.tempId === currentVal ? 'selected' : '';
             opts += `<option value="${p.tempId}" ${sel}>${escapeHtml(p.name)}</option>`;
@@ -1410,7 +1855,7 @@ const app = (() => {
         const warnings = [];
 
         if (advancedStaging.players.length < 2) {
-            errors.push('Roster needs at least 2 players.');
+            errors.push(t('val.minRoster'));
         }
 
         // Duplicate name check
@@ -1420,7 +1865,7 @@ const app = (() => {
             nameCounts[k] = (nameCounts[k] || 0) + 1;
         });
         Object.entries(nameCounts).forEach(([k, c]) => {
-            if (c > 1) errors.push(`Duplicate player name: "${k}"`);
+            if (c > 1) errors.push(t('val.duplicate', { name: k }));
         });
 
         // Track opponents across rounds for rematch warnings
@@ -1428,24 +1873,24 @@ const app = (() => {
         const byeCount = {};    // tempId -> count
 
         advancedStaging.rounds.forEach((round, rIdx) => {
-            const label = `Round ${rIdx + 1}`;
+            const label = t('adv.roundLabel', { n: rIdx + 1 });
             const usedThisRound = new Set();
             let byesThisRound = 0;
 
             if (round.pairings.length === 0) {
-                errors.push(`${label}: no pairings entered.`);
+                errors.push(t('val.noPairings', { label }));
             }
 
             round.pairings.forEach((pairing, pIdx) => {
-                const tag = `${label} pairing ${pIdx + 1}`;
+                const tag = `${label} #${pIdx + 1}`;
 
                 if (pairing.result === 'bye') {
                     if (!pairing.tempA) {
-                        errors.push(`${tag}: bye player not selected.`);
+                        errors.push(t('val.byeNotSelected', { tag }));
                         return;
                     }
                     if (usedThisRound.has(pairing.tempA)) {
-                        errors.push(`${tag}: player appears more than once in this round.`);
+                        errors.push(t('val.dupInRound', { tag }));
                     }
                     usedThisRound.add(pairing.tempA);
                     byesThisRound++;
@@ -1454,21 +1899,21 @@ const app = (() => {
                 }
 
                 if (!pairing.tempA || !pairing.tempB) {
-                    errors.push(`${tag}: both players must be selected.`);
+                    errors.push(t('val.bothNeeded', { tag }));
                     return;
                 }
                 if (pairing.tempA === pairing.tempB) {
-                    errors.push(`${tag}: player A and B must be different.`);
+                    errors.push(t('val.sameAB', { tag }));
                     return;
                 }
                 if (usedThisRound.has(pairing.tempA) || usedThisRound.has(pairing.tempB)) {
-                    errors.push(`${tag}: a player appears more than once in this round.`);
+                    errors.push(t('val.dupInRound2', { tag }));
                 }
                 usedThisRound.add(pairing.tempA);
                 usedThisRound.add(pairing.tempB);
 
                 if (pairing.result === null) {
-                    errors.push(`${tag}: result not set.`);
+                    errors.push(t('val.resultNotSet', { tag }));
                 }
 
                 // Rematch warning
@@ -1477,7 +1922,7 @@ const app = (() => {
                 if (opponentMap[pairing.tempA].has(pairing.tempB)) {
                     const a = advancedStaging.players.find(p => p.tempId === pairing.tempA);
                     const b = advancedStaging.players.find(p => p.tempId === pairing.tempB);
-                    warnings.push(`${tag}: rematch of ${a ? a.name : '?'} vs ${b ? b.name : '?'}.`);
+                    warnings.push(t('val.rematch', { tag, a: a ? a.name : '?', b: b ? b.name : '?' }));
                 }
                 opponentMap[pairing.tempA].add(pairing.tempB);
                 opponentMap[pairing.tempB].add(pairing.tempA);
@@ -1487,13 +1932,13 @@ const app = (() => {
             const rosterSize = advancedStaging.players.length;
             if (rosterSize > 0 && round.pairings.length > 0) {
                 if (rosterSize % 2 === 1 && byesThisRound !== 1) {
-                    errors.push(`${label}: odd roster (${rosterSize}) needs exactly 1 bye, found ${byesThisRound}.`);
+                    errors.push(t('val.oddBye', { label, n: rosterSize, found: byesThisRound }));
                 }
                 if (rosterSize % 2 === 0 && byesThisRound !== 0) {
-                    errors.push(`${label}: even roster should have no byes, found ${byesThisRound}.`);
+                    errors.push(t('val.evenBye', { label, found: byesThisRound }));
                 }
                 if (usedThisRound.size !== rosterSize && round.pairings.length > 0) {
-                    errors.push(`${label}: only ${usedThisRound.size} of ${rosterSize} players accounted for.`);
+                    errors.push(t('val.notAccounted', { label, used: usedThisRound.size, total: rosterSize }));
                 }
             }
         });
@@ -1502,7 +1947,7 @@ const app = (() => {
         Object.entries(byeCount).forEach(([tempId, c]) => {
             if (c > 1) {
                 const p = advancedStaging.players.find(pp => pp.tempId === tempId);
-                warnings.push(`${p ? p.name : '?'} was given a bye ${c} times.`);
+                warnings.push(t('val.tooManyByes', { name: p ? p.name : '?', n: c }));
             }
         });
 
@@ -1515,15 +1960,15 @@ const app = (() => {
         const { errors, warnings } = advancedValidate();
         let html = '';
         if (errors.length > 0) {
-            html += '<div class="adv-errors"><strong>Errors (must fix):</strong><ul>' +
+            html += `<div class="adv-errors"><strong>${t('adv.errors')}</strong><ul>` +
                 errors.map(e => `<li>${escapeHtml(e)}</li>`).join('') + '</ul></div>';
         }
         if (warnings.length > 0) {
-            html += '<div class="adv-warnings"><strong>Warnings (allowed):</strong><ul>' +
+            html += `<div class="adv-warnings"><strong>${t('adv.warnings')}</strong><ul>` +
                 warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('') + '</ul></div>';
         }
         if (html === '') {
-            html = '<div class="adv-ok">No issues detected. Ready to commit.</div>';
+            html = `<div class="adv-ok">${t('adv.ok')}</div>`;
         }
         box.innerHTML = html;
 
@@ -1583,7 +2028,7 @@ const app = (() => {
         renderAdvancedValidation();
 
         if (advancedStaging.players.length < 2) {
-            area.innerHTML = '<p class="info-text">Save a roster first.</p>';
+            area.innerHTML = `<p class="info-text">${t('adv.previewRosterFirst')}</p>`;
             return;
         }
 
@@ -1621,9 +2066,9 @@ const app = (() => {
             return b.owp - a.owp;
         });
 
-        let html = '<table class="standings-table"><thead><tr>' +
-            '<th>Rank</th><th>Player</th><th>Record</th><th>Points</th><th>OWP%</th>' +
-            '</tr></thead><tbody>';
+        let html = `<table class="standings-table"><thead><tr>` +
+            `<th>${t('standings.rank')}</th><th>${t('standings.player')}</th><th>${t('standings.record')}</th><th>${t('standings.points')}</th><th>${t('standings.owp')}</th>` +
+            `</tr></thead><tbody>`;
         rows.forEach((r, i) => {
             html += `<tr><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>${r.record}</td><td>${r.points}</td><td>${(r.owp * 100).toFixed(1)}%</td></tr>`;
         });
@@ -1635,13 +2080,13 @@ const app = (() => {
     function advancedCommit() {
         const { errors } = advancedValidate();
         if (errors.length > 0) {
-            alert('Cannot commit — please fix the errors listed in Step 4.');
+            alert(t('adv.commitFail'));
             return;
         }
         if (state.tournamentStarted) {
-            if (!confirm('This will REPLACE your current tournament state. Continue?')) return;
+            if (!confirm(t('adv.replaceConfirm'))) return;
         } else {
-            if (!confirm('Reconstruct tournament from entered results and generate next round pairings?')) return;
+            if (!confirm(t('adv.commitConfirm'))) return;
         }
 
         // Clear any old per-round snapshots
@@ -1700,7 +2145,7 @@ const app = (() => {
         saveState();
 
         clearAdvancedStaging();
-        showToast(`Reconstructed — Round ${nextRoundIndex + 1} pairings ready!`);
+        showToast(t('adv.reconstructed', { n: nextRoundIndex + 1 }));
         navigateTo('round');
     }
 
@@ -1709,12 +2154,12 @@ const app = (() => {
             navigateTo('home');
             return;
         }
-        if (!confirm('Discard all recovery data entered so far?')) return;
+        if (!confirm(t('adv.discardConfirm'))) return;
         clearAdvancedStaging();
         const rosterInput = document.getElementById('adv-roster-input');
         if (rosterInput) rosterInput.value = '';
         const preview = document.getElementById('adv-preview-area');
-        if (preview) preview.innerHTML = '<p class="info-text">Click "Refresh Preview" after entering roster and round results.</p>';
+        if (preview) preview.innerHTML = `<p class="info-text">${t('adv.previewHint')}</p>`;
         renderAdvanced();
     }
 
@@ -1758,6 +2203,8 @@ const app = (() => {
         if (e.key === 'Escape') {
             if (document.getElementById('winner-overlay').classList.contains('open')) {
                 closeWinnerModal();
+            } else if (document.getElementById('wheel-pick-overlay').classList.contains('open')) {
+                closeWheelPicker();
             } else if (document.getElementById('modal-overlay').classList.contains('open')) {
                 closeModal();
             }
@@ -1772,6 +2219,7 @@ const app = (() => {
     function init() {
         loadState();
         loadAdvancedStaging();
+        applyI18n();
 
         // Keyboard events
         document.addEventListener('keydown', handleKeydown);
@@ -1793,12 +2241,27 @@ const app = (() => {
         if (state.projectorMode) {
             document.body.classList.add('projector-mode');
         }
+
+        // Final flush on tab hide / close — guards against any in-flight changes
+        window.addEventListener('pagehide', saveState);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') saveState();
+        });
+
+        // Warn if the user tries to close mid-tournament
+        window.addEventListener('beforeunload', (e) => {
+            if (state.tournamentStarted && !state.tournamentEnded) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
     }
 
     document.addEventListener('DOMContentLoaded', init);
 
     // ---- PUBLIC API ----
     return {
+        toggleLang,
         navigateTo,
         resumeTournament,
         resetTournament,
@@ -1820,8 +2283,13 @@ const app = (() => {
         timerAdjust,
         toggleTimerMute,
         toggleProjectorMode,
+        toggleCompactMode,
         wheelSetNames,
         wheelSyncFromTournament,
+        closeWheelPicker,
+        wheelPickSetAll,
+        wheelPickExcludeTop3,
+        wheelPickApply,
         wheelReset,
         spinWheel,
         advancedSetRoster,

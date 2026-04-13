@@ -13,7 +13,8 @@
 </head>
 <body>
     <header id="app-header">
-        <h1 class="logo">PTCG Tournament Manager</h1>
+        <button id="lang-toggle" class="lang-toggle" onclick="app.toggleLang()" title="Language">中文</button>
+        <h1 class="logo" data-i18n="header.title">PTCG Tournament Manager</h1>
         <div id="breadcrumb" class="breadcrumb"></div>
     </header>
 
@@ -21,27 +22,27 @@
         <!-- HOME VIEW -->
         <section id="view-home" class="view active">
             <div class="home-container">
-                <h2>Welcome, Trainer!</h2>
-                <p class="subtitle">Choose your path</p>
+                <h2 data-i18n="home.welcome">Welcome, Trainer!</h2>
+                <p class="subtitle" data-i18n="home.subtitle">Choose your path</p>
                 <div class="home-buttons">
                     <button class="btn btn-primary btn-large" onclick="app.navigateTo('registration')">
                         <span class="btn-icon">&#9876;</span>
-                        Tournament
+                        <span data-i18n="home.tournament">Tournament</span>
                     </button>
                     <button class="btn btn-accent btn-large" onclick="app.navigateTo('wheel')">
                         <span class="btn-icon">&#10026;</span>
-                        Lucky Wheel
+                        <span data-i18n="home.wheel">Lucky Wheel</span>
                     </button>
                     <button class="btn btn-secondary btn-large" onclick="app.navigateTo('advanced')">
                         <span class="btn-icon">&#9881;</span>
-                        Advanced
+                        <span data-i18n="home.advanced">Advanced</span>
                     </button>
                 </div>
                 <div id="resume-section" class="resume-section" style="display:none;">
                     <hr class="divider">
-                    <p>You have a tournament in progress.</p>
-                    <button class="btn btn-secondary" onclick="app.resumeTournament()">Resume Tournament</button>
-                    <button class="btn btn-danger btn-small" onclick="app.resetTournament()">Reset</button>
+                    <p data-i18n="home.inProgress">You have a tournament in progress.</p>
+                    <button class="btn btn-secondary" onclick="app.resumeTournament()" data-i18n="home.resume">Resume Tournament</button>
+                    <button class="btn btn-danger btn-small" onclick="app.resetTournament()" data-i18n="common.reset">Reset</button>
                 </div>
             </div>
         </section>
@@ -50,25 +51,25 @@
         <section id="view-registration" class="view">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Player Registration</h2>
+                    <h2 data-i18n="reg.title">Player Registration</h2>
                     <span id="player-count" class="badge">0 players</span>
                 </div>
                 <div class="registration-grid">
                     <div class="reg-input-area">
-                        <label for="bulk-input">Add players (one name per line):</label>
-                        <textarea id="bulk-input" rows="8" placeholder="...please input player&#10;Fox&#10;Henry&#10;hoho&#10;ming&#10;sk&#10;nam&#10;carey&#10;dicky&#10;henry2&#10;wical&#10;szto&#10;ting&#10;hugo&#10;jason"></textarea>
-                        <button class="btn btn-primary" onclick="app.bulkAddPlayers()">Add Players</button>
+                        <label for="bulk-input" data-i18n="reg.bulkLabel">Add players (one name per line):</label>
+                        <textarea id="bulk-input" rows="8" data-i18n-placeholder="reg.bulkPlaceholder" placeholder="...please input player&#10;Fox&#10;Henry&#10;hoho&#10;ming&#10;sk&#10;nam&#10;carey&#10;dicky&#10;henry2&#10;wical&#10;szto&#10;ting&#10;hugo&#10;jason"></textarea>
+                        <button class="btn btn-primary" onclick="app.bulkAddPlayers()" data-i18n="reg.addBtn">Add Players</button>
                     </div>
                     <div class="reg-list-area">
-                        <h3>Registered Players</h3>
+                        <h3 data-i18n="reg.registered">Registered Players</h3>
                         <ul id="player-list" class="player-list"></ul>
                     </div>
                 </div>
                 <div class="reg-footer">
                     <span id="recommended-rounds" class="info-text"></span>
                     <div class="reg-actions">
-                        <button class="btn btn-secondary" onclick="app.navigateTo('home')">Back</button>
-                        <button id="btn-start-tournament" class="btn btn-primary" disabled onclick="app.startTournament()">Start Tournament</button>
+                        <button class="btn btn-secondary" onclick="app.navigateTo('home')" data-i18n="common.back">Back</button>
+                        <button id="btn-start-tournament" class="btn btn-primary" disabled onclick="app.startTournament()" data-i18n="reg.start">Start Tournament</button>
                     </div>
                 </div>
             </div>
@@ -76,24 +77,25 @@
 
         <!-- ROUND VIEW -->
         <section id="view-round" class="view">
-            <div class="panel">
+            <div id="round-panel" class="panel">
                 <div class="round-header">
                     <h2 id="round-title">Round 1</h2>
                     <div id="timer-display" class="timer">25:00</div>
                     <div class="timer-controls">
                         <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(-60)">-1m</button>
-                        <button id="btn-timer-toggle" class="btn btn-small btn-primary" onclick="app.timerToggle()">Start</button>
-                        <button class="btn btn-small btn-secondary" onclick="app.timerReset()">Reset</button>
+                        <button id="btn-timer-toggle" class="btn btn-small btn-primary" onclick="app.timerToggle()" data-i18n="timer.start">Start</button>
+                        <button class="btn btn-small btn-secondary" onclick="app.timerReset()" data-i18n="common.reset">Reset</button>
                         <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(60)">+1m</button>
-                        <button id="btn-timer-mute" class="btn btn-small btn-secondary" onclick="app.toggleTimerMute()">Mute</button>
-                        <button id="btn-projector" class="btn btn-small btn-accent" onclick="app.toggleProjectorMode()">Projector Mode</button>
+                        <button id="btn-timer-mute" class="btn btn-small btn-secondary" onclick="app.toggleTimerMute()" data-i18n="timer.mute">Mute</button>
+                        <button id="btn-compact" class="btn btn-small btn-secondary" onclick="app.toggleCompactMode()" data-i18n="timer.compact">Compact</button>
+                        <button id="btn-projector" class="btn btn-small btn-accent" onclick="app.toggleProjectorMode()" data-i18n="timer.projector">Projector Mode</button>
                     </div>
                 </div>
                 <div id="pairings-container" class="pairings-container"></div>
                 <div class="round-footer">
-                    <button class="btn btn-secondary" onclick="app.goBackFromRound()">Previous Round</button>
-                    <button id="btn-submit-results" class="btn btn-primary" disabled onclick="app.submitResults()">Submit Results &amp; Next Round</button>
-                    <button class="btn btn-accent" onclick="app.endTournament()">End Tournament</button>
+                    <button class="btn btn-secondary" onclick="app.goBackFromRound()" data-i18n="round.prev">Previous Round</button>
+                    <button id="btn-submit-results" class="btn btn-primary" disabled onclick="app.submitResults()" data-i18n="round.submitNext">Submit Results &amp; Next Round</button>
+                    <button class="btn btn-accent" onclick="app.endTournament()" data-i18n="round.end">End Tournament</button>
                 </div>
             </div>
         </section>
@@ -103,25 +105,25 @@
             <div class="panel">
                 <div class="panel-header">
                     <h2 id="standings-title">Final Standings</h2>
-                    <button class="btn btn-small btn-accent" onclick="app.downloadStandings()">Download as Image</button>
+                    <button class="btn btn-small btn-accent" onclick="app.downloadStandings()" data-i18n="standings.download">Download as Image</button>
                 </div>
                 <div id="standings-table-wrapper">
                     <table id="standings-table" class="standings-table">
                         <thead>
                             <tr>
-                                <th>Rank</th>
-                                <th>Player</th>
-                                <th>Record</th>
-                                <th>Points</th>
-                                <th>OWP%</th>
+                                <th data-i18n="standings.rank">Rank</th>
+                                <th data-i18n="standings.player">Player</th>
+                                <th data-i18n="standings.record">Record</th>
+                                <th data-i18n="standings.points">Points</th>
+                                <th data-i18n="standings.owp">OWP%</th>
                             </tr>
                         </thead>
                         <tbody id="standings-body"></tbody>
                     </table>
                 </div>
                 <div class="standings-footer">
-                    <button class="btn btn-secondary" onclick="app.navigateTo('home')">Home</button>
-                    <button class="btn btn-primary" onclick="app.backToLastRound()">Back to Round</button>
+                    <button class="btn btn-secondary" onclick="app.navigateTo('home')" data-i18n="common.home">Home</button>
+                    <button class="btn btn-primary" onclick="app.backToLastRound()" data-i18n="standings.backRound">Back to Round</button>
                 </div>
             </div>
         </section>
@@ -129,36 +131,36 @@
         <!-- LUCKY WHEEL VIEW -->
         <section id="view-wheel" class="view">
             <div class="panel">
-                <h2>Lucky Wheel</h2>
+                <h2 data-i18n="wheel.title">Lucky Wheel</h2>
                 <div class="wheel-layout">
                     <div class="wheel-input-area">
-                        <label for="wheel-names">Names (one per line):</label>
-                        <textarea id="wheel-names" rows="6" placeholder="Enter names..."></textarea>
+                        <label for="wheel-names" data-i18n="wheel.namesLabel">Names (one per line):</label>
+                        <textarea id="wheel-names" rows="6" data-i18n-placeholder="wheel.placeholder" placeholder="Enter names..."></textarea>
                         <div class="wheel-input-buttons">
-                            <button class="btn btn-primary btn-small" onclick="app.wheelSetNames()">Set Names</button>
-                            <button class="btn btn-secondary btn-small" onclick="app.wheelSyncFromTournament()">Sync from Tournament</button>
+                            <button class="btn btn-primary btn-small" onclick="app.wheelSetNames()" data-i18n="wheel.setNames">Set Names</button>
+                            <button class="btn btn-secondary btn-small" onclick="app.wheelSyncFromTournament()" data-i18n="wheel.sync">Sync from Tournament</button>
                         </div>
                         <div class="wheel-option">
                             <label class="toggle-label">
                                 <input type="checkbox" id="wheel-remove-winner" checked>
                                 <span class="toggle-slider"></span>
-                                Remove Winner After Spin
+                                <span data-i18n="wheel.remove">Remove Winner After Spin</span>
                             </label>
                         </div>
                     </div>
                     <div class="wheel-canvas-area">
                         <div class="wheel-pointer"></div>
                         <canvas id="wheel-canvas" width="400" height="400"></canvas>
-                        <button id="btn-spin" class="btn btn-primary btn-large" onclick="app.spinWheel()" disabled>SPIN!</button>
+                        <button id="btn-spin" class="btn btn-primary btn-large" onclick="app.spinWheel()" disabled data-i18n="wheel.spin">SPIN!</button>
                     </div>
                     <div class="wheel-history-area">
-                        <h3>Winners</h3>
+                        <h3 data-i18n="wheel.winners">Winners</h3>
                         <ol id="wheel-history" class="wheel-history"></ol>
-                        <button class="btn btn-small btn-danger" style="margin-top:0.8rem" onclick="app.wheelReset()">Reset Wheel</button>
+                        <button class="btn btn-small btn-danger" style="margin-top:0.8rem" onclick="app.wheelReset()" data-i18n="wheel.resetBtn">Reset Wheel</button>
                     </div>
                 </div>
                 <div class="wheel-footer">
-                    <button class="btn btn-secondary" onclick="app.navigateTo('home')">Back</button>
+                    <button class="btn btn-secondary" onclick="app.navigateTo('home')" data-i18n="common.back">Back</button>
                 </div>
             </div>
         </section>
@@ -168,56 +170,56 @@
         <section id="view-advanced" class="view">
             <div class="panel">
                 <div class="panel-header">
-                    <h2>Advanced &mdash; Recover Tournament</h2>
-                    <span class="badge">Rebuild from past results</span>
+                    <h2 data-i18n="adv.title">Advanced &mdash; Recover Tournament</h2>
+                    <span class="badge" data-i18n="adv.tag">Rebuild from past results</span>
                 </div>
-                <p class="info-text" style="margin-bottom:1rem">
+                <p class="info-text" style="margin-bottom:1rem" data-i18n="adv.intro">
                     Lost your tournament data? Enter the roster and every completed round's results here,
                     then generate the next round's pairings to continue playing.
                 </p>
 
                 <!-- STEP 1: ROSTER -->
                 <div class="adv-step">
-                    <h3 class="adv-step-title"><span class="adv-step-num">1</span> Player Roster</h3>
-                    <label for="adv-roster-input">Enter all players (one name per line):</label>
-                    <textarea id="adv-roster-input" rows="6" placeholder="Fox&#10;Henry&#10;ming&#10;sk&#10;wical&#10;szto"></textarea>
+                    <h3 class="adv-step-title"><span class="adv-step-num">1</span> <span data-i18n="adv.step1">Player Roster</span></h3>
+                    <label for="adv-roster-input" data-i18n="adv.rosterLabel">Enter all players (one name per line):</label>
+                    <textarea id="adv-roster-input" rows="6" data-i18n-placeholder="adv.rosterPlaceholder" placeholder="Fox&#10;Henry&#10;ming&#10;sk&#10;wical&#10;szto"></textarea>
                     <div class="adv-row-actions">
-                        <button class="btn btn-primary btn-small" onclick="app.advancedSetRoster()">Save Roster</button>
+                        <button class="btn btn-primary btn-small" onclick="app.advancedSetRoster()" data-i18n="adv.saveRoster">Save Roster</button>
                         <span id="adv-roster-count" class="info-text"></span>
                     </div>
                 </div>
 
                 <!-- STEP 2: ROUNDS -->
                 <div class="adv-step">
-                    <h3 class="adv-step-title"><span class="adv-step-num">2</span> Past Rounds</h3>
+                    <h3 class="adv-step-title"><span class="adv-step-num">2</span> <span data-i18n="adv.step2">Past Rounds</span></h3>
                     <div id="adv-rounds-container"></div>
                     <div class="adv-row-actions">
-                        <button class="btn btn-secondary btn-small" onclick="app.advancedAddRound()">+ Add Round</button>
+                        <button class="btn btn-secondary btn-small" onclick="app.advancedAddRound()" data-i18n="adv.addRound">+ Add Round</button>
                         <span id="adv-rounds-info" class="info-text"></span>
                     </div>
                 </div>
 
                 <!-- STEP 3: PREVIEW -->
                 <div class="adv-step">
-                    <h3 class="adv-step-title"><span class="adv-step-num">3</span> Preview Reconstructed Standings</h3>
-                    <button class="btn btn-secondary btn-small" onclick="app.advancedPreview()">Refresh Preview</button>
+                    <h3 class="adv-step-title"><span class="adv-step-num">3</span> <span data-i18n="adv.step3">Preview Reconstructed Standings</span></h3>
+                    <button class="btn btn-secondary btn-small" onclick="app.advancedPreview()" data-i18n="adv.refreshPreview">Refresh Preview</button>
                     <div id="adv-preview-area" class="adv-preview-area">
-                        <p class="info-text">Click "Refresh Preview" after entering roster and round results.</p>
+                        <p class="info-text" data-i18n="adv.previewHint">Click "Refresh Preview" after entering roster and round results.</p>
                     </div>
                 </div>
 
                 <!-- STEP 4: COMMIT -->
                 <div class="adv-step">
-                    <h3 class="adv-step-title"><span class="adv-step-num">4</span> Generate Next Round &amp; Continue</h3>
+                    <h3 class="adv-step-title"><span class="adv-step-num">4</span> <span data-i18n="adv.step4">Generate Next Round &amp; Continue</span></h3>
                     <div id="adv-validation-messages" class="adv-validation-messages"></div>
                     <div class="adv-row-actions">
-                        <button id="btn-adv-commit" class="btn btn-primary" onclick="app.advancedCommit()">Reconstruct &amp; Continue Tournament</button>
-                        <button class="btn btn-danger btn-small" onclick="app.advancedDiscard()">Discard Recovery</button>
+                        <button id="btn-adv-commit" class="btn btn-primary" onclick="app.advancedCommit()" data-i18n="adv.commit">Reconstruct &amp; Continue Tournament</button>
+                        <button class="btn btn-danger btn-small" onclick="app.advancedDiscard()" data-i18n="adv.discard">Discard Recovery</button>
                     </div>
                 </div>
 
                 <div class="adv-footer">
-                    <button class="btn btn-secondary" onclick="app.navigateTo('home')">Back to Home</button>
+                    <button class="btn btn-secondary" onclick="app.navigateTo('home')" data-i18n="adv.backHome">Back to Home</button>
                 </div>
             </div>
         </section>
@@ -230,14 +232,33 @@
         </div>
     </div>
 
+    <!-- WHEEL PICKER MODAL -->
+    <div id="wheel-pick-overlay" class="modal-overlay" onclick="app.closeWheelPicker()">
+        <div class="modal-content wheel-pick-modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.closeWheelPicker()">&times;</button>
+            <h3 data-i18n="wheel.pickTitle">Select Participants for the Wheel</h3>
+            <p class="info-text" data-i18n="wheel.pickHint">Uncheck the players you want to exclude (e.g. champion, 2nd, 3rd).</p>
+            <div class="wheel-pick-actions">
+                <button class="btn btn-small btn-secondary" onclick="app.wheelPickSetAll(true)" data-i18n="wheel.pickAll">Select All</button>
+                <button class="btn btn-small btn-secondary" onclick="app.wheelPickSetAll(false)" data-i18n="wheel.pickNone">Clear All</button>
+                <button class="btn btn-small btn-accent" onclick="app.wheelPickExcludeTop3()" data-i18n="wheel.pickExcludeTop3">Exclude Top 3</button>
+            </div>
+            <div id="wheel-pick-list" class="wheel-pick-list"></div>
+            <div class="wheel-pick-footer">
+                <button class="btn btn-secondary" onclick="app.closeWheelPicker()" data-i18n="wheel.pickCancel">Cancel</button>
+                <button class="btn btn-primary" onclick="app.wheelPickApply()" data-i18n="wheel.pickApply">Add to Wheel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- WINNER MODAL -->
     <div id="winner-overlay" class="modal-overlay winner-overlay" onclick="app.closeWinnerModal()">
         <div class="modal-content winner-modal" onclick="event.stopPropagation()">
             <div class="winner-text">
-                <span class="winner-label">Winner!</span>
+                <span class="winner-label" data-i18n="wheel.winner">Winner!</span>
                 <span id="winner-name" class="winner-name"></span>
             </div>
-            <button class="btn btn-primary" onclick="app.closeWinnerModal()">OK</button>
+            <button class="btn btn-primary" onclick="app.closeWinnerModal()" data-i18n="common.ok">OK</button>
         </div>
     </div>
 
