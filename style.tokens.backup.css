@@ -1,0 +1,43 @@
+/* ===========================================================
+ * Color tokens backup — Orange / Dark Neutral theme
+ * Captured before swapping to the Slate / Crimson palette.
+ * To restore: paste these blocks back over the matching
+ * :root blocks in style.css (lines ~1842 and ~3346).
+ * =========================================================== */
+
+:root {
+    --color-bg-header: #141414;
+    --color-bg-base: #1A1A1A;
+    --color-bg-surface: #262626;
+    --color-bg-surface-2: #2f2f2f;
+    --color-border: #333333;
+    --color-border-soft: #2a2a2a;
+
+    --color-primary: #FF7324;
+    --color-primary-hover: #E56720;
+    --color-primary-soft: rgba(255, 115, 36, 0.12);
+
+    --color-text: #FFFFFF;
+    --color-text-secondary: #A3A3A3;
+    --color-text-muted: #6e6e6e;
+
+    --color-win: #2ec4b6;
+    --color-draw: #ffd60a;
+    --color-loss: #e63946;
+
+    --gold: #ffd700;
+    --silver: #c0c9d4;
+    --bronze: #cd7f32;
+
+    --ring: 0 0 0 3px rgba(255, 115, 36, 0.3);
+}
+
+/* A / B side colors — A=blue, B=orange */
+:root {
+    --side-a: #3B82F6;
+    --side-a-bg: rgba(59, 130, 246, 0.16);
+    --side-a-border: rgba(59, 130, 246, 0.45);
+    --side-b: #FF7324;
+    --side-b-bg: rgba(255, 115, 36, 0.16);
+    --side-b-border: rgba(255, 115, 36, 0.45);
+}

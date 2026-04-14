@@ -1835,7 +1835,7 @@ body.projector-mode .timer-controls {
      --color-bg-base    #1A1A1A
      --color-bg-surface #262626
      --color-border     #333333
-     --color-primary    #FF7324  (hover #E56720)
+     --color-primary    #F59E0B  (hover #D97706)
      --color-text       #FFFFFF / #A3A3A3
    ===================================================================== */
 
@@ -1850,23 +1850,23 @@ body.projector-mode .timer-controls {
     --color-border: #333333;
     --color-border-soft: #2a2a2a;
 
-    --color-primary: #FF7324;
-    --color-primary-hover: #E56720;
-    --color-primary-soft: rgba(255, 115, 36, 0.12);
+    --color-primary: #F59E0B;
+    --color-primary-hover: #D97706;
+    --color-primary-soft: rgba(245, 158, 11, 0.10);
 
     --color-text: #FFFFFF;
     --color-text-secondary: #A3A3A3;
     --color-text-muted: #6e6e6e;
 
-    --color-win: #2ec4b6;
-    --color-draw: #ffd60a;
-    --color-loss: #e63946;
+    --color-win: #10B981;
+    --color-draw: #E8D9A8;
+    --color-loss: #EF4444;
 
     --gold: #ffd700;
     --silver: #c0c9d4;
     --bronze: #cd7f32;
 
-    --ring: 0 0 0 3px rgba(255, 115, 36, 0.3);
+    --ring: 0 0 0 3px rgba(245, 158, 11, 0.3);
 }
 
 html, body {
@@ -2101,7 +2101,7 @@ body {
     transform: translateY(-3px);
     border-color: var(--color-primary);
     color: #fff;
-    box-shadow: 0 18px 38px -16px rgba(255,115,36,0.45), 0 8px 20px -10px rgba(0,0,0,0.7);
+    box-shadow: 0 18px 38px -16px rgba(245,158,11,0.45), 0 8px 20px -10px rgba(0,0,0,0.7);
 }
 .home-buttons .home-tile:hover::before { opacity: 1; height: 3px; }
 .home-buttons .home-tile:hover .home-tile-glow { opacity: 1; }
@@ -2112,7 +2112,7 @@ body {
     background: linear-gradient(160deg, var(--color-primary) 0%, #d95a1a 100%);
     border-color: var(--color-primary);
     color: #fff;
-    box-shadow: 0 14px 30px -16px rgba(255,115,36,0.55), 0 6px 16px -8px rgba(0,0,0,0.7);
+    box-shadow: 0 14px 30px -16px rgba(245,158,11,0.55), 0 6px 16px -8px rgba(0,0,0,0.7);
 }
 .home-buttons .home-tile.home-tile-primary::before {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
@@ -2120,7 +2120,7 @@ body {
 }
 .home-buttons .home-tile.home-tile-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 22px 44px -14px rgba(255,115,36,0.7), 0 8px 18px -8px rgba(0,0,0,0.7);
+    box-shadow: 0 22px 44px -14px rgba(245,158,11,0.7), 0 8px 18px -8px rgba(0,0,0,0.7);
     color: #fff;
 }
 .home-buttons .home-tile.home-tile-primary .home-tile-glow {
@@ -2185,7 +2185,7 @@ body {
 .badge {
     background: var(--color-primary-soft);
     color: var(--color-primary);
-    border: 1px solid rgba(255, 115, 36, 0.35);
+    border: 1px solid rgba(245, 158, 11, 0.35);
     box-shadow: none;
     border-radius: 999px;
     padding: 0.3rem 0.85rem;
@@ -2281,7 +2281,7 @@ select:focus {
 
 .pairing-row.bye-row {
     background: var(--color-bg-base);
-    border-color: rgba(255, 115, 36, 0.35);
+    border-color: rgba(245, 158, 11, 0.35);
     border-left: 3px solid var(--color-primary);
 }
 
@@ -2605,7 +2605,7 @@ body.projector-mode {
 .static-page a {
     color: var(--color-primary);
     text-decoration: none;
-    border-bottom: 1px dotted rgba(255, 115, 36, 0.5);
+    border-bottom: 1px dotted rgba(245, 158, 11, 0.5);
 }
 .static-page a:hover {
     border-bottom-color: var(--color-primary);
@@ -2873,7 +2873,7 @@ body.view-only .home-buttons .btn-large[onclick*="advanced"] {
 .share-panel {
     background: var(--color-bg-base);
     border: 1px solid var(--color-border);
-    border-top: 1px solid rgba(255, 115, 36, 0.25);
+    border-top: 1px solid rgba(245, 158, 11, 0.25);
     border-radius: 10px;
     margin-bottom: 1rem;
     overflow: hidden;
@@ -2896,7 +2896,7 @@ body.view-only .home-buttons .btn-large[onclick*="advanced"] {
     transition: background 0.12s;
 }
 .share-panel-header:hover {
-    background: rgba(255, 115, 36, 0.06);
+    background: rgba(245, 158, 11, 0.06);
 }
 .share-panel-live {
     color: var(--color-primary);
@@ -3093,8 +3093,8 @@ body.view-only .viewer-pin {
     font-weight: 600;
 }
 .viewer-pin-result .pairing-row.pinned {
-    background: rgba(255, 115, 36, 0.06);
-    border: 1px solid rgba(255, 115, 36, 0.35);
+    background: rgba(245, 158, 11, 0.06);
+    border: 1px solid rgba(245, 158, 11, 0.35);
 }
 .viewer-pin-empty {
     color: var(--color-text-muted, #888);
@@ -3344,12 +3344,12 @@ body.no-ads .viewer-ad-slot { display: none !important; }
 
 /* ===== A / B side colors — A=blue, B=orange ===== */
 :root {
-    --side-a: #3B82F6;
-    --side-a-bg: rgba(59, 130, 246, 0.16);
-    --side-a-border: rgba(59, 130, 246, 0.45);
-    --side-b: #FF7324;
-    --side-b-bg: rgba(255, 115, 36, 0.16);
-    --side-b-border: rgba(255, 115, 36, 0.45);
+    --side-a: #60A5FA;
+    --side-a-bg: rgba(96, 165, 250, 0.16);
+    --side-a-border: rgba(96, 165, 250, 0.45);
+    --side-b: #F59E0B;
+    --side-b-bg: rgba(245, 158, 11, 0.16);
+    --side-b-border: rgba(245, 158, 11, 0.45);
 }
 
 .pairing-player.side-a,
@@ -3369,12 +3369,12 @@ body.no-ads .viewer-ad-slot { display: none !important; }
 .pairing-player.side-a.winner {
     color: var(--side-a);
     border-color: var(--side-a);
-    background: rgba(59, 130, 246, 0.22);
+    background: rgba(96, 165, 250, 0.22);
 }
 .pairing-player.side-b.winner {
     color: var(--side-b);
     border-color: var(--side-b);
-    background: rgba(255, 115, 36, 0.22);
+    background: rgba(245, 158, 11, 0.22);
 }
 .pairing-player.loser { opacity: 0.55; }
 
@@ -3390,12 +3390,12 @@ body.no-ads .viewer-ad-slot { display: none !important; }
     color: var(--side-b);
 }
 .result-buttons .result-btn:first-child:hover {
-    background: rgba(59, 130, 246, 0.28);
+    background: rgba(96, 165, 250, 0.28);
     border-color: var(--side-a);
     color: #fff;
 }
 .result-buttons .result-btn:last-child:hover {
-    background: rgba(255, 115, 36, 0.28);
+    background: rgba(245, 158, 11, 0.28);
     border-color: var(--side-b);
     color: #fff;
 }

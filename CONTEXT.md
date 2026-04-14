@@ -320,6 +320,15 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
 ### Pending console actions (carried forward)
 - Still pending: enable Firestore TTL on `tournaments.expiresAt`; restrict the Firebase Web API key in Google Cloud Console by HTTP-referrer.
 
+### Cyber-Amber theme swap (post-v1.0 patch, same day)
+- Brand accent shifted from energetic orange `#FF7324` to premium amber `#F59E0B` (hover `#D97706`).
+- Surfaces unchanged (`#1A1A1A` family) — only the warm accent shifts.
+- Side-A repainted to softer light-blue `#60A5FA` (was `#3B82F6`); side-B follows the new amber.
+- `--color-draw` desaturated to beige `#E8D9A8` so it doesn't fight the amber brand.
+- `--color-win` upgraded to emerald `#10B981`; `--color-loss` to `#EF4444` for clearer semantic contrast on dark.
+- All hardcoded `rgba(255,115,36,…)` glow/tint values replaced with `rgba(245,158,11,…)`.
+- Original orange/dark-neutral tokens preserved at `style.tokens.backup.css` (paste back over the two `:root` blocks in `style.css` to restore).
+
 ### Configurable Swiss scoring (post-v1.0 patch, same day)
 - New `state.scoringDrawBonus` (boolean, default `false`).
   - `false` (default) → **Win 3, Loss 1, Draw 0** — house rule: showing up earns a point, draws score nothing.
