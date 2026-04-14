@@ -320,6 +320,17 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
 ### Pending console actions (carried forward)
 - Still pending: enable Firestore TTL on `tournaments.expiresAt`; restrict the Firebase Web API key in Google Cloud Console by HTTP-referrer.
 
+### Configurable Swiss scoring (post-v1.0 patch, same day)
+- New `state.scoringDrawBonus` (boolean, default `false`).
+  - `false` (default) → **Win 3, Loss 1, Draw 0** — house rule: showing up earns a point, draws score nothing.
+  - `true` → **Win 3, Draw 1, Loss 0** — traditional Swiss.
+- New helper `pointsFor(result)` is the single source of truth; `applyResults()` and Advanced Recovery's replay both consume it.
+- Bye always awards 3 points (unchanged).
+- Knockout bracket advancement is unaffected (decided by result, not points).
+- Registration view gets a checkbox row (`#scoring-draw-bonus`) under the name/date inputs. Locked the moment `tournamentStarted` flips true, just like the meta inputs. New i18n keys `reg.scoringDrawBonus` + `reg.scoringHint` (EN + zh-Hant). New export `app.toggleScoringDrawBonus`.
+- Pairing-help modal Swiss body updated to describe both modes + bye behavior, both languages.
+- New Updates entry seeded for users (newest first in `UPDATES` array).
+
 ## Next candidate tasks
 - Update `privacy.html` to disclose Firebase storage when published (required before broad launch).
 - Knockout v2: hide Draw button, manual/drag seeding, Bo3 mode, proper bracket-tree visualization for desktop.

@@ -147,6 +147,13 @@
                         <input id="tournament-date" type="date" oninput="app.updateTournamentMeta()" />
                     </div>
                 </div>
+                <div class="reg-scoring">
+                    <label class="reg-scoring-toggle">
+                        <input id="scoring-draw-bonus" type="checkbox" onchange="app.toggleScoringDrawBonus()" />
+                        <span data-i18n="reg.scoringDrawBonus">Standard Swiss scoring (Draw 1 pt, Loss 0 pt)</span>
+                    </label>
+                    <span class="info-text reg-scoring-hint" data-i18n="reg.scoringHint">Default: Win 3 · Loss 1 · Draw 0. Tick to use Win 3 · Draw 1 · Loss 0 instead.</span>
+                </div>
                 <div class="registration-grid">
                     <div class="reg-input-area">
                         <label for="bulk-input" data-i18n="reg.bulkLabel">Add players (one name per line):</label>

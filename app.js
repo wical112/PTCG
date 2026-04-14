@@ -47,6 +47,8 @@ const app = (() => {
             'reg.tournamentName': 'Tournament Name',
             'reg.tournamentNamePlaceholder': 'e.g. AAB Shop Gym Battle',
             'reg.tournamentDate': 'Tournament Date',
+            'reg.scoringDrawBonus': 'Standard Swiss scoring (Draw 1 pt, Loss 0 pt)',
+            'reg.scoringHint': 'Default: Win 3 \u00b7 Loss 1 \u00b7 Draw 0. Tick to use the more common Win 3 \u00b7 Draw 1 \u00b7 Loss 0 instead. Locked once the tournament starts.',
             'reg.bulkLabel': 'Add players (one name per line):',
             'reg.bulkPlaceholder': 'Enter one player name per line…\nPlayer 1\nPlayer 2\nPlayer 3',
             'reg.addBtn': 'Add Players',
@@ -265,6 +267,8 @@ const app = (() => {
             'reg.tournamentName': '賽事名稱',
             'reg.tournamentNamePlaceholder': '例:AAB 店舖道館戰',
             'reg.tournamentDate': '賽事日期',
+            'reg.scoringDrawBonus': '使用標準瑞士制計分（和 1 分、負 0 分）',
+            'reg.scoringHint': '預設為 勝 3 \u00b7 負 1 \u00b7 和 0；勾選後改為更常見的 勝 3 \u00b7 和 1 \u00b7 負 0。賽事開始後將鎖定不可更改。',
             'reg.bulkLabel': '新增玩家(每行一個名字):',
             'reg.bulkPlaceholder': '每行輸入一位玩家名稱⋯\n玩家 1\n玩家 2\n玩家 3',
             'reg.addBtn': '新增玩家',
@@ -525,6 +529,7 @@ const app = (() => {
     const DEFAULT_STATE = {
         tournamentName: '',
         tournamentDate: '',
+        scoringDrawBonus: false, // false = Win 3 / Loss 1 / Draw 0 (default); true = Win 3 / Draw 1 / Loss 0
         noAds: true,
         players: [],
         rounds: [],
@@ -773,6 +778,11 @@ const app = (() => {
             if (dateInput.value !== (state.tournamentDate || '')) dateInput.value = state.tournamentDate || '';
             dateInput.disabled = locked;
         }
+        const scoringInput = document.getElementById('scoring-draw-bonus');
+        if (scoringInput) {
+            scoringInput.checked = !!state.scoringDrawBonus;
+            scoringInput.disabled = locked;
+        }
 
         list.innerHTML = '';
         state.players.forEach((p, i) => {
@@ -809,6 +819,17 @@ const app = (() => {
     // ---- UPDATES / ANNOUNCEMENTS ----
     // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
     const UPDATES = [
+        {
+            date: '2026-04-14',
+            title: {
+                en: 'Configurable Swiss scoring (default Win 3 / Loss 1 / Draw 0)',
+                zh: '可調整的瑞士制計分（預設 勝 3 / 負 1 / 和 0）'
+            },
+            body: {
+                en: 'Swiss scoring now defaults to Win 3 / Loss 1 / Draw 0 — losing still awards 1 point so showing up to play is rewarded, while a draw scores nothing. A new checkbox on the Registration page lets organisers switch back to the more traditional Win 3 / Draw 1 / Loss 0 if their event prefers it. Bye is always counted as an automatic win (3 points). The choice is locked once the tournament starts. Knockout brackets are unaffected — only the result decides advancement.',
+                zh: '瑞士制計分預設改為 勝 3 分、負 1 分、和 0 分 — 出席比賽即可獲 1 分，和局則不計分。報名頁面新增勾選方塊，主辦方可隨時切換回較傳統的 勝 3、和 1、負 0 計分方式。輪空一律視為自動勝場（3 分）。賽事一旦開始，計分模式即鎖定不可更改。淘汰賽不受影響 — 晉級僅依比賽結果判定。'
+            }
+        },
         {
             date: '2026-04-14',
             title: {
@@ -905,8 +926,8 @@ const app = (() => {
             label: { en: 'SWISS FORMAT', zh: '瑞士制' },
             title: { en: 'Swiss pairing rules', zh: '瑞士制配對規則' },
             body: {
-                en: 'Swiss pairings group players with similar match records together each round, without eliminating anyone.\n\nHOW PAIRINGS ARE GENERATED\n   • Round 1: players are randomly shuffled, then paired top-to-bottom.\n   • Round 2 onwards: players are sorted by match points (3 per win, 1 per draw, 0 per loss). Highest scorers are paired first.\n\nAVOIDING REMATCHES\n   • The app uses a backtracking algorithm to find a pairing where no two players have already faced each other this tournament.\n   • If a no-rematch pairing is mathematically impossible (e.g. round 4 with only 4 players left), the closest-ranked rematch is allowed and a warning is logged to the browser console.\n\nBYE (ODD PLAYER COUNT)\n   • If the player count is odd, the lowest-ranked player who has not yet had a bye receives one.\n   • A bye counts as a win and is worth 3 match points; the player skips that round.\n   • The same player will not get a bye twice unless every other player has already had one.\n\nTIEBREAKERS (STANDINGS)\n   • Match Points (MP) first.\n   • Then OWP — Opponents\' Win Percentage — the average win rate of every opponent you faced. Rewards beating tougher fields.\n   • Players still tied are listed in registration order.\n\nRECOMMENDED ROUND COUNT\n   • The app suggests ⌈log₂(N)⌉ rounds for N players (e.g. 8 → 3, 16 → 4, 32 → 5). You can always end early or run extra rounds.\n\nDROP PLAYER\n   • Open a player\'s trainer card and tap Drop Player to remove them from future pairings. Their existing results stay on record. Tap Undo Drop to reinstate.',
-                zh: '瑞士制將戰績相近的玩家配對在一起，整個過程不淘汰任何人。\n\n配對方式\n   • 第 1 輪：隨機洗牌後依序配對。\n   • 第 2 輪起：依勝點排序（勝 3 分、和 1 分、負 0 分），高分者優先配對。\n\n避免重複對局\n   • 系統使用回溯演算法，盡可能讓本次賽事中沒有任何兩位玩家再次相遇。\n   • 若數學上無法避免（例如第 4 輪只剩 4 人），則允許戰績最相近的重複對局，並在瀏覽器主控台記錄警告。\n\n輪空（玩家人數為奇數時）\n   • 由尚未獲得輪空、戰績最低者獲得輪空。\n   • 輪空計為勝場，獲得 3 勝點，該輪不需出戰。\n   • 同一位玩家不會獲得兩次輪空，除非全員都已輪空過。\n\n排名分小（決勝順位）\n   • 先比勝點（MP）。\n   • 再比 OWP（對手勝率）— 你所有對手的平均勝率，獎勵擊敗強敵者。\n   • 仍同分者依報名順序排列。\n\n建議輪數\n   • 系統依 ⌈log₂(N)⌉ 推薦輪數（例如 8 人 → 3 輪、16 人 → 4 輪、32 人 → 5 輪）。可自行提前結束或加打額外輪次。\n\n退賽\n   • 開啟玩家訓練家卡片並點擊「玩家退賽」，即可從後續配對中移除該玩家；既有對戰結果仍會保留。再點「取消退賽」可恢復。'
+                en: 'Swiss pairings group players with similar match records together each round, without eliminating anyone.\n\nHOW PAIRINGS ARE GENERATED\n   • Round 1: players are randomly shuffled, then paired top-to-bottom.\n   • Round 2 onwards: players are sorted by match points. Highest scorers are paired first.\n\nSCORING (TWO MODES, PICKED ON THE REGISTRATION PAGE)\n   • Default — Win 3, Loss 1, Draw 0 (rewards showing up; draws score nothing).\n   • Standard Swiss — Win 3, Draw 1, Loss 0. Tick the "Standard Swiss scoring" checkbox on the registration page to switch.\n   • Bye is always counted as an automatic Win (3 points).\n   • Scoring is locked once the tournament starts.\n\nAVOIDING REMATCHES\n   • The app uses a backtracking algorithm to find a pairing where no two players have already faced each other this tournament.\n   • If a no-rematch pairing is mathematically impossible (e.g. round 4 with only 4 players left), the closest-ranked rematch is allowed and a warning is logged to the browser console.\n\nBYE (ODD PLAYER COUNT)\n   • If the player count is odd, the lowest-ranked player who has not yet had a bye receives one.\n   • A bye counts as a win and is worth 3 match points; the player skips that round.\n   • The same player will not get a bye twice unless every other player has already had one.\n\nTIEBREAKERS (STANDINGS)\n   • Match Points (MP) first.\n   • Then OWP — Opponents\' Win Percentage — the average win rate of every opponent you faced. Rewards beating tougher fields.\n   • Players still tied are listed in registration order.\n\nRECOMMENDED ROUND COUNT\n   • The app suggests ⌈log₂(N)⌉ rounds for N players (e.g. 8 → 3, 16 → 4, 32 → 5). You can always end early or run extra rounds.\n\nDROP PLAYER\n   • Open a player\'s trainer card and tap Drop Player to remove them from future pairings. Their existing results stay on record. Tap Undo Drop to reinstate.',
+                zh: '瑞士制將戰績相近的玩家配對在一起，整個過程不淘汰任何人。\n\n配對方式\n   • 第 1 輪：隨機洗牌後依序配對。\n   • 第 2 輪起：依勝點排序，高分者優先配對。\n\n計分（兩種模式，於報名頁面選擇）\n   • 預設 — 勝 3 分、負 1 分、和 0 分（鼓勵到場參賽，和局不計分）。\n   • 標準瑞士制 — 勝 3 分、和 1 分、負 0 分。在報名頁面勾選「標準瑞士制計分」即可切換。\n   • 輪空一律視為自動勝場（3 分）。\n   • 賽事開始後，計分模式將鎖定。\n\n避免重複對局\n   • 系統使用回溯演算法，盡可能讓本次賽事中沒有任何兩位玩家再次相遇。\n   • 若數學上無法避免（例如第 4 輪只剩 4 人），則允許戰績最相近的重複對局，並在瀏覽器主控台記錄警告。\n\n輪空（玩家人數為奇數時）\n   • 由尚未獲得輪空、戰績最低者獲得輪空。\n   • 輪空計為勝場，獲得 3 勝點，該輪不需出戰。\n   • 同一位玩家不會獲得兩次輪空，除非全員都已輪空過。\n\n排名分小（決勝順位）\n   • 先比勝點（MP）。\n   • 再比 OWP（對手勝率）— 你所有對手的平均勝率，獎勵擊敗強敵者。\n   • 仍同分者依報名順序排列。\n\n建議輪數\n   • 系統依 ⌈log₂(N)⌉ 推薦輪數（例如 8 人 → 3 輪、16 人 → 4 輪、32 人 → 5 輪）。可自行提前結束或加打額外輪次。\n\n退賽\n   • 開啟玩家訓練家卡片並點擊「玩家退賽」，即可從後續配對中移除該玩家；既有對戰結果仍會保留。再點「取消退賽」可恢復。'
             }
         },
         knockout: {
@@ -1419,6 +1440,18 @@ const app = (() => {
         if (endBtn) endBtn.style.display = final ? 'none' : '';
     }
 
+    // Returns [pointsForA, pointsForB] for a given match result, honouring the
+    // current scoring mode. Bye is always +3 (treated as automatic win).
+    //   default (scoringDrawBonus = false): Win 3, Loss 1, Draw 0
+    //   alternate (scoringDrawBonus = true): Win 3, Loss 0, Draw 1
+    function pointsFor(result) {
+        const drawBonus = !!state.scoringDrawBonus;
+        if (result === 'a') return [3, drawBonus ? 0 : 1];
+        if (result === 'b') return [drawBonus ? 0 : 1, 3];
+        if (result === 'draw') return drawBonus ? [1, 1] : [0, 0];
+        return [0, 0];
+    }
+
     // FIX #2: Single applyResults function used by both submitResults and endTournament
     function applyResults(round) {
         round.pairings.forEach(pairing => {
@@ -1437,14 +1470,13 @@ const app = (() => {
             pA.opponents.push(pairing.playerB);
             pB.opponents.push(pairing.playerA);
 
-            if (pairing.result === 'a') {
-                pA.matchPoints += 3; pA.wins += 1; pB.losses += 1;
-            } else if (pairing.result === 'b') {
-                pB.matchPoints += 3; pB.wins += 1; pA.losses += 1;
-            } else if (pairing.result === 'draw') {
-                pA.matchPoints += 1; pB.matchPoints += 1;
-                pA.draws += 1; pB.draws += 1;
-            }
+            const [pa, pb] = pointsFor(pairing.result);
+            pA.matchPoints += pa;
+            pB.matchPoints += pb;
+
+            if (pairing.result === 'a') { pA.wins += 1; pB.losses += 1; }
+            else if (pairing.result === 'b') { pB.wins += 1; pA.losses += 1; }
+            else if (pairing.result === 'draw') { pA.draws += 1; pB.draws += 1; }
         });
     }
 
@@ -1737,6 +1769,14 @@ const app = (() => {
         const dateInput = document.getElementById('tournament-date');
         if (nameInput) state.tournamentName = nameInput.value.trim();
         if (dateInput) state.tournamentDate = dateInput.value;
+        saveState();
+    }
+
+    function toggleScoringDrawBonus() {
+        if (viewOnly || state.tournamentStarted) return;
+        const cb = document.getElementById('scoring-draw-bonus');
+        if (!cb) return;
+        state.scoringDrawBonus = !!cb.checked;
         saveState();
     }
 
@@ -3045,14 +3085,12 @@ const app = (() => {
                 if (!pA || !pB || pairing.result === null) return;
                 pA.opponents.push(pairing.tempB);
                 pB.opponents.push(pairing.tempA);
-                if (pairing.result === 'a') {
-                    pA.matchPoints += 3; pA.wins += 1; pB.losses += 1;
-                } else if (pairing.result === 'b') {
-                    pB.matchPoints += 3; pB.wins += 1; pA.losses += 1;
-                } else if (pairing.result === 'draw') {
-                    pA.matchPoints += 1; pB.matchPoints += 1;
-                    pA.draws += 1; pB.draws += 1;
-                }
+                const [pa, pb] = pointsFor(pairing.result);
+                pA.matchPoints += pa;
+                pB.matchPoints += pb;
+                if (pairing.result === 'a') { pA.wins += 1; pB.losses += 1; }
+                else if (pairing.result === 'b') { pB.wins += 1; pA.losses += 1; }
+                else if (pairing.result === 'draw') { pA.draws += 1; pB.draws += 1; }
             });
         });
 
@@ -3383,6 +3421,7 @@ const app = (() => {
         viewerShareClose,
         viewerShareCopy,
         updateTournamentMeta,
+        toggleScoringDrawBonus,
         toggleNoAds,
         wheelReset,
         spinWheel,
