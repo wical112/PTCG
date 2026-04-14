@@ -255,6 +255,71 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
   2. Google-certified Consent Management Platform banner for EEA/UK traffic (e.g. Funding Choices).
   3. Optional but recommended: 3–5 substantive blog/help articles to thicken content.
 
+## Session 2026-04-14 changes (v1.0 polish — analytics, round-view UX, home redesign, in-app docs)
+
+### Google Analytics 4 (GA4) wired up
+- Property `G-44W3GZTCS4`. `gtag.js` snippet added to all 8 HTML pages (`index, landing, about, faq, contact, privacy, terms`) right before `</head>` — async, non-blocking.
+- `app.js` adds a `track(event, params)` helper that no-ops in viewer mode and when `gtag` is missing. Wired events:
+  - `tournament_started` (`format`, `player_count`) — Swiss + Knockout start paths
+  - `round_submitted` (`format`, `round_number`, `player_count`)
+  - `tournament_ended` (`format`, `total_rounds`, `player_count`) — knockout champion + Swiss endTournament + Swiss final-round merged-submit
+  - `tournament_published` (`format`, `player_count`)
+  - `pairings_reshuffled` (`format`)
+- `privacy.html` Section 4a discloses GA4 + opt-out link.
+- View counts/session breakdowns live in GA4 → Reports → Engagement → Events. For per-day/week/month custom event totals, use Explore → Free-form (dimension `Event name`, metric `Event count`, set date granularity in the report header).
+
+### Re-shuffle round 1 pairings
+- New round-action button (visible on round 1, pre-submit, admin only) — re-runs `generatePairings(0)` (Swiss) or `buildKnockoutFirstRound(state.players)` (knockout) and replaces `state.rounds[0]`. Saves snapshot, syncs to cloud.
+- i18n: `round.reshuffle`, `round.confirmReshuffle`. New export `app.reshufflePairings`. GA4 event `pairings_reshuffled`.
+
+### Round-view toolbar overhaul (top of round panel)
+- Pulled Compact / Projector / Publish / Re-shuffle out of the legacy `.timer-controls` bar into a new `.round-actions` toolbar at the top of the round panel.
+- Each button is now icon + label: Compact (4-grid), Projector (monitor), Publish (QR-code), Re-shuffle (shuffle arrows), End Tournament (red circle-X).
+- Generic `.btn-action` CSS system + `.btn-action-primary` (Publish, orange filled) + `.btn-action-danger` (End, red outline).
+- Layout: **End Tournament top-left** (close-this-tournament feel), other actions top-right. Footer: **Previous Round bottom-left**, **Submit Results bottom-right** — natural back/forward axis.
+- `applyCompactMode()` / `updateProjectorMode()` / `updatePublishButton()` now write to inner `.btn-label` so the SVG icon is preserved across toggles.
+- `.timer-controls` retains only timer affordances (-1m / Start / Reset / +1m / Mute).
+
+### Submit Results merged with End Tournament on the final round
+- `isFinalRound()` helper: Swiss = `currentRound + 1 >= getRecommendedRounds()`; Knockout = exactly one non-bye pairing in the current round.
+- On the final round the submit button label flips to **"Submit Results & End Tournament"** / **"提交結果並結束賽事"**, the confirm dialog uses `round.confirmSubmitEnd`, the standalone End Tournament button auto-hides (no duplication).
+- Swiss final-round path now calls `tournamentEnded = true` + navigate to standings instead of generating another round. Knockout final still uses the existing champion-confirm flow.
+- New i18n keys `round.submitEnd`, `round.confirmSubmitEnd`.
+
+### Home view redesign — 2×2 glass tiles
+- `.home-buttons` switched from 3-column (3+1 orphan row) to **2×2 grid**, max-width 720px, single column under 560px.
+- Each tile = `.home-tile` with absolute-positioned `.home-tile-glow` (radial bloom on hover) + top accent bar + lift-on-hover transform.
+- Primary tiles (Swiss / Knockout) — orange linear-gradient with white sheen, orange-tinted shadow halo.
+- Secondary tiles (Lucky Wheel / Advanced) — dark glass with orange accent on icon.
+- Replaced unicode glyph icons with inline SVG (crossed swords, bracket lines, wheel-spokes, gear) inside a rounded-rect `.btn-icon` badge.
+- Selectors all prefixed with `.home-buttons` to outrank the older `.home-buttons .btn-large.btn-primary` cascades.
+
+### Updates / announcements feature (home view)
+- New panel pinned above the welcome heading on home: title pill, top-3 update items (date + title), bottom-right `…` chip → opens **All Updates** modal; clicking any title opens **Detail** modal.
+- Detail close-from-list reopens the list automatically (tracked via `updatesDetailFromList` flag); detail close-from-panel returns to home.
+- `UPDATES` is a JS array of `{date, title:{en,zh}, body:{en,zh}}`. Newest-first. Body uses `\n` line breaks rendered via `white-space: pre-wrap`. Re-renders on language toggle.
+- v1.0 launch: array trimmed to **two entries** — (1) *Welcome — TCG Tournament Manager v1.0* (mission, future ad model, gratitude) and (2) *User guide & recommended workflow* (7-section walkthrough). Both bilingual.
+- New i18n: `updates.title`, `updates.allTitle`, `updates.more`. Exports: `openUpdatesList`, `closeUpdatesList`, `openUpdateDetail`, `closeUpdatesDetail`.
+
+### Pairing-rules in-app docs (`?` badge on home tiles)
+- Small circular `?` badge in the top-right corner of each primary home tile. Clicking it stops propagation and opens the pairing-help modal pre-filled for that format.
+- `PAIRING_HELP[swiss|knockout]` data: format label + title + multi-section body (generation, no-rematch backtracking / standard seed order, byes, tiebreakers, drop-player handling, draws policy, when-to-use). Bilingual. Reuses `.updates-detail-body` styling.
+- `openPairingHelp(format)` — explicit format arg from the home tiles; falls back to `state.tournamentType` if called without args (reserved for any future round-view trigger).
+- Keyboard accessible (Enter / Space on the badge); hidden in projector mode.
+
+### CSS surface area
+- New blocks appended to `style.css`: `.btn-action` toolbar system, Updates panel + modal, pairing-help button + modal, `.home-tile` glass-tile system. Total CSS now ~3,750 lines (was 3,403).
+
+### Files touched (this session)
+- `app.js` — analytics helper + event firings, reshuffle handler, `isFinalRound`, button-label refactor, UPDATES array + render/modal handlers, PAIRING_HELP + handlers, exports, i18n additions.
+- `index.html` — round-actions toolbar restructure, home tiles rewrite with SVG icons + `?` badges, Updates panel + 2 modals, pairing-help modal, gtag snippet.
+- `style.css` — `.btn-action*`, `.round-actions*`, `.updates-*`, `.pairing-help-*`, `.home-tile*` blocks.
+- `style.css`, `about.html`, `contact.html`, `faq.html`, `index.html`, `landing.html`, `privacy.html`, `terms.html` — gtag snippet inserted before `</head>`.
+- `privacy.html` — Section 4a (GA4 disclosure).
+
+### Pending console actions (carried forward)
+- Still pending: enable Firestore TTL on `tournaments.expiresAt`; restrict the Firebase Web API key in Google Cloud Console by HTTP-referrer.
+
 ## Next candidate tasks
 - Update `privacy.html` to disclose Firebase storage when published (required before broad launch).
 - Knockout v2: hide Draw button, manual/drag seeding, Bo3 mode, proper bracket-tree visualization for desktop.

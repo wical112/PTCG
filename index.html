@@ -20,6 +20,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
     <script src="firebase-config.js" defer></script>
     <script src="cloud.js" defer></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-44W3GZTCS4"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-44W3GZTCS4');
+    </script>
 </head>
 <body>
     <div id="view-mode-banner" class="view-mode-banner" style="display:none;">
@@ -45,24 +53,72 @@
         <!-- HOME VIEW -->
         <section id="view-home" class="view active">
             <div class="home-container">
+                <section id="updates-panel" class="updates-panel" aria-labelledby="updates-panel-title">
+                    <div class="updates-panel-header">
+                        <h3 id="updates-panel-title" data-i18n="updates.title">Updates</h3>
+                    </div>
+                    <ul id="updates-list" class="updates-list"></ul>
+                    <button type="button" class="updates-more" onclick="app.openUpdatesList()" aria-label="See all updates" data-i18n-placeholder="updates.more" title="See all updates">&hellip;</button>
+                </section>
                 <h2 data-i18n="home.welcome">Welcome, Trainer!</h2>
                 <p class="subtitle" data-i18n="home.subtitle">Choose your path</p>
                 <div class="home-buttons">
-                    <button class="btn btn-primary btn-large" onclick="app.startNewTournament('swiss')">
-                        <span class="btn-icon">&#9876;</span>
-                        <span data-i18n="home.swiss">Swiss Tournament</span>
+                    <button class="btn btn-primary btn-large home-tile home-tile-primary" onclick="app.startNewTournament('swiss')">
+                        <span class="home-tile-glow" aria-hidden="true"></span>
+                        <span class="pairing-help-btn home-tile-help" role="button" tabindex="0"
+                              onclick="event.stopPropagation(); app.openPairingHelp('swiss')"
+                              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();app.openPairingHelp('swiss');}"
+                              aria-label="Swiss pairing rules" title="Swiss pairing rules">?</span>
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14.5 17.5L3 6V3h3l11.5 11.5"/>
+                                <path d="M13 19l6-6"/>
+                                <path d="M16 16l4 4"/>
+                                <path d="M19 21l2-2"/>
+                                <path d="M9.5 17.5L21 6V3h-3L6.5 14.5"/>
+                                <path d="M11 19l-6-6"/>
+                                <path d="M8 16l-4 4"/>
+                                <path d="M5 21l-2-2"/>
+                            </svg>
+                        </span>
+                        <span class="home-tile-label" data-i18n="home.swiss">Swiss Tournament</span>
                     </button>
-                    <button class="btn btn-primary btn-large" onclick="app.startNewTournament('knockout')">
-                        <span class="btn-icon">&#9885;</span>
-                        <span data-i18n="home.knockout">Knockout Tournament</span>
+                    <button class="btn btn-primary btn-large home-tile home-tile-primary" onclick="app.startNewTournament('knockout')">
+                        <span class="home-tile-glow" aria-hidden="true"></span>
+                        <span class="pairing-help-btn home-tile-help" role="button" tabindex="0"
+                              onclick="event.stopPropagation(); app.openPairingHelp('knockout')"
+                              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();app.openPairingHelp('knockout');}"
+                              aria-label="Knockout pairing rules" title="Knockout pairing rules">?</span>
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 5h4v3H3zM3 16h4v3H3zM17 5h4v3h-4zM17 16h4v3h-4z"/>
+                                <path d="M7 6.5h3v11H7"/>
+                                <path d="M17 6.5h-3v11h3"/>
+                                <path d="M10 12h4"/>
+                            </svg>
+                        </span>
+                        <span class="home-tile-label" data-i18n="home.knockout">Knockout Tournament</span>
                     </button>
-                    <button class="btn btn-accent btn-large" onclick="app.navigateTo('wheel')">
-                        <span class="btn-icon">&#10026;</span>
-                        <span data-i18n="home.wheel">Lucky Wheel</span>
+                    <button class="btn btn-secondary btn-large home-tile home-tile-secondary" onclick="app.navigateTo('wheel')">
+                        <span class="home-tile-glow" aria-hidden="true"></span>
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/>
+                                <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
+                            </svg>
+                        </span>
+                        <span class="home-tile-label" data-i18n="home.wheel">Lucky Wheel</span>
                     </button>
-                    <button class="btn btn-secondary btn-large" onclick="app.navigateTo('advanced')">
-                        <span class="btn-icon">&#9881;</span>
-                        <span data-i18n="home.advanced">Advanced</span>
+                    <button class="btn btn-secondary btn-large home-tile home-tile-secondary" onclick="app.navigateTo('advanced')">
+                        <span class="home-tile-glow" aria-hidden="true"></span>
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+                            </svg>
+                        </span>
+                        <span class="home-tile-label" data-i18n="home.advanced">Advanced</span>
                     </button>
                 </div>
                 <div id="resume-section" class="resume-section" style="display:none;">
@@ -115,6 +171,55 @@
         <!-- ROUND VIEW -->
         <section id="view-round" class="view">
             <div id="round-panel" class="panel">
+                <div class="round-actions">
+                    <div class="round-actions-left">
+                        <button id="btn-end" class="btn-action btn-action-danger edit-only" type="button" onclick="app.endTournament()">
+                            <svg class="action-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M9 9l6 6M15 9l-6 6"/>
+                            </svg>
+                            <span class="btn-label" data-i18n="round.end">End Tournament</span>
+                        </button>
+                    </div>
+                    <div class="round-actions-right">
+                    <button id="btn-reshuffle" class="btn-action edit-only" type="button" style="display:none" onclick="app.reshufflePairings()">
+                        <svg class="action-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M16 3h5v5"/>
+                            <path d="M4 20L21 3"/>
+                            <path d="M21 16v5h-5"/>
+                            <path d="M15 15l6 6"/>
+                            <path d="M4 4l5 5"/>
+                        </svg>
+                        <span class="btn-label" data-i18n="round.reshuffle">Re-shuffle</span>
+                    </button>
+                    <button id="btn-compact" class="btn-action edit-only" type="button" onclick="app.toggleCompactMode()">
+                        <svg class="action-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                            <rect x="3" y="3" width="8" height="8"/>
+                            <rect x="13" y="3" width="8" height="8"/>
+                            <rect x="3" y="13" width="8" height="8"/>
+                            <rect x="13" y="13" width="8" height="8"/>
+                        </svg>
+                        <span class="btn-label" data-i18n="timer.compact">Compact</span>
+                    </button>
+                    <button id="btn-projector" class="btn-action edit-only" type="button" onclick="app.toggleProjectorMode()">
+                        <svg class="action-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="13" rx="1"/>
+                            <path d="M8 21h8"/>
+                            <path d="M12 17v4"/>
+                        </svg>
+                        <span class="btn-label" data-i18n="timer.projector">Projector</span>
+                    </button>
+                    <button id="btn-publish" class="btn-action btn-action-primary edit-only" type="button" onclick="app.cloudPublishToggle()">
+                        <svg class="action-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                            <path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 19h2M19 14v2"/>
+                        </svg>
+                        <span class="btn-label" data-i18n="cloud.publish">Publish</span>
+                    </button>
+                    </div>
+                </div>
                 <div class="round-header">
                     <h2 id="round-title">Round 1</h2>
                     <button id="btn-viewer-share" class="viewer-share-btn" type="button" onclick="app.viewerShareOpen()" aria-label="Share" title="Share">
@@ -132,9 +237,6 @@
                         <button class="btn btn-small btn-secondary" onclick="app.timerReset()" data-i18n="common.reset">Reset</button>
                         <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(60)">+1m</button>
                         <button id="btn-timer-mute" class="btn btn-small btn-secondary" onclick="app.toggleTimerMute()" data-i18n="timer.mute">Mute</button>
-                        <button id="btn-compact" class="btn btn-small btn-secondary" onclick="app.toggleCompactMode()" data-i18n="timer.compact">Compact</button>
-                        <button id="btn-projector" class="btn btn-small btn-accent" onclick="app.toggleProjectorMode()" data-i18n="timer.projector">Projector Mode</button>
-                        <button id="btn-publish" class="btn btn-small btn-primary edit-only" onclick="app.cloudPublishToggle()" data-i18n="cloud.publish">Publish</button>
                     </div>
                 </div>
                 <div id="share-panel" class="share-panel" style="display:none;">
@@ -177,7 +279,6 @@
                 <div class="round-footer">
                     <button class="btn btn-secondary" onclick="app.goBackFromRound()" data-i18n="round.prev">Previous Round</button>
                     <button id="btn-submit-results" class="btn btn-primary" disabled onclick="app.submitResults()" data-i18n="round.submitNext">Submit Results &amp; Next Round</button>
-                    <button class="btn btn-accent" onclick="app.endTournament()" data-i18n="round.end">End Tournament</button>
                 </div>
             </div>
         </section>
@@ -319,6 +420,35 @@
                 <input id="viewer-share-link" type="text" readonly>
                 <button class="btn btn-small btn-primary" type="button" onclick="app.viewerShareCopy()" data-i18n="cloud.copyLink">Copy Link</button>
             </div>
+        </div>
+    </div>
+
+    <!-- UPDATES LIST MODAL -->
+    <div id="updates-list-overlay" class="modal-overlay" onclick="app.closeUpdatesList()">
+        <div class="modal-content updates-list-modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.closeUpdatesList()" aria-label="Close">&times;</button>
+            <h3 data-i18n="updates.allTitle">All Updates</h3>
+            <ul id="updates-full-list" class="updates-list updates-list-full"></ul>
+        </div>
+    </div>
+
+    <!-- UPDATES DETAIL MODAL -->
+    <div id="updates-detail-overlay" class="modal-overlay" onclick="app.closeUpdatesDetail()">
+        <div class="modal-content updates-detail-modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.closeUpdatesDetail()" aria-label="Close">&times;</button>
+            <div class="updates-detail-date" id="updates-detail-date"></div>
+            <h3 id="updates-detail-title"></h3>
+            <div class="updates-detail-body" id="updates-detail-body"></div>
+        </div>
+    </div>
+
+    <!-- PAIRING HELP MODAL -->
+    <div id="pairing-help-overlay" class="modal-overlay" onclick="app.closePairingHelp()">
+        <div class="modal-content pairing-help-modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="app.closePairingHelp()" aria-label="Close">&times;</button>
+            <div class="updates-detail-date" id="pairing-help-format"></div>
+            <h3 id="pairing-help-title"></h3>
+            <div class="updates-detail-body" id="pairing-help-body"></div>
         </div>
     </div>
 

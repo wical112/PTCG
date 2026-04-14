@@ -33,6 +33,9 @@ const app = (() => {
             'common.home': 'Home',
             'common.reset': 'Reset',
             'common.ok': 'OK',
+            'updates.title': 'Updates',
+            'updates.allTitle': 'All Updates',
+            'updates.more': 'See all',
             'home.welcome': 'Welcome, Trainer!',
             'home.subtitle': 'Choose your path',
             'home.tournament': 'Tournament',
@@ -68,12 +71,16 @@ const app = (() => {
             'round.draw': 'Draw',
             'round.submitNext': 'Submit Results & Next Round',
             'round.submitted': 'Results Submitted',
+            'round.submitEnd': 'Submit Results & End Tournament',
+            'round.confirmSubmitEnd': 'Submit final-round results and end the tournament? This cannot be undone.',
             'round.prev': 'Previous Round',
             'round.end': 'End Tournament',
             'round.confirmSubmit': 'Submit results and proceed to next round? This cannot be undone.',
             'round.confirmSubmitBeforeEnd': 'Submit current round results before ending?',
             'round.confirmDiscardEnd': 'Current round has incomplete results. Discard this round and end tournament?',
             'round.confirmGoBack': 'Go back to previous round to edit results?',
+            'round.reshuffle': 'Re-shuffle Pairings',
+            'round.confirmReshuffle': 'Re-shuffle the round 1 pairings? Any results selected for this round will be cleared.',
             'round.editResubmit': 'Edit results and re-submit',
             'timer.start': 'Start',
             'timer.pause': 'Pause',
@@ -244,6 +251,9 @@ const app = (() => {
             'common.home': '首頁',
             'common.reset': '重設',
             'common.ok': '確定',
+            'updates.title': '更新公告',
+            'updates.allTitle': '全部更新',
+            'updates.more': '查看全部',
             'home.welcome': '歡迎,訓練家!',
             'home.subtitle': '請選擇',
             'home.tournament': '賽事',
@@ -279,12 +289,16 @@ const app = (() => {
             'round.draw': '平手',
             'round.submitNext': '提交結果並進入下一輪',
             'round.submitted': '結果已提交',
+            'round.submitEnd': '提交結果並結束賽事',
+            'round.confirmSubmitEnd': '提交最後一輪結果並結束賽事?此操作無法復原。',
             'round.prev': '上一輪',
             'round.end': '結束賽事',
             'round.confirmSubmit': '提交結果並進入下一輪?此操作無法復原。',
             'round.confirmSubmitBeforeEnd': '結束前是否提交本輪結果?',
             'round.confirmDiscardEnd': '本輪結果尚未完成。捨棄本輪並結束賽事?',
             'round.confirmGoBack': '返回上一輪以修改結果?',
+            'round.reshuffle': '重新配對',
+            'round.confirmReshuffle': '重新產生第 1 輪配對嗎?此輪已選擇的結果將會清除。',
             'round.editResubmit': '修改結果後重新提交',
             'timer.start': '開始',
             'timer.pause': '暫停',
@@ -484,6 +498,7 @@ const app = (() => {
         currentLang = currentLang === 'en' ? 'zh' : 'en';
         localStorage.setItem('ptcg_lang', currentLang);
         applyI18n();
+        renderUpdates();
         // Re-render dynamic views so JS-generated text picks up new language
         if (state.currentView) navigateTo(state.currentView);
         updateBreadcrumb(state.currentView);
@@ -791,6 +806,148 @@ const app = (() => {
         }
     }
 
+    // ---- UPDATES / ANNOUNCEMENTS ----
+    // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
+    const UPDATES = [
+        {
+            date: '2026-04-14',
+            title: {
+                en: 'Welcome — TCG Tournament Manager v1.0',
+                zh: '歡迎使用 — TCG 賽事管理 v1.0'
+            },
+            body: {
+                en: 'This application aims to provide the most useful features for trading card game (TCG) players and event / tournament organizers, striving for an improved user experience for both players and organizers. We are open and happy to accept advice from everyone, and it is our pleasure to see every TCG player enjoy the joy of the TCG game.\n\nAs the creator of this application, I aim to provide free use for users. In the future, as our user base grows, we will introduce an advertising feature to maintain free usage, offsetting the higher costs of hosting services. We would welcome the opportunity to rent our ad blocks for placing your ads, with a primary focus on TCG-related content.\n\nFor publishing this app and for those who have helped test it, I would like to express my sincere gratitude for your support. Please join us in our efforts to create an even better TCG experience. Thank you.',
+                zh: '本應用程式致力於為集換式卡牌遊戲（TCG）玩家及賽事主辦方提供最實用的功能，努力為玩家與主辦方雙方帶來更優質的使用體驗。我們樂意聆聽並接受各方建議，能見到每位 TCG 玩家享受遊戲的樂趣，是我們的榮幸。\n\n身為此應用程式的開發者，我希望讓使用者免費使用本服務。未來隨著用戶基礎成長，我們將引入廣告功能以維持免費使用，並用以抵銷日益增加的主機代管成本。我們也歡迎與您合作，租用廣告版位刊登貴方廣告，並以 TCG 相關內容為主。\n\n對於支持本應用程式上線，以及協助測試的每一位，我誠摯感謝您們的支持。請與我們一同努力，共同打造更棒的 TCG 體驗。謝謝。'
+            }
+        },
+        {
+            date: '2026-04-14',
+            title: {
+                en: 'User guide & recommended workflow',
+                zh: '使用指南與建議流程'
+            },
+            body: {
+                en: 'A quick walkthrough of every feature and the suggested flow for running a smooth event.\n\n1. PICK A FORMAT (home screen)\n   • Swiss Tournament — every player plays the same number of rounds; best for 4–32 players.\n   • Knockout Tournament — single-elimination bracket; the loser of each match is out.\n\n2. REGISTRATION\n   • Enter the tournament name and date — both appear on the standings header and the downloadable screenshot.\n   • Paste or type one player name per line, then press Add Players. Tap any name to edit or delete.\n   • The recommended round count appears below the list (e.g. 8 players → 3 rounds).\n\n3. THE ROUND VIEW\n   • Each pairing is a coloured card: Side A (blue) vs Side B (orange). Tap "Wins" on the winning side, or "Draw".\n   • Re-shuffle Pairings (round 1 only, before submit) — randomise pairings again if players want a do-over.\n   • End Tournament (top-left, red) — close the event early at any point.\n   • Compact — fits more tables on screen, ideal for store displays.\n   • Projector — full-screen giant timer for a hall projector.\n   • Publish (QR icon) — generate a tournament ID + QR code so spectators can watch live in their own browser. Stop Sharing any time to delete the cloud copy.\n\n4. TIMER & PLAYER ACTIONS\n   • Start / Pause / Reset / ±1m on the timer bar. Mute disables the end-of-round beep.\n   • Tap any player name to open their trainer card with full match history. From here you can drop a player mid-tournament; in knockout mode their pending match auto-awards to the opponent.\n\n5. SUBMITTING & ENDING\n   • Submit Results & Next Round generates the next round automatically.\n   • On the final round the button becomes Submit Results & End Tournament — one click ends the event.\n   • Previous Round (bottom-left) re-opens the prior round if you need to fix a result.\n\n6. STANDINGS & SHARING\n   • Sorted by Match Points, then OWP (opponents\' win percentage). Top 3 get gold / silver / bronze dots.\n   • Download as PNG — captures the standings table with a watermark, ready to post on social.\n\n7. BONUS TOOLS\n   • Lucky Wheel — random draw / prize giveaway with player import; "Exclude Top 3" shortcut for podium prizes.\n   • Advanced Recovery — rebuild a tournament from past round results if a device is lost.\n\nTIPS\n   • Switch language any time with the 中文 / EN button at the top-right.\n   • Spectators viewing a published tournament can pin their own match to the top with the Pin-your-match search box.',
+                zh: '以下為各功能簡介與建議的活動流程。\n\n1. 選擇賽制（主畫面）\n   • 瑞士制（Swiss）— 每位玩家打相同輪數，適合 4–32 人。\n   • 淘汰賽（Knockout）— 單敗淘汰，輸掉一場即出局。\n\n2. 報名登記\n   • 輸入賽事名稱與日期，會顯示於排名頁面與下載圖片上。\n   • 一行貼上一位玩家姓名，按「加入玩家」。點擊名字可編輯或刪除。\n   • 列表下方會顯示建議輪數（例如 8 人 → 3 輪）。\n\n3. 輪次畫面\n   • 每組對局以彩色卡片呈現：A 方（藍）對 B 方（橘）。點擊獲勝方的「勝」鈕，或「和」。\n   • 重新配對（僅第 1 輪、提交結果前）— 一鍵重新隨機配對。\n   • 結束賽事（左上角紅色按鈕）— 任何時候提前結束賽事。\n   • 緊湊模式（Compact）— 一頁顯示更多桌次，適合店內展示。\n   • 投影模式（Projector）— 全螢幕巨型計時器，適合會場投影機。\n   • 發佈（QR 圖示）— 產生賽事 ID 與 QR 碼，觀眾可在自己的瀏覽器即時觀看。可隨時停止分享以刪除雲端副本。\n\n4. 計時器與玩家操作\n   • 計時器列：開始 / 暫停 / 重置 / ±1 分；靜音可關閉結束提示音。\n   • 點擊玩家名字可開啟訓練家卡片，查看完整對戰紀錄；亦可在賽事中將該玩家標記為退賽。淘汰賽模式下，其未進行的對局會自動判給對手。\n\n5. 提交與結束\n   • 「提交結果並進入下一輪」會自動產生下一輪配對。\n   • 最後一輪的按鈕會變為「提交結果並結束賽事」，一鍵結束賽事。\n   • 「上一輪」（左下角）可回到前一輪修改結果。\n\n6. 排名與分享\n   • 依勝點排序，再以 OWP（對手勝率）作小分。前三名顯示金 / 銀 / 銅標記。\n   • 下載為圖片（PNG）— 含浮水印，可直接分享到社群媒體。\n\n7. 進階工具\n   • 幸運轉盤（Lucky Wheel）— 隨機抽獎，可匯入玩家名單；「排除前三名」快速鈕適合頒獎場合。\n   • 進階回復（Advanced Recovery）— 若裝置遺失，可由過去輪次結果重建賽事。\n\n小提醒\n   • 右上角「中文 / EN」按鈕可隨時切換語言。\n   • 觀看已發佈賽事的觀眾，可在「鎖定我的對局」搜尋框輸入名字，將自己的對局置頂。'
+            }
+        }
+    ];
+
+    function localizedUpdate(u) {
+        const lang = currentLang === 'zh' ? 'zh' : 'en';
+        return { date: u.date, title: u.title[lang] || u.title.en, body: u.body[lang] || u.body.en };
+    }
+
+    function renderUpdates() {
+        const list = document.getElementById('updates-list');
+        if (!list) return;
+        const top = UPDATES.slice(0, 3);
+        list.innerHTML = top.map((u, i) => {
+            const lu = localizedUpdate(u);
+            return `<li class="updates-item" onclick="app.openUpdateDetail(${i})">
+                <span class="updates-date">${lu.date}</span>
+                <span class="updates-title">${escapeHtml(lu.title)}</span>
+            </li>`;
+        }).join('');
+    }
+
+    let updatesDetailFromList = false;
+
+    function openUpdatesList() {
+        const list = document.getElementById('updates-full-list');
+        if (list) {
+            list.innerHTML = UPDATES.map((u, i) => {
+                const lu = localizedUpdate(u);
+                return `<li class="updates-item" onclick="app.openUpdateDetail(${i}, true)">
+                    <span class="updates-date">${lu.date}</span>
+                    <span class="updates-title">${escapeHtml(lu.title)}</span>
+                </li>`;
+            }).join('');
+        }
+        const overlay = document.getElementById('updates-list-overlay');
+        if (overlay) overlay.classList.add('open');
+    }
+
+    function closeUpdatesList() {
+        const overlay = document.getElementById('updates-list-overlay');
+        if (overlay) overlay.classList.remove('open');
+    }
+
+    function openUpdateDetail(idx, fromList) {
+        const u = UPDATES[idx];
+        if (!u) return;
+        const lu = localizedUpdate(u);
+        const dateEl = document.getElementById('updates-detail-date');
+        const titleEl = document.getElementById('updates-detail-title');
+        const bodyEl = document.getElementById('updates-detail-body');
+        if (dateEl) dateEl.textContent = lu.date;
+        if (titleEl) titleEl.textContent = lu.title;
+        if (bodyEl) bodyEl.textContent = lu.body;
+        updatesDetailFromList = !!fromList;
+        // Hide the list modal while the detail is open, but remember to restore on close.
+        closeUpdatesList();
+        const overlay = document.getElementById('updates-detail-overlay');
+        if (overlay) overlay.classList.add('open');
+    }
+
+    function closeUpdatesDetail() {
+        const overlay = document.getElementById('updates-detail-overlay');
+        if (overlay) overlay.classList.remove('open');
+        if (updatesDetailFromList) {
+            updatesDetailFromList = false;
+            openUpdatesList();
+        }
+    }
+
+    // ---- PAIRING HELP (rules per format) ----
+    const PAIRING_HELP = {
+        swiss: {
+            label: { en: 'SWISS FORMAT', zh: '瑞士制' },
+            title: { en: 'Swiss pairing rules', zh: '瑞士制配對規則' },
+            body: {
+                en: 'Swiss pairings group players with similar match records together each round, without eliminating anyone.\n\nHOW PAIRINGS ARE GENERATED\n   • Round 1: players are randomly shuffled, then paired top-to-bottom.\n   • Round 2 onwards: players are sorted by match points (3 per win, 1 per draw, 0 per loss). Highest scorers are paired first.\n\nAVOIDING REMATCHES\n   • The app uses a backtracking algorithm to find a pairing where no two players have already faced each other this tournament.\n   • If a no-rematch pairing is mathematically impossible (e.g. round 4 with only 4 players left), the closest-ranked rematch is allowed and a warning is logged to the browser console.\n\nBYE (ODD PLAYER COUNT)\n   • If the player count is odd, the lowest-ranked player who has not yet had a bye receives one.\n   • A bye counts as a win and is worth 3 match points; the player skips that round.\n   • The same player will not get a bye twice unless every other player has already had one.\n\nTIEBREAKERS (STANDINGS)\n   • Match Points (MP) first.\n   • Then OWP — Opponents\' Win Percentage — the average win rate of every opponent you faced. Rewards beating tougher fields.\n   • Players still tied are listed in registration order.\n\nRECOMMENDED ROUND COUNT\n   • The app suggests ⌈log₂(N)⌉ rounds for N players (e.g. 8 → 3, 16 → 4, 32 → 5). You can always end early or run extra rounds.\n\nDROP PLAYER\n   • Open a player\'s trainer card and tap Drop Player to remove them from future pairings. Their existing results stay on record. Tap Undo Drop to reinstate.',
+                zh: '瑞士制將戰績相近的玩家配對在一起，整個過程不淘汰任何人。\n\n配對方式\n   • 第 1 輪：隨機洗牌後依序配對。\n   • 第 2 輪起：依勝點排序（勝 3 分、和 1 分、負 0 分），高分者優先配對。\n\n避免重複對局\n   • 系統使用回溯演算法，盡可能讓本次賽事中沒有任何兩位玩家再次相遇。\n   • 若數學上無法避免（例如第 4 輪只剩 4 人），則允許戰績最相近的重複對局，並在瀏覽器主控台記錄警告。\n\n輪空（玩家人數為奇數時）\n   • 由尚未獲得輪空、戰績最低者獲得輪空。\n   • 輪空計為勝場，獲得 3 勝點，該輪不需出戰。\n   • 同一位玩家不會獲得兩次輪空，除非全員都已輪空過。\n\n排名分小（決勝順位）\n   • 先比勝點（MP）。\n   • 再比 OWP（對手勝率）— 你所有對手的平均勝率，獎勵擊敗強敵者。\n   • 仍同分者依報名順序排列。\n\n建議輪數\n   • 系統依 ⌈log₂(N)⌉ 推薦輪數（例如 8 人 → 3 輪、16 人 → 4 輪、32 人 → 5 輪）。可自行提前結束或加打額外輪次。\n\n退賽\n   • 開啟玩家訓練家卡片並點擊「玩家退賽」，即可從後續配對中移除該玩家；既有對戰結果仍會保留。再點「取消退賽」可恢復。'
+            }
+        },
+        knockout: {
+            label: { en: 'KNOCKOUT FORMAT', zh: '淘汰賽' },
+            title: { en: 'Knockout pairing rules', zh: '淘汰賽配對規則' },
+            body: {
+                en: 'Knockout (single-elimination) pairings build a bracket where the loser of each match is out.\n\nBRACKET CONSTRUCTION (ROUND 1)\n   • All registered players are randomly shuffled into a seed list.\n   • Bracket size = the next power of 2 greater than or equal to the player count. Example: 11 players → 16-slot bracket.\n   • Empty slots become byes for the top seeds, who advance automatically without playing.\n\nSTANDARD SEED ORDER\n   • Pairings follow the conventional knockout order: 1 vs N, 4 vs N-3, 5 vs N-4, … 2 vs N-1, 3 vs N-2, …\n   • This guarantees the strongest seeds only meet in later rounds.\n   • Example for 8 players: 1v8, 4v5, 2v7, 3v6.\n\nSUBSEQUENT ROUNDS\n   • The winner of each match is paired with the winner of the adjacent match, preserving bracket structure.\n   • Round names follow the remaining player count: Round of 16 → Quarterfinal → Semifinal → Final.\n\nFINAL ROUND\n   • When only one match remains, the Submit button becomes Submit Results & End Tournament. One click crowns the champion.\n\nDROP PLAYER (KNOCKOUT-AWARE)\n   • If a player drops mid-bracket BEFORE their pending round is submitted, their match auto-awards to their opponent so the bracket can advance.\n   • If their match is already complete, dropping them only updates the standings tag.\n\nDRAWS\n   • Knockout has no draws by design — each match must produce a winner. The Draw button still appears today; we plan to hide it in a future update.\n\nWHEN TO USE\n   • Best for 4–32 players when you want a quick champion rather than full Swiss-style ranking.\n   • For Best-of-3 or manual seeding, use Swiss + a custom round count instead — bracket-tree visualisation and manual seeding are on the roadmap.',
+                zh: '淘汰賽（單敗）採用標準括號賽制，每場比賽輸方即出局。\n\n第 1 輪括號建立\n   • 所有報名玩家隨機洗牌後排入種子列表。\n   • 括號大小 = 大於或等於玩家數的最小 2 的次方。例如：11 人 → 16 籤位。\n   • 空缺籤位由高種子玩家獲得輪空，自動晉級無需出賽。\n\n標準種子順序\n   • 採用傳統淘汰賽順序：1 對 N、4 對 N-3、5 對 N-4⋯ 2 對 N-1、3 對 N-2⋯\n   • 這能確保最強的種子要到後期才會碰頭。\n   • 8 人範例：1對8、4對5、2對7、3對6。\n\n後續輪次\n   • 每場勝者與相鄰場次的勝者配對，保留括號結構。\n   • 輪次名稱依剩餘人數命名：16 強 → 8 強 → 準決賽 → 決賽。\n\n決賽\n   • 僅剩一場比賽時，提交按鈕會變為「提交結果並結束賽事」。一鍵決出冠軍。\n\n退賽（淘汰賽特殊處理）\n   • 若玩家在所屬輪次提交結果前退賽，該對局會自動判給對手，使賽程繼續。\n   • 若該場已完成，退賽只會在排名加註標記。\n\n和局\n   • 淘汰賽本質上不允許和局，每場必須分出勝負。目前畫面仍會顯示「和」鈕，未來版本將予以隱藏。\n\n適用情境\n   • 適合 4–32 人快速分出冠軍，不需完整的瑞士制小分。\n   • 若需 BO3 或手動種子，目前可改用瑞士制並調整輪數；括號樹視圖與手動種子已在規劃中。'
+            }
+        }
+    };
+
+    function openPairingHelp(format) {
+        const type = format === 'knockout' || (!format && state.tournamentType === 'knockout')
+            ? 'knockout'
+            : 'swiss';
+        const help = PAIRING_HELP[type];
+        if (!help) return;
+        const lang = currentLang === 'zh' ? 'zh' : 'en';
+        const labelEl = document.getElementById('pairing-help-format');
+        const titleEl = document.getElementById('pairing-help-title');
+        const bodyEl = document.getElementById('pairing-help-body');
+        if (labelEl) labelEl.textContent = help.label[lang] || help.label.en;
+        if (titleEl) titleEl.textContent = help.title[lang] || help.title.en;
+        if (bodyEl) bodyEl.textContent = help.body[lang] || help.body.en;
+        const overlay = document.getElementById('pairing-help-overlay');
+        if (overlay) overlay.classList.add('open');
+    }
+
+    function closePairingHelp() {
+        const overlay = document.getElementById('pairing-help-overlay');
+        if (overlay) overlay.classList.remove('open');
+    }
+
+    // ---- ANALYTICS (GA4) ----
+    function track(event, params) {
+        if (viewOnly) return;
+        if (typeof window.gtag !== 'function') return;
+        try { window.gtag('event', event, params || {}); } catch (_) {}
+    }
+
     // ---- TOURNAMENT MODE PICKER ----
     function startNewTournament(type) {
         // Coming from home: clear any prior tournament state and go to registration
@@ -842,6 +999,7 @@ const app = (() => {
         saveRoundSnapshot(0);
         saveState();
         resetTimerValue();
+        track('tournament_started', { format: 'swiss', player_count: state.players.length });
         navigateTo('round');
     }
 
@@ -866,6 +1024,7 @@ const app = (() => {
         saveRoundSnapshot(0);
         saveState();
         resetTimerValue();
+        track('tournament_started', { format: 'knockout', player_count: state.players.length });
         navigateTo('round');
     }
 
@@ -1063,6 +1222,12 @@ const app = (() => {
         }
         document.getElementById('round-title').textContent = roundLabel;
 
+        const reshuffleBtn = document.getElementById('btn-reshuffle');
+        if (reshuffleBtn) {
+            const show = !viewOnly && state.currentRound === 0 && !round.resultsSubmitted;
+            reshuffleBtn.style.display = show ? '' : 'none';
+        }
+
         const container = document.getElementById('pairings-container');
         container.innerHTML = '';
 
@@ -1222,6 +1387,18 @@ const app = (() => {
         renderRound();
     }
 
+    function isFinalRound() {
+        const round = state.rounds[state.currentRound];
+        if (!round) return false;
+        if (state.tournamentType === 'knockout') {
+            // Final = exactly one non-bye pairing (the championship match)
+            const matches = round.pairings.filter(p => !p.isBye);
+            return matches.length === 1;
+        }
+        const rec = getRecommendedRounds();
+        return rec > 0 && state.currentRound + 1 >= rec;
+    }
+
     function updateSubmitButton() {
         const round = state.rounds[state.currentRound];
         if (!round) return;
@@ -1230,11 +1407,16 @@ const app = (() => {
         const btn = document.getElementById('btn-submit-results');
         btn.disabled = !allSet || round.resultsSubmitted;
 
+        const final = isFinalRound();
         if (round.resultsSubmitted) {
             btn.textContent = t('round.submitted');
         } else {
-            btn.textContent = t('round.submitNext');
+            btn.textContent = final ? t('round.submitEnd') : t('round.submitNext');
         }
+
+        // Hide standalone End Tournament on the final round (merged action covers it)
+        const endBtn = document.getElementById('btn-end');
+        if (endBtn) endBtn.style.display = final ? 'none' : '';
     }
 
     // FIX #2: Single applyResults function used by both submitResults and endTournament
@@ -1266,14 +1448,39 @@ const app = (() => {
         });
     }
 
+    function reshufflePairings() {
+        if (viewOnly) return;
+        if (state.currentRound !== 0) return;
+        const round = state.rounds[0];
+        if (!round || round.resultsSubmitted) return;
+        if (!confirm(t('round.confirmReshuffle'))) return;
+        if (state.tournamentType === 'knockout') {
+            state.rounds[0] = buildKnockoutFirstRound(state.players);
+        } else {
+            const pairings = generatePairings(0);
+            state.rounds[0] = { pairings, resultsSubmitted: false };
+        }
+        saveRoundSnapshot(0);
+        saveState();
+        track('pairings_reshuffled', { format: state.tournamentType || 'swiss' });
+        renderRound();
+    }
+
     function submitResults() {
         const round = state.rounds[state.currentRound];
         if (!round) return;
-        if (!confirm(t('round.confirmSubmit'))) return;
+        const final = isFinalRound();
+        const confirmKey = final ? 'round.confirmSubmitEnd' : 'round.confirmSubmit';
+        if (!confirm(t(confirmKey))) return;
 
         applyResults(round);
         round.resultsSubmitted = true;
         saveRoundSnapshot(state.currentRound);
+        track('round_submitted', {
+            format: state.tournamentType || 'swiss',
+            round_number: state.currentRound + 1,
+            player_count: state.players.length
+        });
 
         if (state.tournamentType === 'knockout') {
             // Count winners advancing from this round.
@@ -1291,6 +1498,11 @@ const app = (() => {
                     state.tournamentEnded = true;
                     stopTimer();
                     saveState();
+                    track('tournament_ended', {
+                        format: 'knockout',
+                        total_rounds: state.rounds.length,
+                        player_count: state.players.length
+                    });
                     navigateTo('standings');
                     return;
                 }
@@ -1307,6 +1519,20 @@ const app = (() => {
             saveState();
             resetTimerValue();
             navigateTo('round');
+            return;
+        }
+
+        if (final) {
+            // Swiss final round — end the tournament instead of generating another.
+            state.tournamentEnded = true;
+            stopTimer();
+            saveState();
+            track('tournament_ended', {
+                format: 'swiss',
+                total_rounds: state.rounds.length,
+                player_count: state.players.length
+            });
+            navigateTo('standings');
             return;
         }
 
@@ -1344,6 +1570,11 @@ const app = (() => {
         state.tournamentEnded = true;
         stopTimer();
         saveState();
+        track('tournament_ended', {
+            format: state.tournamentType || 'swiss',
+            total_rounds: state.rounds.length,
+            player_count: state.players.length
+        });
         navigateTo('standings');
     }
 
@@ -1845,7 +2076,8 @@ const app = (() => {
         if (panel) panel.classList.toggle('compact-mode', state.compactMode);
         const btn = document.getElementById('btn-compact');
         if (btn) {
-            btn.textContent = state.compactMode ? t('timer.expand') : t('timer.compact');
+            const label = btn.querySelector('.btn-label') || btn;
+            label.textContent = state.compactMode ? t('timer.expand') : t('timer.compact');
             btn.classList.toggle('btn-active', state.compactMode);
         }
     }
@@ -1861,7 +2093,9 @@ const app = (() => {
     function updateProjectorMode() {
         const btn = document.getElementById('btn-projector');
         if (btn) {
-            btn.textContent = state.projectorMode ? t('timer.exitProjector') : t('timer.projector');
+            const label = btn.querySelector('.btn-label') || btn;
+            label.textContent = state.projectorMode ? t('timer.exitProjector') : t('timer.projector');
+            btn.classList.toggle('btn-active', state.projectorMode);
         }
         document.body.classList.toggle('projector-mode', state.projectorMode);
     }
@@ -1974,8 +2208,9 @@ const app = (() => {
             return;
         }
         const btn = document.getElementById('btn-publish');
-        const originalLabel = btn ? btn.textContent : '';
-        if (btn) { btn.disabled = true; btn.textContent = t('cloud.publishing'); }
+        const labelEl = btn ? (btn.querySelector('.btn-label') || btn) : null;
+        const originalLabel = labelEl ? labelEl.textContent : '';
+        if (btn) { btn.disabled = true; if (labelEl) labelEl.textContent = t('cloud.publishing'); }
         try {
             if (!window.cloud.isReady()) await window.cloud.init();
             if (!window.cloud.isReady()) throw new Error('init failed');
@@ -1986,11 +2221,15 @@ const app = (() => {
             shareExpanded = true;
             renderSharePanel();
             showToast(t('cloud.published'));
+            track('tournament_published', {
+                format: state.tournamentType || 'swiss',
+                player_count: state.players.length
+            });
         } catch (e) {
             console.error(e);
             alert(t('cloud.publishFail'));
         } finally {
-            if (btn) { btn.disabled = false; if (!state.publishedTournamentId) btn.textContent = originalLabel; }
+            if (btn) { btn.disabled = false; if (!state.publishedTournamentId && labelEl) labelEl.textContent = originalLabel; }
         }
     }
 
@@ -2094,11 +2333,12 @@ const app = (() => {
         if (viewOnly) { btn.style.display = 'none'; return; }
         btn.style.display = '';
         btn.disabled = false;
+        const label = btn.querySelector('.btn-label') || btn;
         if (state.publishedTournamentId) {
-            btn.textContent = t('cloud.published');
+            label.textContent = t('cloud.published');
             btn.classList.add('btn-active');
         } else {
-            btn.textContent = t('cloud.publish');
+            label.textContent = t('cloud.publish');
             btn.classList.remove('btn-active');
         }
     }
@@ -3032,6 +3272,7 @@ const app = (() => {
         loadAdvancedStaging();
         applyI18n();
         applyNoAds();
+        renderUpdates();
 
         // Keyboard events
         document.addEventListener('keydown', handleKeydown);
@@ -3104,6 +3345,13 @@ const app = (() => {
         startNewTournament,
         setResult,
         submitResults,
+        reshufflePairings,
+        openUpdatesList,
+        closeUpdatesList,
+        openUpdateDetail,
+        closeUpdatesDetail,
+        openPairingHelp,
+        closePairingHelp,
         endTournament,
         goBackFromRound,
         backToLastRound,
