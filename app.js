@@ -498,6 +498,59 @@ const app = (() => {
         if (langBtn) langBtn.textContent = currentLang === 'en' ? '中文' : 'EN';
     }
 
+    // ---- Theme selector (Crobat / Original) ----
+    const THEME_LABELS = { crobat: 'Crobat', gardevoir: 'Gardevoir', gengar: 'Gengar', greninja: 'Greninja', pikachu: 'Pikachu', original: 'Original' };
+    let currentTheme = localStorage.getItem('ptcg_theme') || 'crobat';
+    if (!THEME_LABELS[currentTheme]) currentTheme = 'crobat';
+    function applyTheme() {
+        const root = document.documentElement;
+        root.classList.remove('theme-original', 'theme-gardevoir', 'theme-gengar', 'theme-pikachu', 'theme-greninja');
+        if (currentTheme === 'original') root.classList.add('theme-original');
+        else if (currentTheme === 'gardevoir') root.classList.add('theme-gardevoir');
+        else if (currentTheme === 'gengar') root.classList.add('theme-gengar');
+        else if (currentTheme === 'pikachu') root.classList.add('theme-pikachu');
+        else if (currentTheme === 'greninja') root.classList.add('theme-greninja');
+        const label = document.getElementById('theme-toggle-label');
+        if (label) label.textContent = THEME_LABELS[currentTheme];
+        document.querySelectorAll('#theme-menu li').forEach(li => {
+            li.classList.toggle('is-active', li.getAttribute('data-theme') === currentTheme);
+        });
+    }
+    function toggleThemeMenu(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('theme-menu');
+        const btn = document.getElementById('theme-toggle');
+        if (!menu || !btn) return;
+        const open = !menu.hasAttribute('hidden');
+        if (open) {
+            menu.setAttribute('hidden', '');
+            btn.setAttribute('aria-expanded', 'false');
+        } else {
+            menu.removeAttribute('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+        }
+    }
+    function closeThemeMenu() {
+        const menu = document.getElementById('theme-menu');
+        const btn = document.getElementById('theme-toggle');
+        if (menu) menu.setAttribute('hidden', '');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+    function selectTheme(theme) {
+        if (!THEME_LABELS[theme]) return;
+        currentTheme = theme;
+        localStorage.setItem('ptcg_theme', currentTheme);
+        applyTheme();
+        closeThemeMenu();
+    }
+    document.addEventListener('click', (e) => {
+        const wrap = document.querySelector('.theme-dropdown');
+        if (wrap && !wrap.contains(e.target)) closeThemeMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeThemeMenu();
+    });
+
     function toggleLang() {
         currentLang = currentLang === 'en' ? 'zh' : 'en';
         localStorage.setItem('ptcg_lang', currentLang);
@@ -819,6 +872,17 @@ const app = (() => {
     // ---- UPDATES / ANNOUNCEMENTS ----
     // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
     const UPDATES = [
+        {
+            date: '2026-04-14',
+            title: {
+                en: 'New: theme picker (6 colour palettes)',
+                zh: '新功能：主題切換（6 種配色）'
+            },
+            body: {
+                en: 'A new theme dropdown sits next to the language toggle in the top-right. Six palettes are available: Crobat (deep purple), Gardevoir (ethereal magenta), Gengar (psychedelic cyan), Pikachu (crystal gold), Greninja (ninja coral), and the Original orange. Your choice is remembered on this device. Pick whichever matches your shop\'s vibe.',
+                zh: '右上角語言按鈕旁新增主題切換下拉選單，共提供 6 種配色：Crobat（深紫）、Gardevoir（洋紅）、Gengar（致幻青綠）、Pikachu（閃亮金）、Greninja（珊瑚）與原始橙色。你的選擇會保留在此裝置上，可隨時切換符合店舖氛圍的色系。'
+            }
+        },
         {
             date: '2026-04-14',
             title: {
@@ -3308,6 +3372,7 @@ const app = (() => {
     function init() {
         loadState();
         loadAdvancedStaging();
+        applyTheme();
         applyI18n();
         applyNoAds();
         renderUpdates();
@@ -3373,6 +3438,8 @@ const app = (() => {
     // ---- PUBLIC API ----
     return {
         toggleLang,
+        toggleThemeMenu,
+        selectTheme,
         navigateTo,
         resumeTournament,
         resetTournament,

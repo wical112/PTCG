@@ -329,6 +329,22 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
 - All hardcoded `rgba(255,115,36,…)` glow/tint values replaced with `rgba(245,158,11,…)`.
 - Original orange/dark-neutral tokens preserved at `style.tokens.backup.css` (paste back over the two `:root` blocks in `style.css` to restore).
 
+### Theme picker — 6 palettes (post-v1.0 patch, same day)
+- New dropdown in the top-right header (between the logo and the language toggle) lets the user pick a theme live. Choice persists in `localStorage.ptcg_theme`.
+- Six themes ship:
+  - **Crobat** (default) — deep purple `#6E32A8` on purple-toned neutrals (`#1B172B` / `#251F3A`).
+  - **Gardevoir** — ethereal magenta `#FF52D9` on cool blue-grey (`#1A1D2D` / `#262B40`).
+  - **Gengar** — psychedelic cyan `#22D3EE` on deep purple-black (`#0B0A1A` / `#15132B`).
+  - **Pikachu** — crystal gold `#FFD700` on deep slate (`#0D1117` / `#161B22`).
+  - **Greninja** — ninja coral `#FF7F50` on deep navy (`#0B1123` / `#151E31`).
+  - **Original** — orange `#FF7324` on dark-neutral (`#1A1A1A` / `#262626`).
+- Implemented via `.theme-<name>` classes on `<html>` that override CSS custom properties. One default `:root` block (Crobat), one override block per theme.
+- Hardcoded brand-color rgbas refactored to `rgba(var(--color-primary-rgb), α)` so every theme's alpha-blended glows/tints swap cleanly. Same pattern for `var(--side-a-rgb)`.
+- Inline `<head>` script reads `localStorage.ptcg_theme` and adds the class before first paint — no flash-of-wrong-theme on reload.
+- New exports: `app.toggleThemeMenu`, `app.selectTheme`. New i18n-free UI (theme names kept in English).
+- `style.tokens.backup.css` is now redundant (Original theme is in the main cascade) — kept for historical reference.
+- Adding a new theme = one `.theme-<name>` block in `style.css`, one entry in `THEME_LABELS` + `classList` branch in `app.js`, one `<li>` in `index.html`, and one branch in the pre-paint `<head>` script.
+
 ### Configurable Swiss scoring (post-v1.0 patch, same day)
 - New `state.scoringDrawBonus` (boolean, default `false`).
   - `false` (default) → **Win 3, Loss 1, Draw 0** — house rule: showing up earns a point, draws score nothing.
