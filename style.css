@@ -2871,6 +2871,14 @@ body.projector-mode {
     margin: 0;
     line-height: 1.5;
 }
+.footer-disclaimer {
+    max-width: 720px;
+    margin: 0 auto 1rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    opacity: 0.85;
+}
 
 /* ===== CLOUD: view-mode banner, share modal, view-only hiding ===== */
 .view-mode-banner {

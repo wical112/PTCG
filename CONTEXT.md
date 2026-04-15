@@ -356,6 +356,14 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
 - Pairing-help modal Swiss body updated to describe both modes + bye behavior, both languages.
 - New Updates entry seeded for users (newest first in `UPDATES` array).
 
+### Legal Notice page + footer disclaimer (2026-04-15)
+- New static page `legal.html` consolidates the Pokémon/Nintendo/Game Freak/Creatures IP disclaimer in the format used by limitlesstcg.com/legal: explicit "not produced/endorsed/sponsored/licensed/affiliated", trademark attribution, no-card-images statement, rights-holder contact path.
+- Every footer (all 7 HTMLs) now carries: (a) a one-line `.footer-disclaimer` paragraph above the existing `.footer-links`, and (b) a new "Legal Notice" link.
+- Disclaimer in `about.html` §Disclaimer, `terms.html` §5, `faq.html` "affiliated?" answer rewritten from generic "any game publisher" → explicit naming of Nintendo, The Pokémon Company, Game Freak, Creatures Inc. Each links to the new `legal.html`.
+- New i18n keys (`footer.disclaimer`, `footer.legal`) only used by `index.html` (the SPA shell). Static pages keep English-only wording.
+- New CSS rule `.footer-disclaimer` (small, muted, 720-px max-width, centred).
+- Cache-bust to `?v=20260415b`.
+
 ## Next candidate tasks
 - Update `privacy.html` to disclose Firebase storage when published (required before broad launch).
 - Knockout v2: hide Draw button, manual/drag seeding, Bo3 mode, proper bracket-tree visualization for desktop.

@@ -29,6 +29,8 @@ const app = (() => {
     const I18N = {
         en: {
             'header.title': 'TCG Tournament Manager',
+            'footer.disclaimer': 'Fan-made tool. Not affiliated with, endorsed by, or sponsored by Nintendo, The Pokémon Company, Game Freak, or Creatures Inc. All trademarks belong to their respective owners.',
+            'footer.legal': 'Legal Notice',
             'common.back': 'Back',
             'common.home': 'Home',
             'common.reset': 'Reset',
@@ -249,6 +251,8 @@ const app = (() => {
         },
         zh: {
             'header.title': 'TCG 賽事管理',
+            'footer.disclaimer': '本工具為粉絲製作，與任天堂（Nintendo）、寶可夢公司（The Pokémon Company）、Game Freak 及 Creatures Inc. 均無關聯，亦未獲其背書或贊助。所有商標均屬其各自所有者所有。',
+            'footer.legal': '法律聲明',
             'common.back': '返回',
             'common.home': '首頁',
             'common.reset': '重設',
@@ -878,6 +882,17 @@ const app = (() => {
     // ---- UPDATES / ANNOUNCEMENTS ----
     // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
     const UPDATES = [
+        {
+            date: '2026-04-15',
+            title: {
+                en: 'Legal Notice added; clearer fan-made disclaimer',
+                zh: '新增法律聲明；明確標示粉絲製作'
+            },
+            body: {
+                en: 'A new Legal Notice page is linked from every footer, and a one-line disclaimer now sits at the bottom of every page. The wording explicitly states that this site is a fan-made tool, not affiliated with Nintendo, The Pokémon Company, Game Freak, or Creatures Inc., and that all trademarks belong to their respective owners. The About, Terms, and FAQ pages have been tightened to match.',
+                zh: '頁尾新增「法律聲明」連結，並於每頁底部加上免責聲明：本站為粉絲製作，與任天堂、寶可夢公司、Game Freak、Creatures Inc. 等公司均無關聯，所有商標均屬其各自所有者所有。About、Terms、FAQ 頁面同步更新。'
+            }
+        },
         {
             date: '2026-04-15',
             title: {
