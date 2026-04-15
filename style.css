@@ -1828,8 +1828,8 @@ body.projector-mode .timer-controls {
 }
 
 /* =====================================================================
-   UI POLISH LAYER v2 — Crobat Deep Purple
-   Dark purple-toned neutrals, deep Crobat purple accent, soft pink highlight.
+   UI POLISH LAYER v2 — Deep Purple (default :root cascade)
+   Dark purple-toned neutrals, deep purple accent, soft pink highlight.
    Palette:
      --color-bg-header  #151121
      --color-bg-base    #1B172B
@@ -3421,7 +3421,7 @@ body.no-ads .viewer-ad-slot { display: none !important; }
     }
 }
 
-/* ===== A / B side colors — A=blue, B=Crobat purple ===== */
+/* ===== A / B side colors — A=blue, B=brand primary ===== */
 :root {
     --side-a: #60A5FA;
     --side-a-rgb: 96, 165, 250;
@@ -3432,8 +3432,8 @@ body.no-ads .viewer-ad-slot { display: none !important; }
     --side-b-border: rgba(var(--color-primary-rgb), 0.45);
 }
 
-/* ===== Theme: Greninja (ninja's edge — coral on deep navy) ===== */
-.theme-greninja {
+/* ===== Theme: Ninja Coral (coral on deep navy) ===== */
+.theme-coral {
     --color-bg-header: #080E1C;
     --color-bg-base: #0B1123;
     --color-bg-surface: #151E31;
@@ -3458,8 +3458,8 @@ body.no-ads .viewer-ad-slot { display: none !important; }
     --side-b: #FF7F50;
 }
 
-/* ===== Theme: Pikachu (crystal lightning — gold on deep slate) ===== */
-.theme-pikachu {
+/* ===== Theme: Electric Yellow (gold on deep slate) ===== */
+.theme-yellow {
     --color-bg-header: #090C10;
     --color-bg-base: #0D1117;
     --color-bg-surface: #161B22;
@@ -3484,8 +3484,8 @@ body.no-ads .viewer-ad-slot { display: none !important; }
     --side-b: #FFD700;
 }
 
-/* ===== Theme: Gengar (psychedelic abyss — cyan on deep purple-black) ===== */
-.theme-gengar {
+/* ===== Theme: Psychedelic Cyan (cyan on deep purple-black) ===== */
+.theme-cyan {
     --color-bg-header: #06050E;
     --color-bg-base: #0B0A1A;
     --color-bg-surface: #15132B;
@@ -3510,8 +3510,8 @@ body.no-ads .viewer-ad-slot { display: none !important; }
     --side-b: #22D3EE;
 }
 
-/* ===== Theme: Gardevoir (ethereal psychic — magenta on blue-grey) ===== */
-.theme-gardevoir {
+/* ===== Theme: Ethereal Magenta (magenta on blue-grey) ===== */
+.theme-magenta {
     --color-bg-header: #121421;
     --color-bg-base: #1A1D2D;
     --color-bg-surface: #262B40;

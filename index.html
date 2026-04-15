@@ -9,11 +9,11 @@
     <meta name="author" content="TCG Tournament Manager">
     <meta name="copyright" content="© 2026 TCG Tournament Manager. All rights reserved.">
     <title>TCG Tournament Manager</title>
-    <script>(function(){try{var t=localStorage.getItem('ptcg_theme');if(t==='original')document.documentElement.classList.add('theme-original');else if(t==='gardevoir')document.documentElement.classList.add('theme-gardevoir');else if(t==='gengar')document.documentElement.classList.add('theme-gengar');else if(t==='pikachu')document.documentElement.classList.add('theme-pikachu');else if(t==='greninja')document.documentElement.classList.add('theme-greninja');}catch(e){}})();</script>
+    <script>(function(){try{var m={crobat:'deeppurple',gardevoir:'magenta',gengar:'cyan',pikachu:'yellow',greninja:'coral'};var t=localStorage.getItem('ptcg_theme');if(t&&m[t]){t=m[t];localStorage.setItem('ptcg_theme',t);}if(!t)t='original';if(t==='original')document.documentElement.classList.add('theme-original');else if(t==='magenta')document.documentElement.classList.add('theme-magenta');else if(t==='cyan')document.documentElement.classList.add('theme-cyan');else if(t==='yellow')document.documentElement.classList.add('theme-yellow');else if(t==='coral')document.documentElement.classList.add('theme-coral');}catch(e){}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20260414f">
+    <link rel="stylesheet" href="style.css?v=20260415a">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
@@ -41,27 +41,27 @@
         <div class="header-controls">
             <div class="theme-dropdown">
                 <button id="theme-toggle" class="lang-toggle theme-toggle" onclick="app.toggleThemeMenu(event)" aria-haspopup="listbox" aria-expanded="false" title="Theme">
-                    <span id="theme-toggle-label">Crobat</span>
+                    <span id="theme-toggle-label">Original</span>
                     <span class="theme-chevron">▾</span>
                 </button>
                 <ul id="theme-menu" class="theme-menu" role="listbox" hidden>
-                    <li role="option" data-theme="crobat" onclick="app.selectTheme('crobat')">
-                        <span class="theme-swatch" style="background:#6E32A8"></span>Crobat
-                    </li>
-                    <li role="option" data-theme="gardevoir" onclick="app.selectTheme('gardevoir')">
-                        <span class="theme-swatch" style="background:#FF52D9"></span>Gardevoir
-                    </li>
-                    <li role="option" data-theme="gengar" onclick="app.selectTheme('gengar')">
-                        <span class="theme-swatch" style="background:#22D3EE"></span>Gengar
-                    </li>
-                    <li role="option" data-theme="pikachu" onclick="app.selectTheme('pikachu')">
-                        <span class="theme-swatch" style="background:#FFD700"></span>Pikachu
-                    </li>
-                    <li role="option" data-theme="greninja" onclick="app.selectTheme('greninja')">
-                        <span class="theme-swatch" style="background:#FF7F50"></span>Greninja
-                    </li>
                     <li role="option" data-theme="original" onclick="app.selectTheme('original')">
                         <span class="theme-swatch" style="background:#FF7324"></span>Original
+                    </li>
+                    <li role="option" data-theme="deeppurple" onclick="app.selectTheme('deeppurple')">
+                        <span class="theme-swatch" style="background:#6E32A8"></span>Deep Purple
+                    </li>
+                    <li role="option" data-theme="magenta" onclick="app.selectTheme('magenta')">
+                        <span class="theme-swatch" style="background:#FF52D9"></span>Ethereal Magenta
+                    </li>
+                    <li role="option" data-theme="cyan" onclick="app.selectTheme('cyan')">
+                        <span class="theme-swatch" style="background:#22D3EE"></span>Psychedelic Cyan
+                    </li>
+                    <li role="option" data-theme="yellow" onclick="app.selectTheme('yellow')">
+                        <span class="theme-swatch" style="background:#FFD700"></span>Electric Yellow
+                    </li>
+                    <li role="option" data-theme="coral" onclick="app.selectTheme('coral')">
+                        <span class="theme-swatch" style="background:#FF7F50"></span>Ninja Coral
                     </li>
                 </ul>
             </div>
@@ -539,6 +539,6 @@
         <p class="footer-note">&copy; 2026 TCG Tournament Manager &mdash; All rights reserved.</p>
     </footer>
 
-    <script src="app.js?v=20260414f"></script>
+    <script src="app.js?v=20260415a"></script>
 </body>
 </html>

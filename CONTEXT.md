@@ -331,19 +331,19 @@ Migration path to Cloudflare if usage explodes later: one doc per tournament map
 
 ### Theme picker — 6 palettes (post-v1.0 patch, same day)
 - New dropdown in the top-right header (between the logo and the language toggle) lets the user pick a theme live. Choice persists in `localStorage.ptcg_theme`.
-- Six themes ship:
-  - **Crobat** (default) — deep purple `#6E32A8` on purple-toned neutrals (`#1B172B` / `#251F3A`).
-  - **Gardevoir** — ethereal magenta `#FF52D9` on cool blue-grey (`#1A1D2D` / `#262B40`).
-  - **Gengar** — psychedelic cyan `#22D3EE` on deep purple-black (`#0B0A1A` / `#15132B`).
-  - **Pikachu** — crystal gold `#FFD700` on deep slate (`#0D1117` / `#161B22`).
-  - **Greninja** — ninja coral `#FF7F50` on deep navy (`#0B1123` / `#151E31`).
-  - **Original** — orange `#FF7324` on dark-neutral (`#1A1A1A` / `#262626`).
-- Implemented via `.theme-<name>` classes on `<html>` that override CSS custom properties. One default `:root` block (Crobat), one override block per theme.
+- Six themes ship (renamed 2026-04-15 to neutral colour names for IP safety):
+  - **Original** (default) — orange `#FF7324` on dark-neutral (`#1A1A1A` / `#262626`). Class: `.theme-original`. Key: `original`.
+  - **Deep Purple** — `#6E32A8` on purple-toned neutrals (`#1B172B` / `#251F3A`). The base `:root` cascade *is* this palette, so no `.theme-deeppurple` class exists; selecting it strips all theme classes from `<html>`.
+  - **Ethereal Magenta** — `#FF52D9` on cool blue-grey. Class: `.theme-magenta`. Key: `magenta`.
+  - **Psychedelic Cyan** — `#22D3EE` on deep purple-black. Class: `.theme-cyan`. Key: `cyan`.
+  - **Electric Yellow** — `#FFD700` on deep slate. Class: `.theme-yellow`. Key: `yellow`.
+  - **Ninja Coral** — `#FF7F50` on deep navy. Class: `.theme-coral`. Key: `coral`.
+- Implemented via `.theme-<name>` classes on `<html>` that override CSS custom properties. The base `:root` block carries the Deep Purple tokens; each non-default theme is one override block.
+- Default for new users is `original` (per April-15 update). Existing users' picks are migrated via `THEME_MIGRATE` (`crobat→deeppurple`, `gardevoir→magenta`, `gengar→cyan`, `pikachu→yellow`, `greninja→coral`) — applied both in `app.js` and the pre-paint `<head>` script, and the migrated key is written back to `localStorage` so the migration runs once.
 - Hardcoded brand-color rgbas refactored to `rgba(var(--color-primary-rgb), α)` so every theme's alpha-blended glows/tints swap cleanly. Same pattern for `var(--side-a-rgb)`.
 - Inline `<head>` script reads `localStorage.ptcg_theme` and adds the class before first paint — no flash-of-wrong-theme on reload.
-- New exports: `app.toggleThemeMenu`, `app.selectTheme`. New i18n-free UI (theme names kept in English).
-- `style.tokens.backup.css` is now redundant (Original theme is in the main cascade) — kept for historical reference.
-- Adding a new theme = one `.theme-<name>` block in `style.css`, one entry in `THEME_LABELS` + `classList` branch in `app.js`, one `<li>` in `index.html`, and one branch in the pre-paint `<head>` script.
+- Exports: `app.toggleThemeMenu`, `app.selectTheme`. UI strings are English-only (no i18n keys for theme names).
+- Adding a new theme = one `.theme-<name>` block in `style.css`, one entry in `THEME_LABELS` + classList branch in `app.js`, one `<li>` in `index.html`, and one branch in the pre-paint `<head>` script.
 
 ### Configurable Swiss scoring (post-v1.0 patch, same day)
 - New `state.scoringDrawBonus` (boolean, default `false`).
