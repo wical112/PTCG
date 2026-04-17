@@ -3804,6 +3804,30 @@ body.no-ads .viewer-ad-slot { display: none !important; }
 body.view-only .round-actions { display: none; }
 body.compact-mode .round-actions { margin-bottom: 0.4rem; }
 body.projector-mode .round-actions { display: none; }
+body.projector-mode .projector-exit-float { display: flex; }
+
+.projector-exit-float {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    opacity: 0.4;
+    transition: opacity 0.2s;
+}
+.projector-exit-float:hover {
+    opacity: 1;
+}
 
 @media (max-width: 600px) {
     .round-actions { gap: 0.4rem; }
