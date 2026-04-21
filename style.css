@@ -345,6 +345,21 @@ textarea:focus {
     gap: 0.8rem;
 }
 
+.reg-round-control {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.reg-round-control label {
+    font-weight: 600;
+}
+.reg-round-control input[type="number"] {
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    text-align: center;
+}
+
 /* ===== TIMER ===== */
 .round-header {
     text-align: center;
@@ -3999,4 +4014,13 @@ body.projector-mode .pairing-help-btn { display: none; }
     background: var(--color-primary);
     color: #fff;
     border-color: var(--color-primary);
+}
+
+/* Trainer ID tag */
+.trainer-id-tag {
+    font-size: 0.75em;
+    color: var(--accent);
+    margin-left: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0.7;
 }

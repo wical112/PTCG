@@ -195,7 +195,14 @@
                     </div>
                 </div>
                 <div class="reg-footer">
-                    <span id="recommended-rounds" class="info-text"></span>
+                    <div class="reg-round-control" id="reg-round-control" style="display:none">
+                        <label for="reg-round-count" data-i18n="reg.roundCountLabel">Rounds:</label>
+                        <input id="reg-round-count" type="number" min="1" max="20" step="1"
+                               style="width:4rem" onchange="app.setRoundCount(this.value)" />
+                        <button class="btn btn-secondary btn-small" type="button"
+                                onclick="app.setRoundCount('')" data-i18n="reg.useRecommended">Use recommended</button>
+                        <span id="recommended-rounds" class="info-text"></span>
+                    </div>
                     <div class="reg-actions">
                         <button class="btn btn-secondary" onclick="app.navigateTo('home')" data-i18n="common.back">Back</button>
                         <button id="btn-start-tournament" class="btn btn-primary" disabled onclick="app.startTournament()" data-i18n="reg.start">Start Tournament</button>
@@ -564,6 +571,6 @@
         <p class="footer-note">&copy; 2026 TCG Tournament Manager &mdash; All rights reserved.</p>
     </footer>
 
-    <script src="app.js?v=20260422b"></script>
+    <script src="app.js?v=20260422c"></script>
 </body>
 </html>

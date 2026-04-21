@@ -60,6 +60,9 @@ const app = (() => {
             'reg.players': '{n} player',
             'reg.players_plural': '{n} players',
             'reg.recommended': 'Recommended rounds: {n}',
+            'reg.recommendedHint': '(recommended: {n})',
+            'reg.roundCountLabel': 'Rounds:',
+            'reg.useRecommended': 'Use recommended',
             'reg.needTwo': 'Need at least 2 players',
             'reg.added': 'Added {n} player',
             'reg.added_plural': 'Added {n} players',
@@ -296,6 +299,9 @@ const app = (() => {
             'reg.players': '{n} 位玩家',
             'reg.players_plural': '{n} 位玩家',
             'reg.recommended': '建議輪數:{n}',
+            'reg.recommendedHint': '(建議:{n})',
+            'reg.roundCountLabel': '輪數:',
+            'reg.useRecommended': '採用建議',
             'reg.needTwo': '至少需要 2 位玩家',
             'reg.added': '已新增 {n} 位玩家',
             'reg.added_plural': '已新增 {n} 位玩家',
@@ -638,7 +644,8 @@ const app = (() => {
         tournamentEnded: false,
         projectorMode: false,
         compactMode: false,
-        publishedTournamentId: null
+        publishedTournamentId: null,
+        roundCountOverride: null
     };
 
     let state = { ...DEFAULT_STATE };
@@ -720,7 +727,7 @@ const app = (() => {
             crumbs.push(`<span class="bc-active">${t('bc.reg')}</span>`);
         } else if (viewName === 'round') {
             crumbs.push(`<span class="bc-link" onclick="app.navigateTo('registration')">${t('bc.reg')}</span>`);
-            const recRounds = getRecommendedRounds();
+            const recRounds = getPlannedRounds();
             const roundLabel = recRounds
                 ? t('round.titleOf', { n: state.currentRound + 1, m: recRounds })
                 : t('round.title', { n: state.currentRound + 1 });
@@ -739,6 +746,24 @@ const app = (() => {
     function getRecommendedRounds() {
         const n = state.players.length;
         return n >= 2 ? Math.ceil(Math.log2(n)) : 0;
+    }
+
+    function setRoundCount(value) {
+        if (state.tournamentStarted) return;
+        const n = parseInt(value, 10);
+        if (Number.isFinite(n) && n > 0 && n <= 20) {
+            state.roundCountOverride = n;
+        } else {
+            state.roundCountOverride = null;
+        }
+        saveState();
+        renderPlayerList();
+    }
+
+    function getPlannedRounds() {
+        const override = parseInt(state.roundCountOverride, 10);
+        if (Number.isFinite(override) && override > 0) return override;
+        return getRecommendedRounds();
     }
 
     // ---- NAVIGATION ----
@@ -907,12 +932,32 @@ const app = (() => {
         const n = state.players.length;
         countEl.textContent = t('reg.players', { n });
 
+        const roundCtl = document.getElementById('reg-round-control');
+        const roundInput = document.getElementById('reg-round-count');
+        const showRoundCtl = state.tournamentType !== 'knockout' && n >= 2;
+        if (roundCtl) roundCtl.style.display = showRoundCtl ? '' : 'none';
+
         if (n >= 2) {
             const rec = getRecommendedRounds();
-            recEl.textContent = t('reg.recommended', { n: rec });
+            const planned = getPlannedRounds();
+            if (state.tournamentType === 'knockout') {
+                recEl.textContent = '';
+            } else {
+                const isCustom = Number.isFinite(parseInt(state.roundCountOverride, 10)) && state.roundCountOverride > 0;
+                recEl.textContent = isCustom
+                    ? t('reg.recommendedHint', { n: rec })
+                    : t('reg.recommended', { n: rec });
+            }
+            if (roundInput) {
+                if (document.activeElement !== roundInput) {
+                    roundInput.value = String(planned || rec || '');
+                }
+                roundInput.disabled = locked;
+            }
             startBtn.disabled = false;
         } else {
             recEl.textContent = n === 1 ? t('reg.needTwo') : '';
+            if (roundInput) roundInput.disabled = true;
             startBtn.disabled = true;
         }
 
@@ -929,6 +974,17 @@ const app = (() => {
     // ---- UPDATES / ANNOUNCEMENTS ----
     // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
     const UPDATES = [
+        {
+            date: '2026-04-22',
+            title: {
+                en: 'New: set your own round count on registration',
+                zh: '新功能：報名頁可自訂賽事輪數'
+            },
+            body: {
+                en: 'The registration page now shows a "Rounds" input so the tournament owner can decide how many Swiss rounds to play. The app still recommends a count based on the roster size (e.g. 14 players → 4 rounds), and that value is used by default. Type a different number (1–20) to override it, or press "Use recommended" to snap back to the suggestion. The choice is locked once the tournament starts. Knockout brackets are unaffected — they always run until a single champion remains.',
+                zh: '報名頁面新增「輪數」輸入欄位，主辦方可自行決定瑞士制要打多少輪。系統仍會依人數提供建議（例如 14 人 → 4 輪）並作為預設值；輸入其他數字（1–20）即可覆寫設定，或按「採用建議」回到系統建議值。賽事一旦開始即鎖定不可更改。淘汰賽不受影響 — 仍會持續對戰直到決出單一冠軍。'
+            }
+        },
         {
             date: '2026-04-21',
             title: {
@@ -1390,7 +1446,7 @@ const app = (() => {
             const remaining = round.pairings.reduce((n, p) => n + (p.isBye ? 1 : 2), 0);
             roundLabel = t('ko.title', { label: knockoutRoundLabel(remaining) });
         } else {
-            const recRounds = getRecommendedRounds();
+            const recRounds = getPlannedRounds();
             roundLabel = recRounds
                 ? t('round.titleOf', { n: state.currentRound + 1, m: recRounds })
                 : t('round.title', { n: state.currentRound + 1 });
@@ -1570,7 +1626,7 @@ const app = (() => {
             const matches = round.pairings.filter(p => !p.isBye);
             return matches.length === 1;
         }
-        const rec = getRecommendedRounds();
+        const rec = getPlannedRounds();
         return rec > 0 && state.currentRound + 1 >= rec;
     }
 
@@ -3777,6 +3833,7 @@ const app = (() => {
         advancedPreview,
         advancedCommit,
         advancedDiscard,
-        advancedResumeFromCloud
+        advancedResumeFromCloud,
+        setRoundCount
     };
 })();
