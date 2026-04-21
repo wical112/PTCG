@@ -3494,19 +3494,14 @@ const app = (() => {
             // Cloud was detached by publisher, so ensure local timer isn't auto-running
             state.timerRunning = false;
 
-            // If the publisher left the current round as "submitted but not ended"
-            // (e.g. they clicked Back to Last Round from standings before publishing),
-            // the submit button would appear locked for the resumer. Reverse the
-            // submission on the current round so it's editable again.
-            if (!state.tournamentEnded && Array.isArray(state.rounds) && state.rounds.length > 0) {
-                const idx = Math.min(state.currentRound, state.rounds.length - 1);
-                const cr = state.rounds[idx];
-                if (cr && cr.resultsSubmitted) {
-                    try { reverseResults(cr); } catch (_) { /* best effort */ }
-                    cr.pairings.forEach(p => { if (!p.isBye) p.result = null; });
-                    cr.resultsSubmitted = false;
-                    state.currentRound = idx;
-                }
+            // If every round already has results submitted, the tournament is
+            // effectively complete — route the resumer to standings rather than
+            // a locked round view. (This also covers the case where the publisher
+            // ended the tournament then used Back to Last Round before publishing.)
+            if (Array.isArray(state.rounds) && state.rounds.length > 0 &&
+                state.rounds.every(r => r.resultsSubmitted)) {
+                state.tournamentEnded = true;
+                state.currentView = 'standings';
             }
 
             saveState();
