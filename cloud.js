@@ -146,6 +146,13 @@ window.cloud = (() => {
         }
     }
 
+    async function fetchOnce(tid) {
+        if (!db) throw new Error('not_initialized');
+        const snap = await db.collection(COLLECTION).doc(tid).get();
+        if (!snap.exists) throw new Error('not_found');
+        return snap.data();
+    }
+
     function subscribeView(tid, onUpdate, onError) {
         if (!db) {
             if (onError) onError(new Error('Cloud not initialized'));
@@ -182,6 +189,7 @@ window.cloud = (() => {
         init, isConfigured, isReady,
         publish, attachExisting, getActiveTournamentId,
         syncState, flush, unpublish,
+        fetchOnce,
         subscribeView, unsubscribeView,
         buildViewUrl
     };

@@ -202,6 +202,20 @@ const app = (() => {
             'adv.warnings': 'Warnings (allowed):',
             'adv.ok': 'No issues detected. Ready to commit.',
             'adv.needRoster': 'Save a roster of at least 2 players first.',
+            'adv.resume.title': 'Resume Tournament from Cloud ID',
+            'adv.resume.tag': 'Pull live state by ID',
+            'adv.resume.intro': 'Have a published Tournament ID? Enter it below to pull the full tournament state from the cloud and continue editing on this device.',
+            'adv.resume.placeholder': 'ABC123',
+            'adv.resume.btn': 'Resume',
+            'adv.resume.fetching': 'Fetching…',
+            'adv.resume.invalidId': 'Tournament ID must be 6 characters (letters and digits).',
+            'adv.resume.notConfigured': 'Cloud sharing is not set up on this build.',
+            'adv.resume.initFailed': 'Could not reach the cloud. Check your internet connection.',
+            'adv.resume.notFound': 'No tournament found with that ID. Double-check the code and try again.',
+            'adv.resume.fetchFailed': 'Could not load that tournament. Please try again.',
+            'adv.resume.replaceConfirm': 'This will REPLACE your current tournament state with the cloud copy. Continue?',
+            'adv.resume.success': 'Tournament loaded — resuming where it left off.',
+            'adv.resume.note': 'Note: you are now the local owner. To keep sharing live, click Publish again on the round view.',
             'val.minRoster': 'Roster needs at least 2 players.',
             'val.duplicate': 'Duplicate player name: "{name}"',
             'val.byeNotSelected': '{tag}: bye player not selected.',
@@ -424,6 +438,20 @@ const app = (() => {
             'adv.warnings': '警告(可允許):',
             'adv.ok': '未發現問題,可以重建。',
             'adv.needRoster': '請先儲存至少 2 位玩家的名單。',
+            'adv.resume.title': '以雲端編號續辦賽事',
+            'adv.resume.tag': '以編號載入直播狀態',
+            'adv.resume.intro': '已有一個已發佈的賽事編號?在此輸入即可把完整賽事狀態從雲端取回,並於本裝置繼續編輯。',
+            'adv.resume.placeholder': 'ABC123',
+            'adv.resume.btn': '續辦',
+            'adv.resume.fetching': '載入中⋯',
+            'adv.resume.invalidId': '賽事編號必須為 6 個字元(英文字母與數字)。',
+            'adv.resume.notConfigured': '此版本尚未設定雲端分享功能。',
+            'adv.resume.initFailed': '無法連線到雲端,請檢查網路連線。',
+            'adv.resume.notFound': '找不到此編號的賽事,請再次確認編號。',
+            'adv.resume.fetchFailed': '載入賽事失敗,請稍後再試。',
+            'adv.resume.replaceConfirm': '此操作將以雲端副本取代目前的賽事狀態,是否繼續?',
+            'adv.resume.success': '已載入賽事 — 從中斷之處繼續。',
+            'adv.resume.note': '注意:本裝置現為本地擁有者。若仍要即時分享,請於對戰畫面再次點選「發佈」。',
             'val.minRoster': '名單至少需要 2 位玩家。',
             'val.duplicate': '玩家名稱重複:「{name}」',
             'val.byeNotSelected': '{tag}:未選擇輪空玩家。',
@@ -767,9 +795,18 @@ const app = (() => {
         const lines = textarea.value.split('\n');
         let added = 0;
         lines.forEach(line => {
-            const name = line.trim();
+            const trimmed = line.trim();
+            if (!trimmed) return;
+            let name, trainerId = '';
+            if (trimmed.includes('|')) {
+                const parts = trimmed.split('|');
+                name = parts[0].trim();
+                trainerId = parts[1].trim();
+            } else {
+                name = trimmed;
+            }
             if (name && !state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-                state.players.push(createPlayer(name));
+                state.players.push(createPlayer(name, trainerId));
                 added++;
             }
         });
@@ -781,9 +818,10 @@ const app = (() => {
         }
     }
 
-    function createPlayer(name) {
+    function createPlayer(name, trainerId) {
         return {
             name,
+            trainerId: trainerId || '',
             id: name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             matchPoints: 0,
             wins: 0,
@@ -805,15 +843,23 @@ const app = (() => {
     function editPlayerName(index) {
         if (state.tournamentStarted) return;
         const player = state.players[index];
-        const newName = prompt(t('reg.editPrompt'), player.name);
+        const currentValue = player.trainerId ? `${player.name} | ${player.trainerId}` : player.name;
+        const newName = prompt(t('reg.editPrompt'), currentValue);
         if (newName && newName.trim()) {
-            const trimmed = newName.trim();
+            let trimmed = newName.trim();
+            let trainerId = player.trainerId || '';
+            if (trimmed.includes('|')) {
+                const parts = trimmed.split('|');
+                trimmed = parts[0].trim();
+                trainerId = parts[1].trim();
+            }
             // Check for duplicate
             if (state.players.some((p, i) => i !== index && p.name.toLowerCase() === trimmed.toLowerCase())) {
                 alert(t('reg.dupName'));
                 return;
             }
             player.name = trimmed;
+            player.trainerId = trainerId;
             saveState();
             renderPlayerList();
         }
@@ -850,8 +896,9 @@ const app = (() => {
         list.innerHTML = '';
         state.players.forEach((p, i) => {
             const li = document.createElement('li');
+            const trainerTag = p.trainerId ? `<span class="trainer-id-tag">${escapeHtml(p.trainerId)}</span>` : '';
             li.innerHTML = `
-                <span class="player-name" ${!locked ? `ondblclick="app.editPlayerName(${i})" title="Double-click to edit"` : ''}>${escapeHtml(p.name)}</span>
+                <span class="player-name" ${!locked ? `ondblclick="app.editPlayerName(${i})" title="Double-click to edit"` : ''}>${escapeHtml(p.name)}${trainerTag}</span>
                 ${!locked ? `<button class="btn-delete" onclick="app.deletePlayer(${i})" title="Remove">&times;</button>` : ''}
             `;
             list.appendChild(li);
@@ -882,6 +929,17 @@ const app = (() => {
     // ---- UPDATES / ANNOUNCEMENTS ----
     // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
     const UPDATES = [
+        {
+            date: '2026-04-21',
+            title: {
+                en: 'New: resume a tournament by Cloud ID',
+                zh: '新功能：以雲端編號續辦賽事'
+            },
+            body: {
+                en: 'A new sub-feature on the Advanced page lets you resume a published tournament on a different device. Enter the 6-character Tournament ID shown on the publisher\'s share panel, press Resume, and the full state — roster, rounds, standings, timer — is pulled from the cloud into this browser so you can keep running the event. The resumed copy becomes a fresh local tournament; click Publish again on the round view if you want to keep sharing live.',
+                zh: '「進階」頁面新增子功能：以雲端編號續辦賽事。在發佈方的分享面板中取得 6 碼賽事編號，於新裝置輸入後按下「續辦」，即可將完整狀態（名單、輪次、排名、計時器）從雲端載入此瀏覽器繼續進行。載入後為本機獨立賽事；若仍需即時分享，請於對戰畫面再次點選「發佈」。'
+            }
+        },
         {
             date: '2026-04-15',
             title: {
@@ -1925,6 +1983,7 @@ const app = (() => {
             `;
             tbody.appendChild(tr);
         });
+        updateShowdownButton();
     }
 
     function downloadStandings() {
@@ -1968,6 +2027,53 @@ const app = (() => {
             console.error('Screenshot failed:', err);
             alert(t('standings.snapFail'));
         });
+    }
+
+    function sendToShowdown() {
+        const standings = getStandings();
+        const rounds = state.rounds.map((r, i) => ({
+            roundNumber: i + 1,
+            pairings: r.pairings.map(p => ({
+                table: p.table,
+                playerA: { name: getPlayer(p.playerA)?.name || p.playerA },
+                playerB: p.playerB ? { name: getPlayer(p.playerB)?.name || p.playerB } : null,
+                result: p.result === 'a' ? 'a_win' : p.result === 'b' ? 'b_win' : p.result === 'bye' ? 'bye' : p.result === 'draw' ? 'draw' : p.result,
+            })),
+        }));
+        const payload = {
+            version: '1.0',
+            source: 'tcgtm',
+            createEvent: !state.showdownEventId,
+            eventId: state.showdownEventId || '',
+            tournamentName: state.tournamentName || '',
+            tournamentDate: state.tournamentDate || '',
+            tournamentType: state.tournamentType || 'swiss',
+            totalRounds: state.rounds.filter(r => r.resultsSubmitted).length,
+            standings: standings.map((p, i) => ({
+                rank: i + 1,
+                name: p.name,
+                trainerId: p.trainerId || '',
+                record: p.record,
+                matchPoints: p.matchPoints,
+                wins: p.wins,
+                losses: p.losses,
+                draws: p.draws,
+                owp: p.owp,
+                dropped: !!p.dropped,
+            })),
+            rounds,
+        };
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        const showdownUrl = window.SHOWDOWN_URL || 'https://showdown-hk.web.app';
+        const urlId = state.showdownEventId || 'new';
+        window.open(`${showdownUrl}/en/dashboard/results?id=${urlId}&tcgtm=${encodeURIComponent(encoded)}`, '_blank');
+    }
+
+    function updateShowdownButton() {
+        const btn = document.getElementById('btn-send-showdown');
+        if (!btn) return;
+        const tournamentEnded = state.tournamentStarted && state.currentRound >= state.totalRounds && state.rounds.every(r => r.resultsSubmitted);
+        btn.style.display = (state.showdownEventId || tournamentEnded) ? '' : 'none';
     }
 
     // ---- TRAINER CARD MODAL ----
@@ -3268,7 +3374,7 @@ const app = (() => {
         // 1. Build fresh real players from staging
         const tempIdToRealId = {};
         state.players = advancedStaging.players.map(sp => {
-            const real = createPlayer(sp.name);
+            const real = createPlayer(sp.name, sp.trainerId);
             tempIdToRealId[sp.tempId] = real.id;
             return real;
         });
@@ -3318,6 +3424,91 @@ const app = (() => {
         clearAdvancedStaging();
         showToast(t('adv.reconstructed', { n: nextRoundIndex + 1 }));
         navigateTo('round');
+    }
+
+    async function advancedResumeFromCloud() {
+        if (viewOnly) return;
+        const input = document.getElementById('adv-resume-id-input');
+        const statusEl = document.getElementById('adv-resume-status');
+        const btn = document.getElementById('btn-adv-resume');
+        const setStatus = (msg, isError) => {
+            if (!statusEl) return;
+            statusEl.textContent = msg || '';
+            statusEl.style.color = isError ? 'var(--danger, #ff6b6b)' : '';
+        };
+
+        const raw = (input ? input.value : '').trim().toUpperCase();
+        if (!/^[A-Z0-9]{6}$/.test(raw)) {
+            setStatus(t('adv.resume.invalidId'), true);
+            return;
+        }
+
+        if (!window.cloud || !window.cloud.isConfigured()) {
+            setStatus(t('adv.resume.notConfigured'), true);
+            return;
+        }
+
+        if (state.tournamentStarted && !confirm(t('adv.resume.replaceConfirm'))) return;
+
+        if (btn) btn.disabled = true;
+        setStatus(t('adv.resume.fetching'), false);
+
+        try {
+            if (!window.cloud.isReady()) await window.cloud.init();
+            if (!window.cloud.isReady()) {
+                setStatus(t('adv.resume.initFailed'), true);
+                return;
+            }
+
+            let data;
+            try {
+                data = await window.cloud.fetchOnce(raw);
+            } catch (e) {
+                if (e && e.message === 'not_found') setStatus(t('adv.resume.notFound'), true);
+                else { console.error('[resume] fetch failed', e); setStatus(t('adv.resume.fetchFailed'), true); }
+                return;
+            }
+
+            const remote = data && data.state;
+            if (!remote || typeof remote !== 'object') {
+                setStatus(t('adv.resume.fetchFailed'), true);
+                return;
+            }
+
+            // Clear any old per-round snapshots — fresh state incoming.
+            for (let i = 0; i < 50; i++) {
+                localStorage.removeItem(`ptcg_round_${i}`);
+            }
+
+            // Merge remote state into local. Drop publishedTournamentId so the
+            // resumer is local-only (they are not the cloud owner and writes
+            // would be rejected by the security rules).
+            state = {
+                ...DEFAULT_STATE,
+                ...remote,
+                publishedTournamentId: null,
+                // Preserve per-device prefs
+                timerMuted: state.timerMuted,
+                noAds: true
+            };
+            // Cloud was detached by publisher, so ensure local timer isn't auto-running
+            state.timerRunning = false;
+            saveState();
+
+            // Re-snapshot each completed round so back-to-round navigation works
+            if (Array.isArray(state.rounds)) {
+                state.rounds.forEach((_, idx) => saveRoundSnapshot(idx));
+            }
+
+            setStatus('', false);
+            showToast(t('adv.resume.success'));
+            alert(t('adv.resume.note'));
+
+            updatePublishButton && updatePublishButton();
+            resumeTournament();
+        } finally {
+            if (btn) btn.disabled = false;
+        }
     }
 
     function advancedDiscard() {
@@ -3412,6 +3603,46 @@ const app = (() => {
         // Keyboard events
         document.addEventListener('keydown', handleKeydown);
 
+        // Import players from SHOWDOWN via URL param (check before view-mode)
+        const importParam = new URLSearchParams(window.location.search).get('import');
+        if (importParam) {
+            try {
+                const raw = atob(decodeURIComponent(importParam));
+                let jsonStr;
+                try { jsonStr = decodeURIComponent(escape(raw)); } catch (_) { jsonStr = raw; }
+                const imported = JSON.parse(jsonStr);
+                if (imported.players && Array.isArray(imported.players)) {
+                    // Reset state for fresh import
+                    for (let i = 0; i < 50; i++) localStorage.removeItem(`ptcg_round_${i}`);
+                    const keepWheel = { wheelNames: state.wheelNames, wheelHistory: state.wheelHistory };
+                    state = { ...DEFAULT_STATE, ...keepWheel, players: [], rounds: [] };
+                    stopTimer();
+
+                    state.tournamentType = imported.tournamentType || 'swiss';
+                    state.tournamentName = imported.eventTitle || '';
+                    state.tournamentDate = imported.eventDate || new Date().toISOString().split('T')[0];
+                    state.showdownEventId = imported.eventId || null;
+                    let added = 0;
+                    imported.players.forEach(p => {
+                        const name = p.name || p.playerName;
+                        const trainerId = p.playerId || '';
+                        if (name) {
+                            state.players.push(createPlayer(name, trainerId));
+                            added++;
+                        }
+                    });
+                    saveState();
+                    window.history.replaceState({}, '', window.location.pathname);
+                    navigateTo('registration');
+                    if (added > 0) showToast(t('reg.added', { n: added }));
+                    renderTimer();
+                    return;
+                }
+            } catch (e) {
+                console.error('SHOWDOWN import failed:', e);
+            }
+        }
+
         // Detect view-mode (URL has ?t=<id>) — but only if we're not the owner
         const urlTid = getUrlTournamentId();
         if (urlTid && state.publishedTournamentId !== urlTid) {
@@ -3425,7 +3656,6 @@ const app = (() => {
                 await window.cloud.init();
                 if (window.cloud.isReady()) {
                     window.cloud.attachExisting(state.publishedTournamentId);
-                    // Push current state in case viewers missed updates while offline
                     window.cloud.syncState(state);
                 }
             })();
@@ -3497,6 +3727,7 @@ const app = (() => {
         closeModal,
         closeWinnerModal,
         downloadStandings,
+        sendToShowdown,
         timerToggle,
         timerReset,
         timerAdjust,
@@ -3534,6 +3765,7 @@ const app = (() => {
         advancedSetPairingResult,
         advancedPreview,
         advancedCommit,
-        advancedDiscard
+        advancedDiscard,
+        advancedResumeFromCloud
     };
 })();

@@ -20,7 +20,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
     <script src="firebase-config.js" defer></script>
-    <script src="cloud.js" defer></script>
+    <script src="cloud.js?v=20260421a" defer></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-44W3GZTCS4"></script>
     <script>
@@ -186,7 +186,7 @@
                 <div class="registration-grid">
                     <div class="reg-input-area">
                         <label for="bulk-input" data-i18n="reg.bulkLabel">Add players (one name per line):</label>
-                        <textarea id="bulk-input" rows="8" data-i18n-placeholder="reg.bulkPlaceholder" placeholder="Enter one player name per line…&#10;Player 1&#10;Player 2&#10;Player 3"></textarea>
+                        <textarea id="bulk-input" rows="8" data-i18n-placeholder="reg.bulkPlaceholder" placeholder="Enter one player name per line…&#10;Optional: Name | Trainer ID&#10;Player 1&#10;Player 2 | TRN-12345&#10;Player 3"></textarea>
                         <button class="btn btn-primary" onclick="app.bulkAddPlayers()" data-i18n="reg.addBtn">Add Players</button>
                     </div>
                     <div class="reg-list-area">
@@ -329,6 +329,7 @@
                 <div class="panel-header">
                     <h2 id="standings-title">Final Standings</h2>
                     <button class="btn btn-small btn-accent" onclick="app.downloadStandings()" data-i18n="standings.download">Download as Image</button>
+                    <button id="btn-send-showdown" class="btn btn-small btn-primary" onclick="app.sendToShowdown()" style="display:none">Send to SHOWDOWN</button>
                 </div>
                 <div id="standings-table-wrapper">
                     <table id="standings-table" class="standings-table">
@@ -391,6 +392,24 @@
 
         <!-- ADVANCED RECOVERY VIEW -->
         <section id="view-advanced" class="view">
+            <!-- SUB-FEATURE: RESUME FROM CLOUD ID -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 data-i18n="adv.resume.title">Resume Tournament from Cloud ID</h2>
+                    <span class="badge" data-i18n="adv.resume.tag">Pull live state by ID</span>
+                </div>
+                <p class="info-text" style="margin-bottom:1rem" data-i18n="adv.resume.intro">
+                    Have a published Tournament ID? Enter it below to pull the full tournament state from the cloud and continue editing on this device.
+                </p>
+                <div class="adv-row-actions" style="flex-wrap:wrap;gap:0.5rem">
+                    <input id="adv-resume-id-input" type="text" maxlength="6" autocomplete="off"
+                           style="text-transform:uppercase;letter-spacing:0.2em;font-family:monospace;font-size:1.1rem;width:10rem"
+                           data-i18n-placeholder="adv.resume.placeholder" placeholder="ABC123">
+                    <button id="btn-adv-resume" class="btn btn-primary btn-small" onclick="app.advancedResumeFromCloud()" data-i18n="adv.resume.btn">Resume</button>
+                    <span id="adv-resume-status" class="info-text"></span>
+                </div>
+            </div>
+
             <div class="panel">
                 <div class="panel-header">
                     <h2 data-i18n="adv.title">Advanced &mdash; Recover Tournament</h2>
@@ -545,6 +564,6 @@
         <p class="footer-note">&copy; 2026 TCG Tournament Manager &mdash; All rights reserved.</p>
     </footer>
 
-    <script src="app.js?v=20260415b"></script>
+    <script src="app.js?v=20260421a"></script>
 </body>
 </html>
