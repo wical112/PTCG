@@ -2364,8 +2364,9 @@ select:focus {
 }
 
 .pairing-row .table-number {
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-dim);
+    border: 1px solid var(--border-subtle);
     border-radius: 6px;
     padding: 0.3rem 0.5rem;
     font-family: var(--font-mono);

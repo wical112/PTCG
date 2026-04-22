@@ -977,6 +977,17 @@ const app = (() => {
         {
             date: '2026-04-22',
             title: {
+                en: 'UI: Clearer table numbering',
+                zh: '介面：桌號顯示更清晰'
+            },
+            body: {
+                en: 'Table numbers in the pairings view now use a neutral grey box instead of the player color, reducing visual confusion.',
+                zh: '對戰表中的桌號改為中性的灰色背景，不再與玩家顏色混淆，以提升辨識度。'
+            }
+        },
+        {
+            date: '2026-04-22',
+            title: {
                 en: 'New: set your own round count on registration',
                 zh: '新功能：報名頁可自訂賽事輪數'
             },
