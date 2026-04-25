@@ -8,10 +8,10 @@ window.cloud = (() => {
     const ID_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1
     const ID_LEN = 6;
     const SYNC_DEBOUNCE_MS = 800;
-    const TTL_HOURS = 24;
+    const TTL_DAYS = 30;
 
     function ttlTimestamp() {
-        const expires = new Date(Date.now() + TTL_HOURS * 60 * 60 * 1000);
+        const expires = new Date(Date.now() + TTL_DAYS * 24 * 60 * 60 * 1000);
         return firebase.firestore.Timestamp.fromDate(expires);
     }
 
@@ -177,11 +177,13 @@ window.cloud = (() => {
     }
 
     function buildViewUrl(tid) {
+        // Always point new share links at the dedicated viewer page so visitors land
+        // straight on /view/ without going through the root-page redirect.
         const u = new URL(window.location.href);
+        u.pathname = '/view/';
         u.search = '';
         u.hash = '';
         u.searchParams.set('t', tid);
-        // strip path file (use directory) so it works whether served as /index.html or /
         return u.toString();
     }
 

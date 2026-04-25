@@ -1,0 +1,25 @@
+{
+  "name": "GameSet HK — TCG Tournament Manager",
+  "short_name": "GameSet HK",
+  "description": "GameSet HK — Swiss & knockout TCG tournament manager with live spectator links.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e27",
+  "theme_color": "#0a0e27",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20192%20192'%3E%3Crect%20width='192'%20height='192'%20rx='36'%20fill='%230a0e27'/%3E%3Cpath%20d='M60%2042h72v30a36%2036%200%200%201-72%200V42z'%20fill='%23FF7324'/%3E%3Cpath%20d='M42%2054h18v18a18%2018%200%200%201-18-18zm90%200h18a18%2018%200%200%201-18%2018V54z'%20fill='%23FF7324'/%3E%3Crect%20x='78'%20y='108'%20width='36'%20height='24'%20fill='%23FF7324'/%3E%3Crect%20x='60'%20y='132'%20width='72'%20height='18'%20rx='6'%20fill='%23FFC107'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20512%20512'%3E%3Crect%20width='512'%20height='512'%20rx='96'%20fill='%230a0e27'/%3E%3Cpath%20d='M160%20112h192v80a96%2096%200%200%201-192%200v-80z'%20fill='%23FF7324'/%3E%3Cpath%20d='M112%20144h48v48a48%2048%200%200%201-48-48zm240%200h48a48%2048%200%200%201-48%2048v-48z'%20fill='%23FF7324'/%3E%3Crect%20x='208'%20y='288'%20width='96'%20height='64'%20fill='%23FF7324'/%3E%3Crect%20x='160'%20y='352'%20width='192'%20height='48'%20rx='16'%20fill='%23FFC107'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "utilities", "productivity"]
+}

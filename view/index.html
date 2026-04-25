@@ -10,16 +10,16 @@
     <meta name="copyright" content="© 2026 GameSet HK. All rights reserved.">
     <meta name="description" content="GameSet HK — run Swiss or knockout TCG tournaments in-browser. Automatic pairings, live standings with full tiebreakers (OWP, OOMW, WOScore), shareable spectator links, works offline, free.">
     <meta name="keywords" content="GameSet HK, Pokémon TCG, Swiss pairing, tournament manager, knockout bracket, OMW, tiebreaker, trainer, TCG event">
-    <title>GameSet HK — TCG Tournament Manager (Swiss & Knockout)</title>
-    <!-- Owner entry. If a tournament ID is in the URL (?t=...), bounce to the dedicated viewer page. -->
-    <script>(function(){try{var s=window.location.search;var p=new URLSearchParams(s);if(p.get('t')){window.location.replace('/view/'+s);}}catch(e){}})();</script>
+    <title>GameSet HK — Live Tournament View</title>
+    <!-- Viewer-only entry point. If no tournament ID is in the URL, send the user back to the owner home. -->
+    <script>(function(){try{var p=new URLSearchParams(window.location.search);if(!p.get('t')){window.location.replace('/');}}catch(e){}})();</script>
 
     <!-- Open Graph / social sharing -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="GameSet HK">
-    <meta property="og:title" content="GameSet HK — run Pokémon TCG events in your browser">
-    <meta property="og:description" content="Automatic Swiss pairings, live standings with official-style tiebreakers, shareable spectator links. Free, no signup.">
-    <meta property="og:url" content="https://gameset-hk.com/">
+    <meta property="og:title" content="GameSet HK — Live Tournament View">
+    <meta property="og:description" content="Watch a GameSet HK tournament live — pairings, standings, results sync in real time.">
+    <meta property="og:url" content="https://gameset-hk.com/view/">
     <meta property="og:image" content="https://gameset-hk.com/og-image.svg">
 
     <!-- Twitter / X -->
@@ -31,21 +31,21 @@
     <!-- Favicon (inline SVG — trophy) -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230a0e27'/%3E%3Cpath%20d='M20%2014h24v10a12%2012%200%200%201-24%200V14z'%20fill='%23FF7324'/%3E%3Cpath%20d='M14%2018h6v6a6%206%200%200%201-6-6zm30%200h6a6%206%200%200%201-6%206v-6z'%20fill='%23FF7324'/%3E%3Crect%20x='26'%20y='36'%20width='12'%20height='8'%20fill='%23FF7324'/%3E%3Crect%20x='20'%20y='44'%20width='24'%20height='6'%20rx='2'%20fill='%23FFC107'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230a0e27'/%3E%3Cpath%20d='M20%2014h24v10a12%2012%200%200%201-24%200V14z'%20fill='%23FF7324'/%3E%3Cpath%20d='M14%2018h6v6a6%206%200%200%201-6-6zm30%200h6a6%206%200%200%201-6%206v-6z'%20fill='%23FF7324'/%3E%3Crect%20x='26'%20y='36'%20width='12'%20height='8'%20fill='%23FF7324'/%3E%3Crect%20x='20'%20y='44'%20width='24'%20height='6'%20rx='2'%20fill='%23FFC107'/%3E%3C/svg%3E">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="canonical" href="https://gameset-hk.com/">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="canonical" href="https://gameset-hk.com/view/">
     <script>(function(){try{var m={crobat:'deeppurple',gardevoir:'magenta',gengar:'cyan',pikachu:'yellow',greninja:'coral'};var t=localStorage.getItem('ptcg_theme');if(t&&m[t]){t=m[t];localStorage.setItem('ptcg_theme',t);}if(!t)t='original';if(t==='original')document.documentElement.classList.add('theme-original');else if(t==='magenta')document.documentElement.classList.add('theme-magenta');else if(t==='cyan')document.documentElement.classList.add('theme-cyan');else if(t==='yellow')document.documentElement.classList.add('theme-yellow');else if(t==='coral')document.documentElement.classList.add('theme-coral');}catch(e){}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20260425c">
+    <link rel="stylesheet" href="/style.css?v=20260425c">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
-    <script src="firebase-config.js" defer></script>
-    <script src="cloud.js?v=20260421a" defer></script>
+    <script src="/firebase-config.js" defer></script>
+    <script src="/cloud.js?v=20260421a" defer></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-44W3GZTCS4"></script>
     <script>
@@ -55,7 +55,7 @@
       gtag('config', 'G-44W3GZTCS4');
     </script>
 </head>
-<body>
+<body class="view-only">
     <div id="view-mode-banner" class="view-mode-banner" style="display:none;">
         <span class="live-dot"></span>
         <span data-i18n="cloud.live">LIVE</span>
@@ -686,18 +686,18 @@
     <footer class="site-footer">
         <p class="footer-disclaimer" data-i18n="footer.disclaimer">Fan-made tool. Not affiliated with, endorsed by, or sponsored by Nintendo, The Pok&eacute;mon Company, Game Freak, or Creatures Inc. All trademarks belong to their respective owners.</p>
         <div class="footer-links">
-            <a href="landing.html">Home</a>
-            <a href="about.html">About</a>
-            <a href="faq.html">FAQ</a>
-            <a href="contact.html">Contact</a>
-            <a href="privacy.html">Privacy</a>
-            <a href="terms.html">Terms</a>
-            <a href="legal.html" data-i18n="footer.legal">Legal Notice</a>
+            <a href="/landing.html">Home</a>
+            <a href="/about.html">About</a>
+            <a href="/faq.html">FAQ</a>
+            <a href="/contact.html">Contact</a>
+            <a href="/privacy.html">Privacy</a>
+            <a href="/terms.html">Terms</a>
+            <a href="/legal.html" data-i18n="footer.legal">Legal Notice</a>
             <button id="btn-no-ads" type="button" class="no-ads-btn" onclick="app.toggleNoAds()" title="Hide advertisements">noAds</button>
         </div>
         <p class="footer-note">&copy; 2026 GameSet HK &mdash; All rights reserved.</p>
     </footer>
 
-    <script src="app.js?v=20260425e"></script>
+    <script src="/app.js?v=20260425e"></script>
 </body>
 </html>

@@ -61,12 +61,25 @@ body {
 }
 
 .logo {
-    font-size: 1.5rem;
+    font-size: clamp(1rem, 4.5vw, 1.5rem);
     background: linear-gradient(90deg, var(--yellow), var(--red));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 13rem);
+    margin-left: auto;
+    margin-right: auto;
+}
+.logo-short { display: none; }
+@media (max-width: 480px) {
+    .logo-full { display: none; }
+    .logo-short { display: inline; letter-spacing: 1px; font-weight: 800; }
+    /* Reserve only ~7rem for the compact controls instead of 11rem so the title gets room */
+    .logo { max-width: calc(100vw - 7rem); font-size: clamp(0.9rem, 4vw, 1.2rem); }
 }
 
 .breadcrumb {
@@ -198,10 +211,36 @@ body {
     margin-bottom: 0.5rem;
 }
 
+/* Headline — gradient text + tighter line-height for the new GameSet HK welcome */
+.home-container h2.home-headline {
+    font-size: clamp(1.6rem, 5.5vw, 2.6rem);
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    background: linear-gradient(120deg, var(--yellow) 0%, var(--red) 55%, var(--accent, #FF7324) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    max-width: 28ch;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 0 30px rgba(255, 115, 36, 0.15);
+}
+
 .subtitle {
     color: var(--text-dim);
     margin-bottom: 2rem;
     font-size: 1.1rem;
+}
+
+.subtitle.home-tagline {
+    font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+    max-width: 42ch;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+    opacity: 0.9;
 }
 
 .home-buttons {
@@ -240,6 +279,28 @@ body {
 .info-text {
     color: var(--text-dim);
     font-size: 0.9rem;
+}
+
+/* Input hint — appears under an input to describe behavior or preview outcome */
+.input-hint {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--text-dim);
+    opacity: 0.85;
+}
+.input-hint em {
+    color: var(--accent, #FF7324);
+    font-style: normal;
+    font-weight: 600;
+}
+.input-hint code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.05em 0.35em;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.92em;
 }
 
 /* ===== REGISTRATION ===== */
@@ -514,19 +575,32 @@ textarea:focus {
 }
 
 .standings-table th {
-    background: rgba(0, 0, 0, 0.4);
-    padding: 0.7rem 1rem;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 0.7rem 0.75rem;
     text-align: left;
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-dim);
     border-bottom: 2px solid var(--border-accent);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    backdrop-filter: blur(4px);
 }
 
 .standings-table td {
-    padding: 0.7rem 1rem;
+    padding: 0.7rem 0.75rem;
     border-bottom: 1px solid var(--border-subtle);
+    white-space: nowrap;
+}
+
+/* Right-align numeric tiebreaker columns (4..8) for readability */
+.standings-table th:nth-child(n+4),
+.standings-table td:nth-child(n+4) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .standings-table tbody tr {
@@ -1978,6 +2052,14 @@ body {
 .theme-toggle[aria-expanded="true"] .theme-chevron {
     transform: rotate(180deg);
 }
+/* Phone — compact header controls so the GAMESET HK title isn't clipped */
+@media (max-width: 480px) {
+    .header-controls { gap: 0.3rem; top: 0.6rem; right: 0.6rem; }
+    .header-controls .lang-toggle { padding: 0.3rem 0.5rem; font-size: 0.78rem; }
+    .theme-toggle { padding: 0.3rem 0.5rem; }
+    /* Hide the long theme name on phone (e.g. "Original" / "Deep Purple"); keep just the chevron */
+    .theme-toggle #theme-toggle-label { display: none; }
+}
 .theme-menu {
     position: absolute;
     top: calc(100% + 6px);
@@ -2224,6 +2306,42 @@ body {
 /* Secondary tiles (Wheel + Advanced) — dark glass */
 .home-buttons .home-tile.home-tile-secondary {
     background: linear-gradient(155deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 60%), #1f1f1f;
+}
+
+/* Spin-battle primary tiles — distinct cyan/violet gradient so they don't blend with TCG orange */
+.home-buttons .home-tile.home-tile-spin {
+    background: linear-gradient(160deg, #22D3EE 0%, #6E32A8 100%);
+    border-color: #22D3EE;
+    box-shadow: 0 14px 30px -16px rgba(34,211,238,0.55), 0 6px 16px -8px rgba(0,0,0,0.7);
+}
+.home-buttons .home-tile.home-tile-spin:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 44px -14px rgba(34,211,238,0.7), 0 8px 18px -8px rgba(0,0,0,0.7);
+}
+.home-buttons .home-tile.home-tile-spin .btn-icon {
+    color: #fff;
+}
+
+/* TESTING badge — diagonal sticker on the corner of in-progress feature tiles */
+.home-buttons .home-tile-testing {
+    position: relative;
+}
+.home-buttons .home-tile-testing .testing-badge {
+    position: absolute;
+    top: 12px;
+    right: -28px;
+    background: #FFD700;
+    color: #000;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 0.18rem 2rem;
+    transform: rotate(35deg);
+    transform-origin: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    z-index: 2;
+    pointer-events: none;
+    text-shadow: none;
 }
 
 .home-buttons .home-tile .btn-icon {
@@ -2942,7 +3060,7 @@ body.view-only .btn-delete,
 body.view-only .reg-input-area,
 body.view-only .reg-actions,
 body.view-only .round-footer,
-body.view-only .panel-header > button,
+body.view-only .panel-header > button:not(.view-safe),
 body.view-only .timer-controls,
 body.view-only #timer-display,
 body.view-only #breadcrumb,
@@ -2951,9 +3069,28 @@ body.view-only #view-mode-banner,
 body.view-only #view-standings .standings-footer {
     display: none !important;
 }
-body.view-only .result-buttons {
+body.view-only .result-buttons,
+body.view-only .bo3-games,
+body.view-only .spin-controls,
+body.view-only .spin-penalty-block,
+body.view-only .spin-hint,
+body.view-only .deck-btn {
     pointer-events: none;
-    opacity: 0.95;
+    opacity: 0.45;
+}
+/* In view mode, the spin-side cards still exist (so viewers see the score) but can't open the cross popup */
+body.view-only .spin-side {
+    pointer-events: none;
+    cursor: default;
+}
+/* Re-enable just the info "i" button so viewers can still open a player card */
+body.view-only .spin-side .spin-info-btn {
+    pointer-events: auto;
+}
+/* Cross popup, bey picker, and any open popups should never appear in view mode */
+body.view-only .spin-cross,
+body.view-only .spin-bey-picker {
+    display: none !important;
 }
 body.view-only .pairing-row,
 body.view-only .player-list li,
@@ -3249,15 +3386,78 @@ body.view-only .viewer-share-btn:hover {
 }
 body.view-only .viewer-share-btn svg { display: block; }
 
-/* In view-only mode, round-header collapses to title (left) + share button (right) on one row */
+/* In view-only mode, round-header collapses to title (left) + share button (right) on one row.
+   Force this layout at all viewport sizes so the mobile media query below doesn't re-center the title. */
 body.view-only .round-header {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    grid-template-columns: none;
+    gap: 0.5rem;
+    grid-template-columns: none !important;
+    text-align: left !important;
+    flex-wrap: nowrap;
 }
-body.view-only .round-header #round-title { text-align: left; flex: 1; }
+body.view-only .round-header #round-title {
+    text-align: left !important;
+    justify-self: start !important;
+    flex: 0 1 auto;          /* don't hog all the space — leave room for buttons */
+    min-width: 0;            /* allow shrinking */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+body.view-only .round-header #btn-viewer-share {
+    flex: 0 0 auto;
+}
+@media (max-width: 480px) {
+    body.view-only .round-header { gap: 0.4rem; }
+    body.view-only .round-header #round-title { font-size: 1.05rem; }
+}
+
+/* ----- Viewer tabs — flip between live round + standings while watching ----- */
+.viewer-tabs {
+    display: none;        /* hidden by default; only viewers see it */
+    gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    background: var(--color-bg-surface);
+    border-bottom: 1px solid var(--color-border);
+    justify-content: center;
+}
+body.view-only .viewer-tabs {
+    display: flex;
+}
+.viewer-tab {
+    flex: 1 1 0;
+    max-width: 220px;
+    padding: 0.55rem 0.9rem;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.viewer-tab:hover {
+    background: rgba(var(--color-primary-rgb), 0.08);
+    color: var(--color-text);
+}
+.viewer-tab-active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+.viewer-tab-active:hover {
+    background: var(--color-primary);
+    color: #fff;
+}
+@media (max-width: 480px) {
+    .viewer-tabs { padding: 0.45rem 0.6rem; }
+    .viewer-tab { padding: 0.5rem 0.6rem; font-size: 0.82rem; }
+}
 
 /* Viewer share QR modal */
 .viewer-share-modal {
@@ -3322,6 +3522,1017 @@ body.view-only .round-header #round-title { text-align: left; flex: 1; }
 }
 @media (max-width: 720px) {
     .reg-meta { grid-template-columns: 1fr; }
+}
+
+/* Spin Battle — per-match pairing card */
+.pairing-row.pairing-row-spin {
+    display: block;
+    background: linear-gradient(160deg, rgba(34,211,238,0.08), rgba(110,50,168,0.05));
+    border: 1px solid rgba(34,211,238,0.35);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    gap: 0;
+}
+.spin-row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+.spin-row-header .table-number {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-dim);
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+}
+.spin-row-status {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.spin-scoreboard {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+.spin-side {
+    position: relative;          /* anchor for cross popup */
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 0.7rem 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.12s;
+    min-width: 0;
+    user-select: none;
+    text-align: center;          /* both A and B centered for consistency */
+}
+.spin-side:not(.spin-side-locked):hover { background: rgba(34,211,238,0.10); border-color: rgba(34,211,238,0.45); }
+.spin-side:not(.spin-side-locked):active { transform: scale(0.98); }
+.spin-side.is-open { background: rgba(34,211,238,0.20); border-color: var(--cyan, #22D3EE); box-shadow: 0 0 0 4px rgba(34,211,238,0.15); }
+.spin-side.winner { border-color: var(--green, #2ec4b6); background: rgba(46,196,182,0.12); }
+.spin-side.spin-side-locked { cursor: pointer; }   /* still tappable to open trainer card after lock */
+
+/* Small info badge on each player card → opens trainer-card popup (history, OWP, BattlePts) */
+.spin-info-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: rgba(255,255,255,0.08);
+    color: var(--text-dim);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1;
+    font-family: 'Inter', system-ui, sans-serif;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, transform 0.12s;
+    z-index: 5;
+}
+.spin-info-btn:hover  { background: rgba(255,255,255,0.18); color: #fff; transform: scale(1.1); }
+.spin-info-btn:active { transform: scale(0.95); }
+.spin-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.spin-points {
+    margin-top: 0.3rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+}
+.spin-points-num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--color-primary, #FF7324);
+}
+.spin-points-target {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-left: 0.15rem;
+}
+.spin-vs {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+    align-self: center;
+}
+/* Cross popup — opens when an enabled .spin-side is tapped. The container fills the player
+ * card exactly (inset:0); each button is positioned JUST OUTSIDE the card edge so the score
+ * stays fully visible and the button placement adapts to the card's actual size.
+ */
+.spin-cross {
+    position: absolute;
+    inset: 0;                     /* matches the player card's bounding box */
+    pointer-events: none;         /* only buttons are interactive */
+    z-index: 50;
+    animation: spinCrossIn 180ms cubic-bezier(0.2, 1.4, 0.5, 1);
+}
+@keyframes spinCrossIn {
+    0%   { opacity: 0; }
+    50%  { opacity: 1; }
+    100% { opacity: 1; }
+}
+@keyframes spinCrossBtnIn {
+    0%   { opacity: 0; transform: var(--rest-tx, translate(0,0)) scale(0.6); }
+    60%  { opacity: 1; transform: var(--rest-tx, translate(0,0)) scale(1.08); }
+    100% { opacity: 1; transform: var(--rest-tx, translate(0,0)) scale(1); }
+}
+.spin-cross-btn {
+    position: absolute;
+    pointer-events: auto;
+    padding: 0.65rem 1rem;
+    min-width: 4.5rem;
+    background: linear-gradient(155deg, #2a2a3a, #1a1a26);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 8px 22px -6px rgba(0,0,0,0.85), 0 0 0 5px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12);
+    transition: transform 0.1s, filter 0.12s;
+    white-space: nowrap;
+    animation: spinCrossBtnIn 240ms cubic-bezier(0.2, 1.4, 0.5, 1) backwards;
+}
+.spin-cross-btn:hover  { filter: brightness(1.18); }
+.spin-cross-btn:active { transform: var(--rest-tx, translate(0,0)) scale(0.94); }
+
+/* Edge-anchored: each arm sits just OUTSIDE the corresponding edge of the player card */
+.spin-cross-top {
+    bottom: calc(100% + 6px); left: 50%;
+    --rest-tx: translateX(-50%);
+    transform: translateX(-50%);
+    border-color: #ef4444;
+    background: linear-gradient(165deg, #ef4444 0%, #b81b1b 100%);
+    box-shadow: 0 8px 22px -6px rgba(239,68,68,0.55), 0 0 0 5px rgba(0,0,0,0.55);
+    animation-delay: 0ms;
+}
+.spin-cross-right {
+    left: calc(100% + 6px); top: 50%;
+    --rest-tx: translateY(-50%);
+    transform: translateY(-50%);
+    border-color: #06b6d4;
+    background: linear-gradient(165deg, #06b6d4 0%, #0e7490 100%);
+    box-shadow: 0 8px 22px -6px rgba(6,182,212,0.55), 0 0 0 5px rgba(0,0,0,0.55);
+    animation-delay: 40ms;
+}
+.spin-cross-bottom {
+    top: calc(100% + 6px); left: 50%;
+    --rest-tx: translateX(-50%);
+    transform: translateX(-50%);
+    border-color: #94a3b8;
+    background: linear-gradient(165deg, #64748b 0%, #334155 100%);
+    box-shadow: 0 8px 22px -6px rgba(100,116,139,0.55), 0 0 0 5px rgba(0,0,0,0.55);
+    animation-delay: 80ms;
+}
+.spin-cross-left {
+    right: calc(100% + 6px); top: 50%;
+    --rest-tx: translateY(-50%);
+    transform: translateY(-50%);
+    border-color: #f59e0b;
+    background: linear-gradient(165deg, #f59e0b 0%, #b45309 100%);
+    box-shadow: 0 8px 22px -6px rgba(245,158,11,0.55), 0 0 0 5px rgba(0,0,0,0.55);
+    animation-delay: 120ms;
+}
+/* Optional 5th finish: appears between the bottom (Survivor) button and the bey log when Stadium Out is enabled */
+.spin-cross-extra {
+    top: calc(100% + 60px); left: 50%;
+    --rest-tx: translateX(-50%);
+    transform: translateX(-50%);
+    border-color: #a855f7;
+    background: linear-gradient(165deg, #a855f7 0%, #6b21a8 100%);
+    box-shadow: 0 8px 22px -6px rgba(168,85,247,0.55), 0 0 0 5px rgba(0,0,0,0.55);
+    animation-delay: 160ms;
+    font-size: 0.78rem;
+}
+
+/* Hint underneath the scoreboard when no popup is open and match isn't locked */
+.spin-hint {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: -0.2rem 0 0.55rem;
+    opacity: 0.85;
+    animation: spinHintPulse 2.4s ease-in-out infinite;
+}
+@keyframes spinHintPulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 0.95; }
+}
+
+@media (max-width: 480px) {
+    .spin-cross-btn { font-size: 0.85rem; min-width: 4rem; padding: 0.55rem 0.75rem; }
+}
+
+/* ===== PRINT — clean standings page for shop walls ===== */
+@media print {
+    /* hard reset to white-on-black-free for paper */
+    html, body {
+        background: #fff !important;
+        color: #000 !important;
+    }
+    /* hide everything except the standings panel */
+    #app-header,
+    #breadcrumb,
+    #view-mode-banner,
+    .home-buttons,
+    .reg-actions,
+    .round-actions,
+    .standings-footer,
+    #share-panel,
+    #viewer-pin,
+    #viewer-ad-slot,
+    .viewer-ad-slot,
+    #updates-panel,
+    .site-footer,
+    .footer,
+    .ad-slot-inner,
+    button,
+    .lang-toggle,
+    .theme-dropdown,
+    .header-controls {
+        display: none !important;
+    }
+    /* show the standings table cleanly */
+    #view-standings { display: block !important; }
+    .view:not(#view-standings) { display: none !important; }
+    .panel {
+        background: #fff !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    #standings-title {
+        color: #000 !important;
+        margin: 0 0 0.6cm !important;
+        font-size: 18pt !important;
+    }
+    #standings-table-wrapper {
+        background: #fff !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+    .standings-table {
+        font-size: 10pt !important;
+    }
+    .standings-table th {
+        background: #eee !important;
+        color: #333 !important;
+        position: static !important;       /* sticky breaks paged layout */
+        backdrop-filter: none !important;
+        border-bottom: 2px solid #666 !important;
+    }
+    .standings-table td {
+        color: #000 !important;
+        border-bottom: 1px solid #ccc !important;
+    }
+    .standings-table tbody tr:first-child td,
+    .standings-table tbody tr:nth-child(2) td,
+    .standings-table tbody tr:nth-child(3) td {
+        color: #000 !important;
+        font-weight: 700 !important;
+    }
+    /* watermark / footer */
+    body::after {
+        content: 'gameset-hk.com';
+        display: block;
+        position: fixed;
+        bottom: 0.6cm;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: #888;
+        font-size: 8pt;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    /* avoid splitting the table awkwardly across pages */
+    .standings-table { page-break-inside: auto; }
+    .standings-table tr { page-break-inside: avoid; page-break-after: auto; }
+    .standings-table thead { display: table-header-group; }
+}
+
+/* Hide the timer when running a Spin Battle tournament — Beyblade matches are point-target, not time-bound */
+body.gametype-spin #timer-display,
+body.gametype-spin .timer-controls {
+    display: none !important;
+}
+
+/* 3-on-3 Bey picker — replaces the cross popup after a finish is selected */
+.spin-cross.spin-bey-picker {
+    inset: auto;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    padding: 0.6rem 0.7rem;
+    background: linear-gradient(155deg, #1a1a2e, #0f0f1f);
+    border: 2px solid var(--cyan, #22D3EE);
+    border-radius: 12px;
+    box-shadow: 0 12px 28px -8px rgba(0,0,0,0.85), 0 0 0 5px rgba(0,0,0,0.55);
+    pointer-events: auto;
+    width: max-content;
+    height: auto;
+    animation: spinCrossIn 180ms cubic-bezier(0.2, 1.4, 0.5, 1);
+}
+.spin-bey-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--cyan, #22D3EE);
+    text-align: center;
+    margin-bottom: 0.45rem;
+    white-space: nowrap;
+}
+.spin-bey-row {
+    display: flex;
+    gap: 0.45rem;
+}
+.spin-bey-btn {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    background: linear-gradient(155deg, #2a2a3a, #1a1a26);
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.1s, filter 0.12s, border-color 0.12s;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+.spin-bey-btn:hover  { filter: brightness(1.18); border-color: var(--cyan, #22D3EE); }
+.spin-bey-btn:active { transform: scale(0.94); }
+.spin-bey-num {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+/* Bey tag in the battle log */
+.spin-log-bey {
+    display: inline-block;
+    padding: 0.05rem 0.35rem;
+    margin-right: 0.15rem;
+    background: rgba(34,211,238,0.18);
+    color: var(--cyan, #22D3EE);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+/* Trainer card — per-battle / per-game sub-list under each match */
+.timeline-sub {
+    margin-top: 0.3rem;
+    padding-left: 0.85rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.55rem;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+}
+.timeline-sub-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+    white-space: nowrap;
+}
+.timeline-sub-win  { color: var(--green, #2ec4b6); border: 1px solid rgba(46,196,182,0.25); }
+.timeline-sub-loss { color: #ef4444; border: 1px solid rgba(239,68,68,0.22); }
+.timeline-sub-draw { color: #f59e0b; border: 1px solid rgba(245,158,11,0.22); }
+.timeline-sub-bey {
+    display: inline-block;
+    padding: 0 0.25rem;
+    background: rgba(34,211,238,0.18);
+    color: var(--cyan, #22D3EE);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.stat-box-wide { grid-column: span 2; }
+.stat-box-finishes .stat-finish-breakdown {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+.stat-finish-breakdown span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
+    padding: 0.15rem 0.4rem;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+}
+.stat-finish-breakdown b { font-size: 1.1rem; color: var(--color-primary, #FF7324); }
+.stat-finish-breakdown em { font-style: normal; font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-finish-breakdown .finish-penalty b { color: #f59e0b; }
+
+/* DECK REGISTRATION — modal editor + player-list deck button */
+.deck-btn {
+    margin-right: 0.4rem;
+    padding: 0.2rem 0.55rem;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-dim);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.deck-btn:hover { background: rgba(255,255,255,0.12); }
+.deck-btn-ok    { color: var(--green, #2ec4b6); border-color: rgba(46,196,182,0.4); }
+.deck-btn-warn  { color: #f59e0b; border-color: rgba(245,158,11,0.4); }
+
+.modal-content.deck-editor {
+    max-width: 560px;
+    width: 92vw;
+}
+.deck-rules-hint { margin: 0 0 0.7rem; font-size: 0.85rem; }
+.deck-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 0.8rem;
+}
+.deck-bey-header {
+    display: grid;
+    grid-template-columns: 4rem 1fr 1fr 1fr;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    padding: 0 0.2rem;
+}
+.deck-bey-header span:first-child { width: 4rem; }
+.deck-bey-row {
+    display: grid;
+    grid-template-columns: 4rem 1fr 1fr 1fr;
+    gap: 0.4rem;
+    align-items: center;
+}
+.deck-bey-num {
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--cyan, #22D3EE);
+    text-align: center;
+    background: rgba(34,211,238,0.1);
+    border-radius: 4px;
+    padding: 0.4rem 0;
+}
+.deck-bey-row input {
+    padding: 0.45rem 0.6rem;
+    background: var(--color-surface, rgba(255,255,255,0.05));
+    color: inherit;
+    border: 1px solid var(--color-border, rgba(255,255,255,0.12));
+    border-radius: 6px;
+    font-size: 0.88rem;
+    min-width: 0;
+}
+.deck-bey-row input:focus { outline: none; border-color: var(--cyan, #22D3EE); }
+
+.deck-status {
+    margin: 0.6rem 0;
+    padding: 0.5rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}
+.deck-status-ok    { background: rgba(46,196,182,0.15); color: var(--green, #2ec4b6); border: 1px solid rgba(46,196,182,0.4); }
+.deck-status-warn  { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.35); }
+.deck-status-error { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); }
+
+.deck-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+}
+
+/* QR / scan / paste panel inside the Beys editor */
+.deck-qr-panel {
+    margin-top: 0.6rem;
+    padding: 0.7rem 0.85rem;
+    background: rgba(34,211,238,0.05);
+    border: 1px dashed rgba(34,211,238,0.35);
+    border-radius: 8px;
+}
+.deck-qr-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+.deck-qr-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+}
+.deck-qr-label {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+.deck-qr-svg {
+    background: #fff;
+    padding: 6px;
+    border-radius: 6px;
+    width: 100%;
+    max-width: 180px;
+    align-self: flex-start;
+}
+.deck-qr-svg svg { display: block; width: 100%; height: auto; }
+.deck-qr-code-text {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    background: rgba(0,0,0,0.4);
+    color: var(--cyan, #22D3EE);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    cursor: text;
+}
+.deck-scan-video {
+    width: 100%;
+    max-width: 180px;
+    aspect-ratio: 1 / 1;
+    background: #000;
+    border-radius: 6px;
+    display: block;
+}
+.deck-scan-video:not([srcobject]):not([src]) { display: none; }
+.deck-paste-input {
+    width: 100%;
+    padding: 0.4rem 0.55rem;
+    background: var(--color-surface, rgba(255,255,255,0.05));
+    color: inherit;
+    border: 1px solid var(--color-border, rgba(255,255,255,0.12));
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    resize: vertical;
+}
+#deck-qr-note { margin: 0.5rem 0 0; font-size: 0.82rem; }
+#deck-qr-note.deck-qr-note-error { color: #ef4444; }
+#deck-qr-note.deck-qr-note-ok    { color: var(--green, #2ec4b6); }
+@media (max-width: 480px) {
+    .deck-qr-row { grid-template-columns: 1fr; }
+}
+
+/* Trainer card — registered deck stat box */
+.stat-box-deck .stat-deck-list {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: left;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 500;
+}
+.stat-deck-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.15rem 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+}
+.stat-deck-row:last-child { border-bottom: none; }
+.stat-deck-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--cyan, #22D3EE);
+    font-size: 0.78rem;
+    min-width: 1.7rem;
+}
+.stat-deck-row em { font-style: normal; color: var(--text-dim); font-size: 0.78rem; }
+
+/* Missing-Beys warning badge in the round view spin scoreboard */
+.spin-name-warn {
+    display: inline-block;
+    margin-right: 0.3rem;
+    color: #f59e0b;
+    cursor: help;
+    font-size: 0.95em;
+}
+
+/* Spin Bey picker — show real Blade name when registered */
+.spin-bey-btn-named {
+    width: auto;
+    height: auto;
+    padding: 0.4rem 0.65rem;
+    flex-direction: column;
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    min-width: 4.5rem;
+}
+.spin-bey-btn-named .spin-bey-num { font-size: 0.78rem; color: var(--cyan, #22D3EE); }
+.spin-bey-btn-named .spin-bey-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    max-width: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) {
+    .deck-bey-header,
+    .deck-bey-row {
+        grid-template-columns: 3.2rem 1fr 1fr 1fr;
+        gap: 0.3rem;
+    }
+    .deck-bey-row input { font-size: 0.78rem; padding: 0.4rem 0.45rem; }
+}
+
+/* Knockout bracket overview — collapsible details panel above the round pairings */
+.bracket-wrap { margin-bottom: 1rem; }
+.bracket-details {
+    background: var(--color-surface, rgba(255,255,255,0.04));
+    border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+    border-radius: 10px;
+    padding: 0.6rem 0.8rem;
+}
+.bracket-summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--text);
+    list-style: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.2rem 0;
+}
+.bracket-summary::-webkit-details-marker { display: none; }
+.bracket-summary-chev { font-size: 0.85rem; color: var(--text-dim); transition: transform 0.2s; }
+.bracket-details[open] .bracket-summary-chev { transform: rotate(180deg); }
+
+.bracket-scroll {
+    margin-top: 0.6rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.4rem;
+}
+.bracket-grid {
+    display: flex;
+    align-items: stretch;
+    gap: 1.4rem;
+    min-width: max-content;
+    padding: 0.4rem 0.2rem;
+}
+.bracket-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    min-width: 120px;
+}
+.bracket-col-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+    text-align: center;
+}
+.bracket-col-matches {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 0.3rem;
+}
+.bracket-match {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.bracket-match-pending {
+    padding: 0.5rem 0.6rem;
+    color: var(--text-dim);
+    font-style: italic;
+    text-align: center;
+    background: transparent;
+    border-style: dashed;
+}
+.bracket-match-current {
+    border-color: var(--color-primary, #FF7324);
+    box-shadow: 0 0 0 2px rgba(255,115,36,0.2), 0 6px 16px -8px rgba(255,115,36,0.4);
+}
+.bracket-row {
+    padding: 0.35rem 0.55rem;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+}
+.bracket-row:last-child { border-bottom: none; }
+.bracket-row:hover { background: rgba(255,255,255,0.05); }
+.bracket-row.bracket-winner {
+    background: rgba(46,196,182,0.15);
+    color: var(--green, #2ec4b6);
+    font-weight: 700;
+}
+.bracket-row.bracket-loser {
+    color: var(--text-dim);
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+.bracket-row.bracket-bye-row {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+@media (max-width: 480px) {
+    .bracket-col { min-width: 100px; }
+    .bracket-row { padding: 0.3rem 0.45rem; font-size: 0.72rem; }
+}
+
+/* TCG Best-of-3 — per-match game tracker */
+.pairing-row.pairing-row-bo3 {
+    display: block;
+    background: rgba(255, 115, 36, 0.04);
+    border: 1px solid rgba(255, 115, 36, 0.2);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    gap: 0;
+}
+.bo3-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+.bo3-status {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.bo3-status.bo3-locked { color: var(--green, #2ec4b6); font-weight: 700; }
+.bo3-players {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.55rem;
+}
+.bo3-vs {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+.bo3-score-a { color: var(--blue, #6db3f2); }
+.bo3-score-b { color: var(--color-primary, #FF7324); }
+.bo3-games {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.bo3-game-row {
+    display: grid;
+    grid-template-columns: 4rem 1fr 1fr 1fr;
+    gap: 0.35rem;
+    align-items: center;
+}
+.bo3-game-label {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.bo3-btn {
+    padding: 0.4rem 0.5rem;
+    background: rgba(255,255,255,0.05);
+    color: inherit;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.05s;
+}
+.bo3-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+.bo3-btn:active:not(:disabled) { transform: translateY(1px); }
+.bo3-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.bo3-btn.selected-win-a { background: rgba(109, 179, 242, 0.25); border-color: var(--blue, #6db3f2); color: #fff; }
+.bo3-btn.selected-win-b { background: rgba(255, 115, 36, 0.25); border-color: var(--color-primary, #FF7324); color: #fff; }
+.bo3-btn.selected-draw  { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.3); color: #fff; }
+
+@media (max-width: 480px) {
+    .bo3-game-row { grid-template-columns: 3rem 1fr 1fr 1fr; gap: 0.25rem; }
+    .bo3-btn { font-size: 0.75rem; padding: 0.4rem 0.3rem; }
+}
+
+/* Penalty / malfunction panel inside a spin pairing card */
+.spin-penalty-block { margin: 0.4rem 0 0.6rem; }
+.spin-penalty-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.45rem 0.7rem;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-dim);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.spin-penalty-toggle:hover { background: rgba(255,255,255,0.08); }
+.spin-penalty-block.is-open .spin-penalty-toggle { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.4); color: #f59e0b; }
+.spin-pen-summary-active { color: #f59e0b; font-weight: 700; }
+.spin-penalty-chev { font-size: 0.85rem; }
+.spin-penalty-grid {
+    margin-top: 0.4rem;
+    padding: 0.6rem 0.7rem;
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.spin-penalty-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+.spin-penalty-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    flex: 1;
+    cursor: help;
+}
+.spin-penalty-counters {
+    display: flex;
+    gap: 0.3rem;
+}
+.spin-penalty-counters button {
+    padding: 0.3rem 0.55rem;
+    background: rgba(255,255,255,0.06);
+    color: inherit;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 5px;
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+}
+.spin-penalty-counters button:hover {
+    background: rgba(245,158,11,0.18);
+    border-color: rgba(245,158,11,0.5);
+}
+.spin-penalty-counters button strong { color: #f59e0b; margin: 0 0.2rem; }
+
+/* Registration spin-deck toggle */
+.reg-spin-deck {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+}
+
+.spin-log {
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    padding: 0.5rem 0.7rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    max-height: 6rem;
+    overflow-y: auto;
+}
+.spin-log-row { display: block; }
+.spin-log-num { font-family: 'JetBrains Mono', monospace; color: var(--color-primary); margin-right: 0.3rem; }
+
+.spin-controls {
+    display: flex;
+    justify-content: flex-end;
+}
+/* When match auto-locks, make the undo CTA full-width and prominent so re-edit is one tap */
+.spin-controls.spin-controls-locked {
+    justify-content: stretch;
+}
+.spin-controls.spin-controls-locked .btn {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+.spin-undo-prominent {
+    animation: spinUndoPulse 1.8s ease-in-out infinite;
+}
+@keyframes spinUndoPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.4); }
+    50%      { box-shadow: 0 0 0 6px rgba(var(--color-primary-rgb), 0); }
+}
+/* "Match locked — undo to re-edit" hint variant */
+.spin-hint.spin-hint-locked {
+    color: var(--color-primary);
+    text-transform: none;
+    letter-spacing: 0.5px;
+    font-size: 0.82rem;
+    margin-top: 0.4rem;
+    margin-bottom: 0.55rem;
+    opacity: 1;
+    animation: none;
+}
+
+@media (max-width: 480px) {
+    .spin-scoreboard { gap: 0.4rem; }
+    .spin-points-num { font-size: 1.3rem; }
+    .spin-finish-btn { font-size: 0.75rem; padding: 0.4rem 0.4rem; min-width: 4.5rem; }
+}
+
+/* Spin Battle (TESTING) banner on the registration page */
+.reg-spin-banner {
+    margin: 0.2rem 0 1rem;
+    padding: 0.85rem 1rem;
+    background: linear-gradient(155deg, rgba(34,211,238,0.12) 0%, rgba(110,50,168,0.10) 100%);
+    border: 1px solid rgba(34,211,238,0.45);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+.reg-spin-banner-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.reg-spin-badge {
+    display: inline-block;
+    background: #FFD700;
+    color: #000;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 0.18rem 0.6rem;
+    border-radius: 4px;
+}
+.reg-spin-target {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.reg-spin-target input[type="number"] {
+    width: 4.5rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--color-surface);
+    color: inherit;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 1rem;
 }
 
 /* Scoring-mode toggle on registration view */
@@ -3788,6 +4999,15 @@ body.no-ads .viewer-ad-slot { display: none !important; }
 .btn-action:active { transform: translateY(1px); }
 .btn-action:disabled { opacity: 0.6; cursor: default; transform: none; }
 .btn-action .action-icon { display: block; flex-shrink: 0; }
+/* On narrow screens collapse the round action buttons to icon-only so they all fit in one row */
+@media (max-width: 560px) {
+    .round-actions { gap: 0.4rem; }
+    .round-actions-left, .round-actions-right { gap: 0.4rem; }
+    .btn-action { padding: 0.5rem 0.6rem; }
+    .btn-action .btn-label { display: none; }
+    .btn-action[id="btn-end"] .btn-label { display: inline; }  /* keep text on the most-important destructive button */
+}
+
 .btn-action.btn-active {
     background: var(--color-primary);
     color: #fff;

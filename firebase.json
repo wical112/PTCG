@@ -1,36 +1,70 @@
 {
-  "hosting": {
-    "target": "tcgtm",
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      ".firebaserc",
-      "**/.*",
-      "**/node_modules/**",
-      "*.md",
-      "firestore.rules",
-      "firebase-debug.log"
-    ],
-    "headers": [
-      {
-        "source": "**/*",
-        "headers": [
-          { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
-          { "key": "X-Content-Type-Options", "value": "nosniff" },
-          { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-          { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
-          { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" }
-        ]
-      },
-      {
-        "source": "**/*.@(js|css|png|jpg|jpeg|svg|webp|woff|woff2)",
-        "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
-        ]
-      }
-    ]
-  },
+  "hosting": [
+    {
+      "target": "tcgtm",
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        ".firebaserc",
+        "**/.*",
+        "**/node_modules/**",
+        "*.md",
+        "firestore.rules",
+        "firebase-debug.log",
+        "functions/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*",
+          "headers": [
+            { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+            { "key": "X-Content-Type-Options", "value": "nosniff" },
+            { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+            { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
+            { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" }
+          ]
+        },
+        {
+          "source": "**/*.@(js|css|png|jpg|jpeg|svg|webp|woff|woff2)",
+          "headers": [
+            { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "ptcgstm",
+      "public": ".",
+      "ignore": [
+        "firebase.json",
+        ".firebaserc",
+        "**/.*",
+        "**/node_modules/**",
+        "*.md",
+        "firestore.rules",
+        "firebase-debug.log",
+        "functions/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*",
+          "headers": [
+            { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+            { "key": "X-Content-Type-Options", "value": "nosniff" },
+            { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+          ]
+        }
+      ]
+    }
+  ],
   "firestore": {
     "rules": "firestore.rules"
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+    }
+  ]
 }

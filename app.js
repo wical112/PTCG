@@ -1,34 +1,39 @@
 /* ============================================================
-   TCG Tournament Manager - Complete Application Logic
-   © 2026 TCG Tournament Manager. All rights reserved.
+   GameSet HK — TCG Tournament Manager
+   © 2026 GameSet HK. All rights reserved.
    Unauthorised redistribution or rehosting is prohibited.
-   Official site: https://tcgtm.web.app
+   Official site: https://gameset-hk.com
    ============================================================ */
 
-// ---- HOST GUARD (lightweight anti-rehost) ----
+// ---- HOST GUARD + canonical-domain redirect ----
+// Permissive redirect: any host that isn't gameset-hk.com / www / local-dev is treated as
+// an "old" or alias domain and immediately redirected to the canonical site. Adding new
+// owned domains (e.g. tcgtm.web.app, ptcgstm.web.app, foo.com) needs ZERO code changes —
+// just point them at the same Firebase Hosting site (or any DNS that lands here).
+// The unauthorised-rehost branch only fires for non-Firebase hosts that somehow end up
+// serving this file (e.g. someone copies the bundle to their own domain) — which still
+// gets a redirect, not an error page, so old QR codes / shared links always survive.
 (() => {
-    const ALLOWED = [
-        'tcgtm.web.app',
-        'tcgtm.firebaseapp.com',
-        'ptcgstm.web.app',
-        'ptcgstm.firebaseapp.com',
+    const CANONICAL = 'gameset-hk.com';
+    const ALLOWED = new Set([
+        CANONICAL,
+        'www.' + CANONICAL,
         'localhost',
         '127.0.0.1'
-    ];
+    ]);
     const host = location.hostname;
-    if (host === '' || host === 'null') return; // file:// or similar — let it run
-    const ok = ALLOWED.includes(host) || host.endsWith('.local');
-    if (!ok) {
-        document.documentElement.innerHTML = '<head><meta charset="UTF-8"><title>Unauthorized host</title><style>body{background:#141414;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:1rem;text-align:center}.box{max-width:420px}.box h1{color:#FF7324;margin-bottom:.5rem}.box a{color:#FF7324}</style></head><body><div class="box"><h1>Unauthorized host</h1><p>This copy of TCG Tournament Manager is being served from an unauthorised domain.</p><p>The official site is <a href="https://tcgtm.web.app">tcgtm.web.app</a>.</p></div></body>';
-        throw new Error('TCGTM: host not authorized');
-    }
+    if (host === '' || host === 'null') return;          // file:// or similar — let it run
+    if (host.endsWith('.local')) return;                 // mDNS LAN dev — let it run
+    if (ALLOWED.has(host)) return;                       // canonical or local — let it run
+    // Anything else → redirect to canonical, preserve full URL (path + query + hash)
+    location.replace('https://' + CANONICAL + location.pathname + location.search + location.hash);
 })();
 
 const app = (() => {
     // ---- I18N ----
     const I18N = {
         en: {
-            'header.title': 'TCG Tournament Manager',
+            'header.title': 'GameSet HK',
             'footer.disclaimer': 'Fan-made tool. Not affiliated with, endorsed by, or sponsored by Nintendo, The Pokémon Company, Game Freak, or Creatures Inc. All trademarks belong to their respective owners.',
             'footer.legal': 'Legal Notice',
             'common.back': 'Back',
@@ -38,8 +43,8 @@ const app = (() => {
             'updates.title': 'Updates',
             'updates.allTitle': 'All Updates',
             'updates.more': 'See all',
-            'home.welcome': 'Welcome, Trainer!',
-            'home.subtitle': 'Choose your path',
+            'home.welcome': 'Maybe the best GameSet in Hong Kong.',
+            'home.subtitle': 'Run tournaments. Spin battles. Pull a winner. Pick your battlefield below.',
             'home.tournament': 'Tournament',
             'home.wheel': 'Lucky Wheel',
             'home.advanced': 'Advanced',
@@ -51,6 +56,14 @@ const app = (() => {
             'reg.tournamentDate': 'Tournament Date',
             'reg.scoringDrawBonus': 'Standard Swiss scoring (Draw 1 pt, Loss 0 pt)',
             'reg.scoringHint': 'Default: Win 3 \u00b7 Loss 1 \u00b7 Draw 0. Tick to use the more common Win 3 \u00b7 Draw 1 \u00b7 Loss 0 instead. Locked once the tournament starts.',
+            'reg.tournamentNameHint': 'Shown at the top of the standings page and on the downloaded PNG. Preview \u2192 <em>AAB Shop Gym Battle \u2014 Final Standings</em>',
+            'reg.tournamentDateHint': 'Printed next to the name. Preview \u2192 <em>AAB Shop Gym Battle 2026Apr25</em>',
+            'reg.bulkHint': 'Each line = one player. Append <code>| HK-XXXXX</code> to link TopCut HK trainer stats. Duplicate names get a numeric suffix automatically.',
+            'reg.roundCountHint': 'Swiss standard: \u2308log\u2082(players)\u2309. Fewer rounds \u2192 more ties on points; more rounds \u2192 clearer top cut. Locked once the tournament starts.',
+            'viewer.pinHint': 'Type your registered name. Your current match will be pinned to the top so you can track it quickly. Tap any name to see trainer stats.',
+            'wheel.namesHint': 'Each line = one wheel slot. Use <strong>Sync from Tournament</strong> to auto-fill with registered players, or <strong>Exclude Top 3</strong> for podium prizes.',
+            'adv.resume.hint': '6-character code from the publisher\u2019s Share panel. Pulls the live roster, rounds and results into this browser \u2014 the original publisher keeps editing theirs untouched.',
+            'adv.rosterHint': 'Enter the FULL roster in exactly the original join order. Order matters \u2014 used for reproducible tiebreaker fallback.',
             'reg.bulkLabel': 'Add players (one name per line):',
             'reg.bulkPlaceholder': 'Enter one player name per line…\nPlayer 1\nPlayer 2\nPlayer 3',
             'reg.addBtn': 'Add Players',
@@ -107,11 +120,17 @@ const app = (() => {
             'standings.record': 'Record',
             'standings.points': 'Points',
             'standings.owp': 'OWP%',
+            'standings.oomw': 'OOMW%',
+            'standings.woscore': 'WOScore',
+            'standings.byes': 'Byes',
             'standings.backRound': 'Back to Round',
             'standings.htmlMissing': 'html2canvas not loaded yet. Please try again.',
             'standings.snapFail': 'Failed to capture standings. Try again.',
             'trainer.points': 'Points',
             'trainer.owp': 'OWP',
+            'trainer.oomw': 'OOMW',
+            'trainer.woscore': 'WOScore',
+            'trainer.byes': 'Byes',
             'trainer.record': 'Record',
             'trainer.games': 'Games',
             'trainer.history': 'Match History',
@@ -127,6 +146,74 @@ const app = (() => {
             'trainer.confirmDrop': 'Drop {name} from the tournament? They will be removed from future pairings. Past results are kept.',
             'trainer.droppedTag': 'DROPPED',
             'home.swiss': 'Swiss Tournament',
+            'home.spinSwiss': 'Spin Battle Swiss',
+            'home.spinKO': 'Spin Battle Knockout',
+            'reg.spinBattleMode': 'Spin Battle Tournament — Beyblade-X-style scoring (TESTING)',
+            'reg.targetPoints': 'Target Points (first to win):',
+            'reg.targetPointsHint': 'Default 4 (Swiss). Top-cut events usually use 7.',
+            'reg.spinBattleNote': 'Tap a player to score. Cross popup gives you Survivor / Burst / Knock Out / Xtreme. Auto-locks at the target. Penalty rules, malfunctions and 3-on-3 Beys registration are <em>all live</em> — register Beys via the per-player button below or scan a QR.',
+            'battle.survivor': 'Survivor +1',
+            'battle.burst': 'Burst +2',
+            'battle.knockout': 'Knock Out +2',
+            'battle.xtreme': 'Xtreme +3',
+            'battle.stadium_out': 'Stadium Out +3',
+            'battle.stadiumOut': 'Stadium Out +3',
+            'reg.stadiumOut': 'Allow Stadium Out (+3, community variant)',
+            'reg.stadiumOutHint': 'Not in official Hasbro / Takara Tomy rules. Enable only if your venue counts knocking the Bey over the top of the stadium as a +3 finish.',
+            'battle.firstTo': 'First to {n} pts',
+            'battle.matchComplete': 'Match complete',
+            'battle.undo': 'Undo',
+            'battle.tapToScore': 'Tap a battler to score · tap ⓘ for info',
+            'battle.lockedHint': 'Match auto-locked. Tap ↶ Undo below to fix the last finish.',
+            'battle.whichBey': 'Which Bey scored?',
+            'penalty.title': 'Penalties / Malfunctions',
+            'penalty.launchError': 'Launch error',
+            'penalty.launchErrorHint': '2 launch errors in same battle → +1 to opponent, battle replays',
+            'penalty.matchWarn': 'Warning',
+            'penalty.matchWarnHint': '1st: warning · 2nd: +1 to opponent · 3rd: DQ (opponent wins match)',
+            'penalty.malfunction': 'Malfunction',
+            'penalty.malfunctionHint': '3 malfunctions in same match → opponent wins',
+            'reg.bestOfThree': 'Best of 3 — track per-game wins (TCG)',
+            'reg.bestOfThreeHint': 'Off (default): one tap per match. On: each match shows Game 1 / 2 / 3 buttons; match auto-locks when one side wins 2 games. Adds GW-GL column to standings.',
+            'bo3.game': 'Game {n}',
+            'bo3.firstTo2': 'First to 2 games',
+            'bo3.matchScore': 'Match {a} – {b}',
+            'standings.gw': 'GW-GL',
+            'bracket.title': 'Bracket overview',
+            'bracket.tbd': 'TBD',
+            'trainer.viewCard': 'View battler info',
+            'trainer.finishBreakdown': 'Finish breakdown',
+            'trainer.deck': 'Registered Beys',
+            'deck.title': '{name}\'s Beys',
+            'deck.short': 'Beys',
+            'deck.edit': 'Edit Beys',
+            'deck.blade': 'Blade',
+            'deck.ratchet': 'Ratchet',
+            'deck.bit': 'Bit',
+            'deck.bladePh': 'e.g. Phoenix Wing',
+            'deck.ratchetPh': 'e.g. 9-60',
+            'deck.bitPh': 'e.g. Point',
+            'deck.rulesHint': 'Each battler brings 3 different Beys. No Blade, Ratchet or Bit may repeat between your Beys.',
+            'deck.valid': 'Valid — all 9 parts unique',
+            'deck.incomplete': 'Fill in all 3 parts of all 3 Beys',
+            'deck.duplicate': 'Duplicate {part}: "{value}"',
+            'deck.save': 'Save Beys',
+            'deck.missing': 'Beys not registered',
+            'common.cancel': 'Cancel',
+            'qr.show': 'Show QR',
+            'qr.scan': 'Scan QR',
+            'qr.scanUnsupported': 'Camera scan not supported on this browser — use Paste code instead.',
+            'qr.scanInstr': 'Hold the QR code in front of your camera.',
+            'qr.scanFail': 'No Beys QR detected. Try better lighting.',
+            'qr.invalidCode': 'Code is not a valid Beys QR.',
+            'qr.pasteCode': 'Or paste a code:',
+            'qr.imported': 'Beys imported! Save to confirm.',
+            'qr.codeLabel': 'Beys code (copy this or scan the QR):',
+            'qr.import': 'Import code',
+            'reg.threeOnThree': '3-on-3 Beys mode (each battler brings 3 Beys)',
+            'reg.threeOnThreeHint': 'After tapping a finish, choose which Bey scored. Untick for 1-on-1 matches.',
+            'standings.battlePts': 'BattlePts',
+            'trainer.battlePts': 'Battle Pts',
             'home.knockout': 'Knockout Tournament',
             'ko.final': 'FINAL',
             'ko.semi': 'SEMIFINAL',
@@ -245,7 +332,7 @@ const app = (() => {
             'cloud.viewMode': 'View Mode',
             'cloud.viewBanner': 'You are viewing this tournament live. Updates appear automatically.',
             'cloud.shareTitle': 'Share Tournament',
-            'cloud.shareHint': 'Players can scan this QR code or open the link below to view the tournament live.',
+            'cloud.shareHint': 'Players can scan this QR code or open the link to follow the tournament live — pairings, results, standings, and Beys all sync in real time.',
             'cloud.copyLink': 'Copy Link',
             'cloud.copied': 'Link copied!',
             'cloud.tournamentId': 'Tournament ID',
@@ -264,10 +351,12 @@ const app = (() => {
             'viewer.share': 'Share',
             'viewer.shareTitle': 'Share this view',
             'viewer.shareHint': 'Scan the QR code or copy the link to share with other players.',
-            'viewer.linkCopied': 'Link copied!'
+            'viewer.linkCopied': 'Link copied!',
+            'viewer.tabRound': 'Live Round',
+            'viewer.tabStandings': 'Standings'
         },
         zh: {
-            'header.title': 'TCG 賽事管理',
+            'header.title': 'GameSet HK',
             'footer.disclaimer': '本工具為粉絲製作，與任天堂（Nintendo）、寶可夢公司（The Pokémon Company）、Game Freak 及 Creatures Inc. 均無關聯，亦未獲其背書或贊助。所有商標均屬其各自所有者所有。',
             'footer.legal': '法律聲明',
             'common.back': '返回',
@@ -277,8 +366,8 @@ const app = (() => {
             'updates.title': '更新公告',
             'updates.allTitle': '全部更新',
             'updates.more': '查看全部',
-            'home.welcome': '歡迎,訓練家!',
-            'home.subtitle': '請選擇',
+            'home.welcome': '可能係香港最好用既GameSet',
+            'home.subtitle': '打卡、陀螺、抽獎 — 伴你所想',
             'home.tournament': '賽事',
             'home.wheel': '幸運轉盤',
             'home.advanced': '進階',
@@ -290,6 +379,14 @@ const app = (() => {
             'reg.tournamentDate': '賽事日期',
             'reg.scoringDrawBonus': '使用標準瑞士制計分（和 1 分、負 0 分）',
             'reg.scoringHint': '預設為 勝 3 \u00b7 負 1 \u00b7 和 0；勾選後改為更常見的 勝 3 \u00b7 和 1 \u00b7 負 0。賽事開始後將鎖定不可更改。',
+            'reg.tournamentNameHint': '會顯示在排名頁面頂部與下載的 PNG 圖片上。預覽 → <em>AAB Shop Gym Battle — 最終排名</em>',
+            'reg.tournamentDateHint': '與名稱並列顯示。預覽 → <em>AAB Shop Gym Battle 2026Apr25</em>',
+            'reg.bulkHint': '每行一位玩家。可加 <code>| HK-XXXXX</code> 連結 TopCut HK 訓練家戰績。重複名字會自動加編號。',
+            'reg.roundCountHint': '瑞士制建議：⌈log₂(人數)⌉。輪數少 → 同分較多；輪數多 → 前排更清晰。賽事開始後鎖定。',
+            'viewer.pinHint': '輸入你已登記的名字，你當前對局會置頂方便追蹤。點擊任何玩家名字可查看訓練家卡片。',
+            'wheel.namesHint': '每行一個獎名。可用「<strong>從賽事同步</strong>」自動帶入參賽者，或用「<strong>排除前三名</strong>」做頒獎抽獎。',
+            'adv.resume.hint': '發佈者分享面板上的 6 碼代號。會把雲端最新的名單、輪次與結果拉到本瀏覽器 — 原發佈者的賽事不受影響。',
+            'adv.rosterHint': '請依原報名順序輸入完整名單。順序影響決勝小分的預設回退 — 請保持一致。',
             'reg.bulkLabel': '新增玩家(每行一個名字):',
             'reg.bulkPlaceholder': '每行輸入一位玩家名稱⋯\n玩家 1\n玩家 2\n玩家 3',
             'reg.addBtn': '新增玩家',
@@ -346,11 +443,17 @@ const app = (() => {
             'standings.record': '戰績',
             'standings.points': '積分',
             'standings.owp': '對手勝率%',
+            'standings.oomw': '對手的對手勝率%',
+            'standings.woscore': '對手總積分',
+            'standings.byes': '輪空',
             'standings.backRound': '返回對戰',
             'standings.htmlMissing': 'html2canvas 尚未載入,請稍後再試。',
             'standings.snapFail': '截圖失敗,請再試一次。',
             'trainer.points': '積分',
             'trainer.owp': '對手勝率',
+            'trainer.oomw': '對手的對手勝率',
+            'trainer.woscore': '對手總積分',
+            'trainer.byes': '輪空',
             'trainer.record': '戰績',
             'trainer.games': '場數',
             'trainer.history': '對戰紀錄',
@@ -366,6 +469,74 @@ const app = (() => {
             'trainer.confirmDrop': '確定讓 {name} 退賽？該玩家將不再參與後續配對，過往成績保留。',
             'trainer.droppedTag': '已退賽',
             'home.swiss': '瑞士制賽事',
+            'home.spinSwiss': '陀螺對戰瑞士制',
+            'home.spinKO': '陀螺對戰淘汰賽',
+            'reg.spinBattleMode': '陀螺對戰賽事 — Beyblade X 系統（測試版）',
+            'reg.targetPoints': '勝利目標分數（先取到即勝）：',
+            'reg.targetPointsHint': '預設 4 分（瑞士制）。最終 8 強建議改為 7 分。',
+            'reg.spinBattleNote': '點擊玩家加分，十字面板提供存活／爆裂／擊出／中央，達到目標分數自動鎖定。罰則、器材故障、3-on-3 陀螺登記<em>已全部上線</em> — 點下方陀螺按鈕登記，亦可掃 QR 一鍵匯入。',
+            'battle.survivor': '存活 +1',
+            'battle.burst': '爆裂 +2',
+            'battle.knockout': '擊出 +2',
+            'battle.xtreme': '中央 +3',
+            'battle.stadium_out': '台外 +3',
+            'battle.stadiumOut': '台外 +3',
+            'reg.stadiumOut': '允許台外 (+3，社群規則)',
+            'reg.stadiumOutHint': '非 Hasbro / Takara Tomy 官方規則。如場館將陀螺擊出台頂視為 +3 才開啟。',
+            'battle.firstTo': '先取 {n} 分',
+            'battle.matchComplete': '對局結束',
+            'battle.undo': '返回',
+            'battle.tapToScore': '點擊勝方加分 · 點擊 ⓘ 查看玩家資料',
+            'battle.lockedHint': '對局已自動鎖定，按下方 ↶ 撤銷可修改上一個結果。',
+            'battle.whichBey': '邊隻陀螺贏？',
+            'penalty.title': '判罰／故障',
+            'penalty.launchError': '發射失誤',
+            'penalty.launchErrorHint': '同一回合 2 次發射失誤 → 對手 +1 分，本回合重打',
+            'penalty.matchWarn': '警告',
+            'penalty.matchWarnHint': '第 1 次：警告 · 第 2 次：對手 +1 · 第 3 次：判負（對手贏對局）',
+            'penalty.malfunction': '器材故障',
+            'penalty.malfunctionHint': '同一對局 3 次故障 → 對手贏對局',
+            'reg.bestOfThree': '三局二勝 — 逐局記錄勝負（TCG）',
+            'reg.bestOfThreeHint': '關閉（預設）：每場一點即決。開啟：每場顯示第 1 / 2 / 3 局按鈕，先贏 2 局即取得整場。排名加上 GW-GL 欄。',
+            'bo3.game': '第 {n} 局',
+            'bo3.firstTo2': '先取 2 局獲勝',
+            'bo3.matchScore': '比分 {a} – {b}',
+            'standings.gw': 'GW-GL',
+            'bracket.title': '括號賽程一覽',
+            'bracket.tbd': '待定',
+            'trainer.viewCard': '查看玩家資料',
+            'trainer.finishBreakdown': '勝法分佈',
+            'trainer.deck': '登記陀螺',
+            'deck.title': '{name} 的陀螺',
+            'deck.short': '陀螺',
+            'deck.edit': '編輯陀螺',
+            'deck.blade': 'Blade（旋輪）',
+            'deck.ratchet': 'Ratchet（齒輪）',
+            'deck.bit': 'Bit（軸尖）',
+            'deck.bladePh': '例：Phoenix Wing',
+            'deck.ratchetPh': '例：9-60',
+            'deck.bitPh': '例：Point',
+            'deck.rulesHint': '每位選手帶 3 顆陀螺。3 顆陀螺之間，Blade、Ratchet、Bit 三類零件均不可重複。',
+            'deck.valid': '通過 — 9 件零件全部唯一',
+            'deck.incomplete': '請填寫 3 顆陀螺的全部零件',
+            'deck.duplicate': '{part} 重複：「{value}」',
+            'deck.save': '儲存陀螺',
+            'deck.missing': '尚未登記陀螺',
+            'common.cancel': '取消',
+            'qr.show': '顯示 QR',
+            'qr.scan': '掃描 QR',
+            'qr.scanUnsupported': '此瀏覽器不支援相機掃描 — 改用「貼上代碼」。',
+            'qr.scanInstr': '把 QR 碼對準相機。',
+            'qr.scanFail': '未偵測到陀螺 QR。請改善光線後再試。',
+            'qr.invalidCode': '代碼不是有效的陀螺 QR。',
+            'qr.pasteCode': '或貼上代碼：',
+            'qr.imported': '已匯入陀螺！按儲存確認。',
+            'qr.codeLabel': '陀螺代碼（複製或掃描 QR）：',
+            'qr.import': '匯入代碼',
+            'reg.threeOnThree': '3 陀螺對戰 3 陀螺（每位選手帶 3 顆陀螺）',
+            'reg.threeOnThreeHint': '點選勝法後，再選擇邊隻陀螺（1 / 2 / 3）取勝。取消勾選即為 1 陀螺對戰 1 陀螺。',
+            'standings.battlePts': '對戰得分',
+            'trainer.battlePts': '對戰得分',
             'home.knockout': '淘汰制賽事',
             'ko.final': '決賽',
             'ko.semi': '準決賽',
@@ -484,7 +655,7 @@ const app = (() => {
             'cloud.viewMode': '觀看模式',
             'cloud.viewBanner': '你正在即時觀看此賽事,更新會自動顯示。',
             'cloud.shareTitle': '分享賽事',
-            'cloud.shareHint': '玩家可掃描此 QR Code 或開啟下方連結即時觀看賽事。',
+            'cloud.shareHint': '玩家可掃描此 QR Code 或開啟連結即時觀看賽事 — 配對、結果、排名同陀螺資料都會即時同步。',
             'cloud.copyLink': '複製連結',
             'cloud.copied': '已複製連結!',
             'cloud.tournamentId': '賽事編號',
@@ -503,11 +674,14 @@ const app = (() => {
             'viewer.share': '分享',
             'viewer.shareTitle': '分享此頁面',
             'viewer.shareHint': '掃描 QR Code 或複製連結與其他玩家分享。',
-            'viewer.linkCopied': '已複製連結!'
+            'viewer.linkCopied': '已複製連結!',
+            'viewer.tabRound': '即時對戰',
+            'viewer.tabStandings': '排名榜'
         }
     };
 
-    let currentLang = localStorage.getItem('ptcg_lang') || 'en';
+    // Default to Traditional Chinese (Hong Kong audience). Returning users keep their saved choice.
+    let currentLang = localStorage.getItem('ptcg_lang') || 'zh';
 
     function t(key, params) {
         let str = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
@@ -528,6 +702,11 @@ const app = (() => {
         document.documentElement.lang = currentLang === 'zh' ? 'zh-Hant' : 'en';
         document.querySelectorAll('[data-i18n]').forEach(el => {
             el.textContent = t(el.getAttribute('data-i18n'));
+        });
+        // Opt-in: strings that need to render limited inline markup (e.g. <em>, <code>, <strong>)
+        // Only trusted strings in app.js bundle are whitelisted with data-i18n-html.
+        document.querySelectorAll('[data-i18n-html]').forEach(el => {
+            el.innerHTML = t(el.getAttribute('data-i18n-html'));
         });
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
@@ -640,6 +819,11 @@ const app = (() => {
         wheelHistory: [],
         currentView: 'home',
         tournamentType: 'swiss',
+        gameType: 'tcg',                  // 'tcg' | 'spin-battle' — spin-battle is Beyblade-X-style scoring
+        matchTargetPoints: 4,             // spin-battle: first to N battle points wins the match
+        threeOnThreeMode: true,           // spin-battle: each battler brings 3 Beyblades, can swap between battles
+        stadiumOutEnabled: false,         // spin-battle: enables 5th finish "Stadium Out" (+3, community variant)
+        bestOfThree: false,               // tcg: track per-game wins (Bo3); auto-locks match when one side wins 2 games
         tournamentStarted: false,
         tournamentEnded: false,
         projectorMode: false,
@@ -749,7 +933,7 @@ const app = (() => {
     }
 
     function setRoundCount(value) {
-        if (state.tournamentStarted) return;
+        if (viewOnly || state.tournamentStarted) return;
         const n = parseInt(value, 10);
         if (Number.isFinite(n) && n > 0 && n <= 20) {
             state.roundCountOverride = n;
@@ -769,12 +953,13 @@ const app = (() => {
     // ---- NAVIGATION ----
     function navigateTo(view) {
         if (view === 'home') checkResumeState();
-        if (view === 'registration') renderPlayerList();
+        if (view === 'registration') { renderPlayerList(); syncRegistrationGameType(); }
         if (view === 'round') renderRound();
         if (view === 'standings') renderStandings();
         if (view === 'wheel') renderWheel();
         if (view === 'advanced') renderAdvanced();
         showView(view);
+        updateViewerTabs();
     }
 
     function resumeTournament() {
@@ -797,7 +982,9 @@ const app = (() => {
     }
 
     function resetTournament() {
+        if (viewOnly) return;
         if (!confirm(t('reset.confirm'))) return;
+        championCelebrationFired = false;
         for (let i = 0; i < 50; i++) {
             localStorage.removeItem(`ptcg_round_${i}`);
         }
@@ -815,7 +1002,7 @@ const app = (() => {
 
     // ---- PLAYER REGISTRATION ----
     function bulkAddPlayers() {
-        if (state.tournamentStarted) return;
+        if (viewOnly || state.tournamentStarted) return;
         const textarea = document.getElementById('bulk-input');
         const lines = textarea.value.split('\n');
         let added = 0;
@@ -859,14 +1046,14 @@ const app = (() => {
     }
 
     function deletePlayer(index) {
-        if (state.tournamentStarted) return;
+        if (viewOnly || state.tournamentStarted) return;
         state.players.splice(index, 1);
         saveState();
         renderPlayerList();
     }
 
     function editPlayerName(index) {
-        if (state.tournamentStarted) return;
+        if (viewOnly || state.tournamentStarted) return;
         const player = state.players[index];
         const currentValue = player.trainerId ? `${player.name} | ${player.trainerId}` : player.name;
         const newName = prompt(t('reg.editPrompt'), currentValue);
@@ -918,12 +1105,21 @@ const app = (() => {
             scoringInput.disabled = locked;
         }
 
+        const showDeck = !locked && state.gameType === 'spin-battle' && state.threeOnThreeMode !== false;
         list.innerHTML = '';
         state.players.forEach((p, i) => {
             const li = document.createElement('li');
             const trainerTag = p.trainerId ? `<span class="trainer-id-tag">${escapeHtml(p.trainerId)}</span>` : '';
+            let deckBtn = '';
+            if (showDeck) {
+                const v = validateDeck(p.deck);
+                const cls = v.ok ? 'deck-btn-ok' : 'deck-btn-warn';
+                const icon = v.ok ? '✓' : '⚠';
+                deckBtn = `<button class="deck-btn ${cls}" onclick="app.openDeckEditor('${p.id}')" title="${t('deck.edit')}">${icon} ${t('deck.short')}</button>`;
+            }
             li.innerHTML = `
                 <span class="player-name" ${!locked ? `ondblclick="app.editPlayerName(${i})" title="Double-click to edit"` : ''}>${escapeHtml(p.name)}${trainerTag}</span>
+                ${deckBtn}
                 ${!locked ? `<button class="btn-delete" onclick="app.deletePlayer(${i})" title="Remove">&times;</button>` : ''}
             `;
             list.appendChild(li);
@@ -974,6 +1170,127 @@ const app = (() => {
     // ---- UPDATES / ANNOUNCEMENTS ----
     // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
     const UPDATES = [
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Beys: QR generate + scan + paste-code · soft-start with ⚠ badge · wording cleanup',
+                zh: '陀螺：QR 產生／掃描／貼碼 · 未登記也可開賽（顯示 ⚠ 標記）· 用詞統一'
+            },
+            body: {
+                en: 'Three improvements to 3-on-3 Beys: (1) QR support — every Beys editor has a "⊞ QR" toggle that shows a QR code encoding the player\'s 3 Beys plus a copyable text code (gshk-bey:b|r|t;b|r|t;b|r|t). Re-attendees can scan this QR at the next event to import their saved Beys instantly. Cameras with BarcodeDetector (modern Chrome / Safari iOS 17+) get a live "Scan QR" button; everyone else can paste the code into a text box. (2) Tournament start no longer blocks on missing Beys — battlers without registered Beys get a small ⚠ badge next to their name in the round view, but the event runs normally (Bey picker falls back to "1/2/3" buttons for them). (3) Wording cleaned up — "Beys" everywhere instead of mixing "deck" / "Spin" / "Beys". Spin Battle help popup updated to reflect the now-shipped penalty rules and 3-on-3 features.',
+                zh: '3-on-3 陀螺新增三項改進：(1) QR 支援 — 陀螺編輯器加入「⊞ QR」按鈕，可生成包含 3 顆陀螺資料的 QR 碼，並提供可複製的文字代碼（gshk-bey:b|r|t;b|r|t;b|r|t）。下次參賽時掃描即可一鍵匯入已儲存的陀螺。支援 BarcodeDetector 的瀏覽器（最新版 Chrome 與 iOS 17+ 的 Safari）有即時相機掃描；其他瀏覽器可貼上文字代碼。(2) 賽事開始不再因為陀螺未登記而被阻擋 — 未登記陀螺的選手會在對戰畫面名字旁顯示小 ⚠ 標記，賽事正常進行（陀螺選擇器會回退至「1/2/3」按鈕）。(3) 用詞統一 — 全面使用「陀螺／Beys」，不再混用「deck／套牌／spin」。陀螺對戰規則說明已更新，反映罰則與 3-on-3 功能均已上線。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Spin Battle: proper deck registration with parts uniqueness (3-on-3 v1)',
+                zh: '陀螺對戰：3-on-3 套牌登記（v1，含零件唯一性檢查）'
+            },
+            body: {
+                en: 'Each battler now registers their 3 Beys (Blade + Ratchet + Bit each) on the registration page via a per-player Deck button. Validation ensures no part repeats within a deck — official Beyblade X tournament rule. The tournament refuses to start until every battler has a valid deck (or 3-on-3 is turned off). Once registered, the in-match Bey picker shows the actual Blade names instead of "Bey 1 / 2 / 3", the battle log records which Bey scored each finish, and the trainer card shows the registered deck. This closes the last big rule-compliance gap. (TESTING badge stays on for now while the new flow is exercised — let me know when to drop it.)',
+                zh: '報名頁面每位選手卡片旁新增「陀螺」按鈕，可登記 3 顆陀螺的完整零件（Blade 旋輪 / Ratchet 齒輪 / Bit 軸尖）。系統會檢查同一套牌內不可有重複零件 — 完全依照 Beyblade X 官方規則。任一選手未完成登記，賽事將無法開始（除非關閉 3-on-3 選項）。登記完成後，對戰中按勝法後彈出的陀螺選擇器會直接顯示真實的 Blade 名稱（不再是「1 / 2 / 3」），對戰紀錄會保留是哪一顆陀螺取勝，訓練家卡片亦會顯示完整的登記套牌。這是 Beyblade X 規則合規性的最後一塊拼圖。（測試版標記暫時保留以便試用，準備好可隨時通知移除。）'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Knockout bracket tree · trainer-card battle history · print-friendly standings · Stadium Out',
+                zh: '淘汰賽括號圖／訓練家卡片完整對戰紀錄／可列印排名／台外勝法'
+            },
+            body: {
+                en: 'Knockout tournaments now show a collapsible bracket-tree overview at the top of the round view — see the whole bracket at a glance, past winners highlighted in green, current round glowing orange, future rounds shown as TBD. Trainer/Battler cards now include per-battle (spin) and per-game (TCG Bo3) sub-entries under each match in the timeline, plus a "Finish breakdown" stat box showing how many Xtreme / Knock Out / Burst / Survivor finishes the player scored. Standings page is now print-friendly — hit Cmd/Ctrl+P and you get a clean black-on-white standings table ready for the shop wall, with the gameset-hk.com watermark at the bottom. NEW Spin Battle option: "Allow Stadium Out (+3, community variant)" toggle on the registration page — when enabled, a 5th violet finish button appears below the cross. Defaults OFF (not in official Hasbro/Takara Tomy rules).',
+                zh: '淘汰賽現於對戰畫面頂部新增可摺合的「括號賽程一覽」 — 一眼睇曬全部對局，已完成的勝方高亮綠色，當前輪次橙色發光，未來輪次以 TBD 顯示。訓練家卡片現於每場對局下方加入逐回合（陀螺對戰）／逐局（TCG 三局二勝）的細節記錄，並新增「勝法分佈」統計欄位顯示玩家累積的中央／擊出／爆裂／存活勝法數。排名頁面現支援列印 — 按 Cmd/Ctrl+P 即得整潔的黑白排名表（含 gameset-hk.com 水印），可直接貼上店內告示板。陀螺對戰新增選項：「允許台外 (+3，社群規則)」可於報名頁勾選，啟用後十字面板下方會出現第 5 個紫色勝法按鈕。預設關閉（非 Hasbro／Takara Tomy 官方規則）。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Spin Battle (TESTING): penalty rules + spectator pin + Best-of-3 for TCG',
+                zh: '陀螺對戰（測試版）：判罰規則／觀眾置頂／TCG Best-of-3 模式'
+            },
+            body: {
+                en: 'Three additions in one drop: (1) Spin Battle now has a collapsible Penalty / Malfunction panel under each match — covers the official Beyblade X rules: 2 launch errors → +1 to opponent + battle replays; warning ladder (1→2 +1 to opponent → 3 = DQ); 3 malfunctions → opponent wins match. Counter shows current state, auto-awards points, auto-locks the match on DQ/3rd malfunction. (2) Spectator pinned-match for spin tournaments now shows a clean read-only scoreboard instead of the old TCG win/draw/win buttons. (3) NEW: TCG mode has an optional "Best of 3" toggle on the registration page (default OFF). When enabled, each match shows Game 1 / Game 2 / Game 3 buttons; match auto-locks when one side wins 2 games. Standings get a GW-GL column showing per-game record. Per-game tracking unlocks the data needed for official Pokémon TCG PGW% / OGW% tiebreakers in a future release.',
+                zh: '一次推出三項更新：(1) 陀螺對戰每場比賽下方新增可摺合的「判罰／故障」面板 — 完整支援 Beyblade X 官方規則：同一回合 2 次發射失誤 → 對手 +1 分並重打本回合；警告階梯（第 1 次警告 → 第 2 次對手 +1 → 第 3 次直接判負）；同一對局 3 次器材故障 → 對手贏對局。即時計數，達到門檻自動加分／鎖定。(2) 觀眾置頂的對局介面在陀螺對戰模式下改為只讀記分版，取代原本的 TCG 勝／和／勝按鈕。(3) 全新：TCG 模式報名頁面新增「Best of 3」可選項（預設關閉）。開啟後每場顯示 Game 1 / 2 / 3 按鈕，先贏 2 局即取得整場。排名加上 GW-GL 欄位顯示逐局戰績。逐局追蹤亦為未來加入官方 Pokémon TCG PGW% / OGW% 決勝順位鋪路。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Spin Battle (TESTING): 3-on-3 deck mode + cross-popup scoring',
+                zh: '陀螺對戰（測試版）：3-on-3 套牌模式與十字記分介面'
+            },
+            body: {
+                en: 'Tap a player card → spring-animated cross popup appears with 4 finish buttons positioned by motion (Xtreme up, Knock Out right, Survivor down, Burst left). Each player card has a small ⓘ button in the corner that opens the trainer card popup with full stats. The round timer is hidden (Beyblade matches are point-target, not time-bound). NEW: 3-on-3 deck mode is enabled by default — after tapping a finish, a Bey 1/2/3 picker appears so the battle log records which Bey scored. Untick the toggle on the registration page for 1-on-1 matches.',
+                zh: '點擊玩家卡片 → 即彈出十字記分面板，4 種勝法按運動方向擺放（中央在上、擊出在右、存活在下、爆裂在左）。每張玩家卡角落有小 ⓘ 按鈕，點擊可開啟訓練家卡片查看完整資料。陀螺對戰模式下計時器自動隱藏（Beyblade 比賽以分數為勝負，無時限）。新增：3-on-3 套牌模式預設開啟 — 點選勝法後再選擇是邊隻陀螺（1 / 2 / 3）取勝，記錄會保留陀螺編號。報名頁面可取消勾選改為 1-on-1。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'NEW (TESTING): Spin Battle Tournament — Beyblade-X-style scoring',
+                zh: '全新功能（測試版）：陀螺對戰賽事 — Beyblade X 計分制度'
+            },
+            body: {
+                en: 'Two new home-screen tiles — "Spin Battle Swiss" and "Spin Battle Knockout" — let you run Beyblade-X-style spin battle tournaments. Each match uses points-target scoring (default first-to-4 in Swiss; organizers can change it). Per-match UI shows live cumulative points and four finish buttons per side: Survivor +1, Burst +2, Knock Out +2, Xtreme +3. Match auto-locks when a side hits the target, with an Undo for the most recent battle. Standings swap the WOScore column for BattlePts (sum scored across the event). The pairing engine, byes, OWP / OOMW tiebreakers all work the same as TCG mode. Marked as TESTING because penalty rules (two-launch-error, three-warning DQ, three-malfunction match-loss) and 3-on-3 deck registration are not yet implemented — coming in v1.',
+                zh: '主畫面新增兩個按鈕 — 「陀螺對戰瑞士制」與「陀螺對戰淘汰賽」 — 支援 Beyblade X 風格的陀螺對戰賽事。每場對局採用目標分數制（瑞士制預設先取 4 分；主辦方可自訂）。對局介面提供四種勝法按鈕（存活 +1、爆裂 +2、擊出 +2、中央 +3）與即時累計分數，達標後自動鎖定，支援撤銷上一回合。排名表將 WOScore 欄位換成 BattlePts（整個賽事中累積的回合得分）。配對引擎、輪空、OWP／OOMW 決勝順位與 TCG 模式完全相同。標記為「測試版」因罰則（兩次發射失誤、三次警告判負、三次器材故障）與 3-on-3 套牌登記尚未實作 — 將於 v1 加入。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Home page redesigned · Cantonese-first by default',
+                zh: '主頁重新設計 · 預設廣東話介面'
+            },
+            body: {
+                en: 'New visitors now land on the Cantonese (zh-Hant) interface by default — easier for our Hong Kong audience. Returning users keep whatever language they previously chose. The home screen got a new gradient headline ("Maybe the best GameSet in Hong Kong") and a tighter tagline. Switch to English any time with the 中文 / EN button at the top right.',
+                zh: '新訪客現預設以繁體中文（廣東話）介面開啟 — 對香港用戶更直覺。回訪用戶會沿用之前選擇的語言。主頁新增漸變標題「可能係香港最好用既GameSet」與精簡副標題。隨時可在右上角「中文 / EN」按鈕切換英文。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Rebrand: TCG Tournament Manager is now GameSet HK',
+                zh: '品牌更新：TCG Tournament Manager 正式更名為 GameSet HK'
+            },
+            body: {
+                en: 'New official domain: gameset-hk.com. Old links (tcgtm.web.app, ptcgstm.web.app, tcgtm.firebaseapp.com) automatically redirect to the new home, so existing QR codes, share links and bookmarks keep working. The brand and watermark on downloaded standings now read "GameSet HK". The app, features, data, and account sign-ins are unchanged.',
+                zh: '正式網址更新為 gameset-hk.com。原有連結（tcgtm.web.app、ptcgstm.web.app、tcgtm.firebaseapp.com）將自動轉址至新網址，舊有的 QR 碼、分享連結與書籤仍可正常使用。下載的排名圖片浮水印改為「GameSet HK」。功能、資料與登入帳號完全不變。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Standings: full tiebreaker ladder + trainer card upgrade',
+                zh: '排名：完整決勝順位 + 訓練家卡片升級'
+            },
+            body: {
+                en: 'Standings now show the full Pokémon-TCG tiebreaker ladder: Match Points → OWP → OOMW, with WOScore (opponents\' total points) and Byes as reference columns. The OWP formula was corrected to the official (wins + 0.5·draws) / games — scoring-mode independent, fair when draws occur. Byes are never counted as opponents. The trainer card popup now shows all tiebreakers (Points · OWP · OOMW · WOScore · Byes · Record · Games). Top 3 get gold/silver/bronze medals 🥇🥈🥉 and the champion is crowned with confetti. Swiss rules popup and in-app walkthrough updated in both languages.',
+                zh: '排名頁面現已顯示完整的 Pokémon TCG 決勝順位階梯：勝點 → OWP → OOMW，並加上 WOScore（對手總積分）與 Byes（輪空次數）作為參考欄。OWP 公式已修正為官方版本 (勝 + 0.5·和) / 場數 — 不受計分模式影響，和局存在時更公平。輪空不計為對手。點擊玩家名字顯示的訓練家卡片現已列出全部決勝指標（勝點 · OWP · OOMW · WOScore · Byes · 戰績 · 場數）。前三名顯示金/銀/銅獎牌 🥇🥈🥉，冠軍誕生時自動撒下彩帶。瑞士制規則說明與新手導覽的中英文版本均已同步更新。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Mobile polish: sticky header, input hints, shorter logo on phone',
+                zh: '手機優化：排名表頭固定、輸入欄提示、縮短手機版標題'
+            },
+            body: {
+                en: 'Standings table header now stays pinned while you scroll long lists. Every input on the registration, wheel and advanced pages shows a helpful description below it — including a preview of how the value will look on the final standings. The header title scales fluidly so it never collides with the theme/language buttons on phones. In view mode, the Download-as-Image button now correctly shows for spectators, and tapping a player in the pinned "your match" card opens their trainer stats (works on both sides, and on bye pairings).',
+                zh: '排名表的表頭在滾動時固定顯示，方便長名單對照。報名、轉盤、進階三個頁面所有輸入欄下方均加上說明文字，並以預覽方式告訴你最終排名會長什麼樣。頁首標題會依螢幕大小自動縮放，避免在手機上與主題／語言按鈕重疊。觀看模式下「下載為圖片」按鈕現已正常顯示；點擊自己置頂對局中的任一玩家名字，即可開啟該玩家的訓練家卡片（適用於 A 方、B 方及輪空對局）。'
+            }
+        },
+        {
+            date: '2026-04-25',
+            title: {
+                en: 'Shareability: favicon, social previews, PWA install',
+                zh: '分享性：加入網站圖示、社群分享預覽、PWA 安裝'
+            },
+            body: {
+                en: 'GameSet HK now has a trophy favicon in the browser tab, and pasting the link into Discord / WhatsApp / Telegram shows a proper preview card with title, description and image. On mobile, "Add to Home Screen" works like a real app thanks to the new Web App Manifest. No backend changes — pure polish.',
+                zh: 'GameSet HK 瀏覽器分頁現已顯示獎盃網站圖示；在 Discord／WhatsApp／Telegram 貼上連結會自動生成標題、描述與圖片的分享預覽。行動裝置可透過「加到主畫面」以 App 形式安裝（PWA），跟原生應用一樣打開即用。純 UI 優化，後端無變動。'
+            }
+        },
         {
             date: '2026-04-22',
             title: {
@@ -1069,8 +1386,8 @@ const app = (() => {
                 zh: '使用指南與建議流程'
             },
             body: {
-                en: 'A quick walkthrough of every feature and the suggested flow for running a smooth event.\n\n1. PICK A FORMAT (home screen)\n   • Swiss Tournament — every player plays the same number of rounds; best for 4–32 players.\n   • Knockout Tournament — single-elimination bracket; the loser of each match is out.\n\n2. REGISTRATION\n   • Enter the tournament name and date — both appear on the standings header and the downloadable screenshot.\n   • Paste or type one player name per line, then press Add Players. Tap any name to edit or delete.\n   • The recommended round count appears below the list (e.g. 8 players → 3 rounds).\n\n3. THE ROUND VIEW\n   • Each pairing is a coloured card: Side A (blue) vs Side B (orange). Tap "Wins" on the winning side, or "Draw".\n   • Re-shuffle Pairings (round 1 only, before submit) — randomise pairings again if players want a do-over.\n   • End Tournament (top-left, red) — close the event early at any point.\n   • Compact — fits more tables on screen, ideal for store displays.\n   • Projector — full-screen giant timer for a hall projector.\n   • Publish (QR icon) — generate a tournament ID + QR code so spectators can watch live in their own browser. Stop Sharing any time to delete the cloud copy.\n\n4. TIMER & PLAYER ACTIONS\n   • Start / Pause / Reset / ±1m on the timer bar. Mute disables the end-of-round beep.\n   • Tap any player name to open their trainer card with full match history. From here you can drop a player mid-tournament; in knockout mode their pending match auto-awards to the opponent.\n\n5. SUBMITTING & ENDING\n   • Submit Results & Next Round generates the next round automatically.\n   • On the final round the button becomes Submit Results & End Tournament — one click ends the event.\n   • Previous Round (bottom-left) re-opens the prior round if you need to fix a result.\n\n6. STANDINGS & SHARING\n   • Sorted by Match Points, then OWP (opponents\' win percentage). Top 3 get gold / silver / bronze dots.\n   • Download as PNG — captures the standings table with a watermark, ready to post on social.\n\n7. BONUS TOOLS\n   • Lucky Wheel — random draw / prize giveaway with player import; "Exclude Top 3" shortcut for podium prizes.\n   • Advanced Recovery — rebuild a tournament from past round results if a device is lost.\n\nTIPS\n   • Switch language any time with the 中文 / EN button at the top-right.\n   • Spectators viewing a published tournament can pin their own match to the top with the Pin-your-match search box.',
-                zh: '以下為各功能簡介與建議的活動流程。\n\n1. 選擇賽制（主畫面）\n   • 瑞士制（Swiss）— 每位玩家打相同輪數，適合 4–32 人。\n   • 淘汰賽（Knockout）— 單敗淘汰，輸掉一場即出局。\n\n2. 報名登記\n   • 輸入賽事名稱與日期，會顯示於排名頁面與下載圖片上。\n   • 一行貼上一位玩家姓名，按「加入玩家」。點擊名字可編輯或刪除。\n   • 列表下方會顯示建議輪數（例如 8 人 → 3 輪）。\n\n3. 輪次畫面\n   • 每組對局以彩色卡片呈現：A 方（藍）對 B 方（橘）。點擊獲勝方的「勝」鈕，或「和」。\n   • 重新配對（僅第 1 輪、提交結果前）— 一鍵重新隨機配對。\n   • 結束賽事（左上角紅色按鈕）— 任何時候提前結束賽事。\n   • 緊湊模式（Compact）— 一頁顯示更多桌次，適合店內展示。\n   • 投影模式（Projector）— 全螢幕巨型計時器，適合會場投影機。\n   • 發佈（QR 圖示）— 產生賽事 ID 與 QR 碼，觀眾可在自己的瀏覽器即時觀看。可隨時停止分享以刪除雲端副本。\n\n4. 計時器與玩家操作\n   • 計時器列：開始 / 暫停 / 重置 / ±1 分；靜音可關閉結束提示音。\n   • 點擊玩家名字可開啟訓練家卡片，查看完整對戰紀錄；亦可在賽事中將該玩家標記為退賽。淘汰賽模式下，其未進行的對局會自動判給對手。\n\n5. 提交與結束\n   • 「提交結果並進入下一輪」會自動產生下一輪配對。\n   • 最後一輪的按鈕會變為「提交結果並結束賽事」，一鍵結束賽事。\n   • 「上一輪」（左下角）可回到前一輪修改結果。\n\n6. 排名與分享\n   • 依勝點排序，再以 OWP（對手勝率）作小分。前三名顯示金 / 銀 / 銅標記。\n   • 下載為圖片（PNG）— 含浮水印，可直接分享到社群媒體。\n\n7. 進階工具\n   • 幸運轉盤（Lucky Wheel）— 隨機抽獎，可匯入玩家名單；「排除前三名」快速鈕適合頒獎場合。\n   • 進階回復（Advanced Recovery）— 若裝置遺失，可由過去輪次結果重建賽事。\n\n小提醒\n   • 右上角「中文 / EN」按鈕可隨時切換語言。\n   • 觀看已發佈賽事的觀眾，可在「鎖定我的對局」搜尋框輸入名字，將自己的對局置頂。'
+                en: 'A quick walkthrough of every feature and the suggested flow for running a smooth event.\n\n1. PICK A FORMAT (home screen)\n   • Swiss Tournament — every player plays the same number of rounds; best for 4–32 players.\n   • Knockout Tournament — single-elimination bracket; the loser of each match is out.\n\n2. REGISTRATION\n   • Enter the tournament name and date — both appear on the standings header and the downloadable screenshot.\n   • Paste or type one player name per line, then press Add Players. Tap any name to edit or delete.\n   • The recommended round count appears below the list (e.g. 8 players → 3 rounds).\n\n3. THE ROUND VIEW\n   • Each pairing is a coloured card: Side A (blue) vs Side B (orange). Tap "Wins" on the winning side, or "Draw".\n   • Re-shuffle Pairings (round 1 only, before submit) — randomise pairings again if players want a do-over.\n   • End Tournament (top-left, red) — close the event early at any point.\n   • Compact — fits more tables on screen, ideal for store displays.\n   • Projector — full-screen giant timer for a hall projector.\n   • Publish (QR icon) — generate a tournament ID + QR code so spectators can watch live in their own browser. Stop Sharing any time to delete the cloud copy.\n\n4. TIMER & PLAYER ACTIONS\n   • Start / Pause / Reset / ±1m on the timer bar. Mute disables the end-of-round beep.\n   • Tap any player name to open their trainer card with full match history. From here you can drop a player mid-tournament; in knockout mode their pending match auto-awards to the opponent.\n\n5. SUBMITTING & ENDING\n   • Submit Results & Next Round generates the next round automatically.\n   • On the final round the button becomes Submit Results & End Tournament — one click ends the event.\n   • Previous Round (bottom-left) re-opens the prior round if you need to fix a result.\n\n6. STANDINGS & SHARING\n   • Sorted by Match Points → OWP → OOMW (full tiebreaker ladder, details on the Swiss rules popup). Top 3 get gold / silver / bronze medals 🥇🥈🥉. WOScore and Byes shown as reference columns.\n   • Download as PNG — captures the standings table with a watermark, ready to post on social.\n\n7. BONUS TOOLS\n   • Lucky Wheel — random draw / prize giveaway with player import; "Exclude Top 3" shortcut for podium prizes.\n   • Advanced Recovery — rebuild a tournament from past round results if a device is lost.\n\nTIPS\n   • Switch language any time with the 中文 / EN button at the top-right.\n   • Spectators viewing a published tournament can pin their own match to the top with the Pin-your-match search box.',
+                zh: '以下為各功能簡介與建議的活動流程。\n\n1. 選擇賽制（主畫面）\n   • 瑞士制（Swiss）— 每位玩家打相同輪數，適合 4–32 人。\n   • 淘汰賽（Knockout）— 單敗淘汰，輸掉一場即出局。\n\n2. 報名登記\n   • 輸入賽事名稱與日期，會顯示於排名頁面與下載圖片上。\n   • 一行貼上一位玩家姓名，按「加入玩家」。點擊名字可編輯或刪除。\n   • 列表下方會顯示建議輪數（例如 8 人 → 3 輪）。\n\n3. 輪次畫面\n   • 每組對局以彩色卡片呈現：A 方（藍）對 B 方（橘）。點擊獲勝方的「勝」鈕，或「和」。\n   • 重新配對（僅第 1 輪、提交結果前）— 一鍵重新隨機配對。\n   • 結束賽事（左上角紅色按鈕）— 任何時候提前結束賽事。\n   • 緊湊模式（Compact）— 一頁顯示更多桌次，適合店內展示。\n   • 投影模式（Projector）— 全螢幕巨型計時器，適合會場投影機。\n   • 發佈（QR 圖示）— 產生賽事 ID 與 QR 碼，觀眾可在自己的瀏覽器即時觀看。可隨時停止分享以刪除雲端副本。\n\n4. 計時器與玩家操作\n   • 計時器列：開始 / 暫停 / 重置 / ±1 分；靜音可關閉結束提示音。\n   • 點擊玩家名字可開啟訓練家卡片，查看完整對戰紀錄；亦可在賽事中將該玩家標記為退賽。淘汰賽模式下，其未進行的對局會自動判給對手。\n\n5. 提交與結束\n   • 「提交結果並進入下一輪」會自動產生下一輪配對。\n   • 最後一輪的按鈕會變為「提交結果並結束賽事」，一鍵結束賽事。\n   • 「上一輪」（左下角）可回到前一輪修改結果。\n\n6. 排名與分享\n   • 依勝點 → OWP → OOMW 排序（完整決勝順位，詳見瑞士制規則說明）。前三名顯示金 / 銀 / 銅獎牌 🥇🥈🥉。另提供 WOScore 與 Byes 作參考欄。\n   • 下載為圖片（PNG）— 含浮水印，可直接分享到社群媒體。\n\n7. 進階工具\n   • 幸運轉盤（Lucky Wheel）— 隨機抽獎，可匯入玩家名單；「排除前三名」快速鈕適合頒獎場合。\n   • 進階回復（Advanced Recovery）— 若裝置遺失，可由過去輪次結果重建賽事。\n\n小提醒\n   • 右上角「中文 / EN」按鈕可隨時切換語言。\n   • 觀看已發佈賽事的觀眾，可在「鎖定我的對局」搜尋框輸入名字，將自己的對局置頂。'
             }
         }
     ];
@@ -1147,8 +1464,8 @@ const app = (() => {
             label: { en: 'SWISS FORMAT', zh: '瑞士制' },
             title: { en: 'Swiss pairing rules', zh: '瑞士制配對規則' },
             body: {
-                en: 'Swiss pairings group players with similar match records together each round, without eliminating anyone.\n\nHOW PAIRINGS ARE GENERATED\n   • Round 1: players are randomly shuffled, then paired top-to-bottom.\n   • Round 2 onwards: players are sorted by match points. Highest scorers are paired first.\n\nSCORING (TWO MODES, PICKED ON THE REGISTRATION PAGE)\n   • Default — Win 3, Loss 1, Draw 0 (rewards showing up; draws score nothing).\n   • Standard Swiss — Win 3, Draw 1, Loss 0. Tick the "Standard Swiss scoring" checkbox on the registration page to switch.\n   • Bye is always counted as an automatic Win (3 points).\n   • Scoring is locked once the tournament starts.\n\nAVOIDING REMATCHES\n   • The app uses a backtracking algorithm to find a pairing where no two players have already faced each other this tournament.\n   • If a no-rematch pairing is mathematically impossible (e.g. round 4 with only 4 players left), the closest-ranked rematch is allowed and a warning is logged to the browser console.\n\nBYE (ODD PLAYER COUNT)\n   • If the player count is odd, the lowest-ranked player who has not yet had a bye receives one.\n   • A bye counts as a win and is worth 3 match points; the player skips that round.\n   • The same player will not get a bye twice unless every other player has already had one.\n\nTIEBREAKERS (STANDINGS)\n   • Match Points (MP) first.\n   • Then OWP — Opponents\' Win Percentage — the average win rate of every opponent you faced. Rewards beating tougher fields.\n   • Players still tied are listed in registration order.\n\nRECOMMENDED ROUND COUNT\n   • The app suggests ⌈log₂(N)⌉ rounds for N players (e.g. 8 → 3, 16 → 4, 32 → 5). You can always end early or run extra rounds.\n\nDROP PLAYER\n   • Open a player\'s trainer card and tap Drop Player to remove them from future pairings. Their existing results stay on record. Tap Undo Drop to reinstate.',
-                zh: '瑞士制將戰績相近的玩家配對在一起，整個過程不淘汰任何人。\n\n配對方式\n   • 第 1 輪：隨機洗牌後依序配對。\n   • 第 2 輪起：依勝點排序，高分者優先配對。\n\n計分（兩種模式，於報名頁面選擇）\n   • 預設 — 勝 3 分、負 1 分、和 0 分（鼓勵到場參賽，和局不計分）。\n   • 標準瑞士制 — 勝 3 分、和 1 分、負 0 分。在報名頁面勾選「標準瑞士制計分」即可切換。\n   • 輪空一律視為自動勝場（3 分）。\n   • 賽事開始後，計分模式將鎖定。\n\n避免重複對局\n   • 系統使用回溯演算法，盡可能讓本次賽事中沒有任何兩位玩家再次相遇。\n   • 若數學上無法避免（例如第 4 輪只剩 4 人），則允許戰績最相近的重複對局，並在瀏覽器主控台記錄警告。\n\n輪空（玩家人數為奇數時）\n   • 由尚未獲得輪空、戰績最低者獲得輪空。\n   • 輪空計為勝場，獲得 3 勝點，該輪不需出戰。\n   • 同一位玩家不會獲得兩次輪空，除非全員都已輪空過。\n\n排名分小（決勝順位）\n   • 先比勝點（MP）。\n   • 再比 OWP（對手勝率）— 你所有對手的平均勝率，獎勵擊敗強敵者。\n   • 仍同分者依報名順序排列。\n\n建議輪數\n   • 系統依 ⌈log₂(N)⌉ 推薦輪數（例如 8 人 → 3 輪、16 人 → 4 輪、32 人 → 5 輪）。可自行提前結束或加打額外輪次。\n\n退賽\n   • 開啟玩家訓練家卡片並點擊「玩家退賽」，即可從後續配對中移除該玩家；既有對戰結果仍會保留。再點「取消退賽」可恢復。'
+                en: 'Swiss pairings group players with similar match records together each round, without eliminating anyone.\n\nHOW PAIRINGS ARE GENERATED\n   • Round 1: players are randomly shuffled, then paired top-to-bottom.\n   • Round 2 onwards: players are sorted by match points. Highest scorers are paired first.\n\nSCORING (TWO MODES, PICKED ON THE REGISTRATION PAGE)\n   • Default — Win 3, Loss 1, Draw 0 (rewards showing up; draws score nothing).\n   • Standard Swiss — Win 3, Draw 1, Loss 0. Tick the "Standard Swiss scoring" checkbox on the registration page to switch.\n   • Bye is always counted as an automatic Win (3 points).\n   • Scoring is locked once the tournament starts.\n\nAVOIDING REMATCHES\n   • The app uses a backtracking algorithm to find a pairing where no two players have already faced each other this tournament.\n   • If a no-rematch pairing is mathematically impossible (e.g. round 4 with only 4 players left), the closest-ranked rematch is allowed and a warning is logged to the browser console.\n\nBYE (ODD PLAYER COUNT)\n   • If the player count is odd, the lowest-ranked player who has not yet had a bye receives one.\n   • A bye counts as a win and is worth 3 match points; the player skips that round.\n   • The same player will not get a bye twice unless every other player has already had one.\n\nTIEBREAKERS (STANDINGS)\n   • Match Points (MP) first — the primary ranking.\n   • Then OWP (Opponents\' Match-Win %) — average match-win rate of every opponent you faced. Each opponent has a floor of 0.25 so a single zero-win opponent can\'t sink your score. Rewards beating tough fields.\n   • Then OOMW (Opponents\' Opponents\' Match-Win %) — the average OWP of your opponents. Used when OWP is still tied.\n   • WOScore (sum of your opponents\' match points) and Byes (count of byes received) are shown for transparency; they are NOT used for sorting.\n   • Byes are never counted as opponents — if you had a bye, that round does not contribute to OWP/OOMW/WOScore.\n   • Players still tied after all three tiebreakers are listed in registration order.\n\nRECOMMENDED ROUND COUNT\n   • The app suggests ⌈log₂(N)⌉ rounds for N players (e.g. 8 → 3, 16 → 4, 32 → 5). You can always end early or run extra rounds.\n\nDROP PLAYER\n   • Open a player\'s trainer card and tap Drop Player to remove them from future pairings. Their existing results stay on record. Tap Undo Drop to reinstate.',
+                zh: '瑞士制將戰績相近的玩家配對在一起，整個過程不淘汰任何人。\n\n配對方式\n   • 第 1 輪：隨機洗牌後依序配對。\n   • 第 2 輪起：依勝點排序，高分者優先配對。\n\n計分（兩種模式，於報名頁面選擇）\n   • 預設 — 勝 3 分、負 1 分、和 0 分（鼓勵到場參賽，和局不計分）。\n   • 標準瑞士制 — 勝 3 分、和 1 分、負 0 分。在報名頁面勾選「標準瑞士制計分」即可切換。\n   • 輪空一律視為自動勝場（3 分）。\n   • 賽事開始後，計分模式將鎖定。\n\n避免重複對局\n   • 系統使用回溯演算法，盡可能讓本次賽事中沒有任何兩位玩家再次相遇。\n   • 若數學上無法避免（例如第 4 輪只剩 4 人），則允許戰績最相近的重複對局，並在瀏覽器主控台記錄警告。\n\n輪空（玩家人數為奇數時）\n   • 由尚未獲得輪空、戰績最低者獲得輪空。\n   • 輪空計為勝場，獲得 3 勝點，該輪不需出戰。\n   • 同一位玩家不會獲得兩次輪空，除非全員都已輪空過。\n\n排名分小（決勝順位）\n   • 先比勝點（MP）— 主排序。\n   • 再比 OWP（對手勝率）— 你所有對手的平均勝率。每位對手最低以 0.25 計算，避免因一位全敗對手拉低分數。獎勵擊敗強敵者。\n   • 再比 OOMW（對手的對手勝率）— 你所有對手的 OWP 平均值；在 OWP 同分時使用。\n   • 另顯示 WOScore（對手總積分）與 Byes（輪空次數）作透明度參考，不參與排序。\n   • 輪空不計為對手 — 輪空那一輪不會影響 OWP／OOMW／WOScore。\n   • 三項皆同分者依報名順序排列。\n\n建議輪數\n   • 系統依 ⌈log₂(N)⌉ 推薦輪數（例如 8 人 → 3 輪、16 人 → 4 輪、32 人 → 5 輪）。可自行提前結束或加打額外輪次。\n\n退賽\n   • 開啟玩家訓練家卡片並點擊「玩家退賽」，即可從後續配對中移除該玩家；既有對戰結果仍會保留。再點「取消退賽」可恢復。'
             }
         },
         knockout: {
@@ -1158,13 +1475,28 @@ const app = (() => {
                 en: 'Knockout (single-elimination) pairings build a bracket where the loser of each match is out.\n\nBRACKET CONSTRUCTION (ROUND 1)\n   • All registered players are randomly shuffled into a seed list.\n   • Bracket size = the next power of 2 greater than or equal to the player count. Example: 11 players → 16-slot bracket.\n   • Empty slots become byes for the top seeds, who advance automatically without playing.\n\nSTANDARD SEED ORDER\n   • Pairings follow the conventional knockout order: 1 vs N, 4 vs N-3, 5 vs N-4, … 2 vs N-1, 3 vs N-2, …\n   • This guarantees the strongest seeds only meet in later rounds.\n   • Example for 8 players: 1v8, 4v5, 2v7, 3v6.\n\nSUBSEQUENT ROUNDS\n   • The winner of each match is paired with the winner of the adjacent match, preserving bracket structure.\n   • Round names follow the remaining player count: Round of 16 → Quarterfinal → Semifinal → Final.\n\nFINAL ROUND\n   • When only one match remains, the Submit button becomes Submit Results & End Tournament. One click crowns the champion.\n\nDROP PLAYER (KNOCKOUT-AWARE)\n   • If a player drops mid-bracket BEFORE their pending round is submitted, their match auto-awards to their opponent so the bracket can advance.\n   • If their match is already complete, dropping them only updates the standings tag.\n\nDRAWS\n   • Knockout has no draws by design — each match must produce a winner. The Draw button still appears today; we plan to hide it in a future update.\n\nWHEN TO USE\n   • Best for 4–32 players when you want a quick champion rather than full Swiss-style ranking.\n   • For Best-of-3 or manual seeding, use Swiss + a custom round count instead — bracket-tree visualisation and manual seeding are on the roadmap.',
                 zh: '淘汰賽（單敗）採用標準括號賽制，每場比賽輸方即出局。\n\n第 1 輪括號建立\n   • 所有報名玩家隨機洗牌後排入種子列表。\n   • 括號大小 = 大於或等於玩家數的最小 2 的次方。例如：11 人 → 16 籤位。\n   • 空缺籤位由高種子玩家獲得輪空，自動晉級無需出賽。\n\n標準種子順序\n   • 採用傳統淘汰賽順序：1 對 N、4 對 N-3、5 對 N-4⋯ 2 對 N-1、3 對 N-2⋯\n   • 這能確保最強的種子要到後期才會碰頭。\n   • 8 人範例：1對8、4對5、2對7、3對6。\n\n後續輪次\n   • 每場勝者與相鄰場次的勝者配對，保留括號結構。\n   • 輪次名稱依剩餘人數命名：16 強 → 8 強 → 準決賽 → 決賽。\n\n決賽\n   • 僅剩一場比賽時，提交按鈕會變為「提交結果並結束賽事」。一鍵決出冠軍。\n\n退賽（淘汰賽特殊處理）\n   • 若玩家在所屬輪次提交結果前退賽，該對局會自動判給對手，使賽程繼續。\n   • 若該場已完成，退賽只會在排名加註標記。\n\n和局\n   • 淘汰賽本質上不允許和局，每場必須分出勝負。目前畫面仍會顯示「和」鈕，未來版本將予以隱藏。\n\n適用情境\n   • 適合 4–32 人快速分出冠軍，不需完整的瑞士制小分。\n   • 若需 BO3 或手動種子，目前可改用瑞士制並調整輪數；括號樹視圖與手動種子已在規劃中。'
             }
+        },
+        spinBattle: {
+            label: { en: 'SPIN BATTLE (TESTING)', zh: '陀螺對戰（測試版）' },
+            title: { en: 'Spin Battle rules (Beyblade-X-style)', zh: '陀螺對戰規則（Beyblade X 系統）' },
+            body: {
+                en: 'Spin Battle Tournament uses Beyblade-X-style points scoring on top of the existing Swiss / Knockout pairing engine.\n\nMATCH FORMAT\n   • Each match consists of multiple battles. First battler to reach the target points (default 4 in Swiss, organizers may set 7 for top-cut) wins the match.\n   • The match auto-locks the moment a side hits the target.\n\nBATTLE FINISHES (POINTS PER BATTLE)\n   • Survivor Finish (+1) — opponent\'s Bey stops spinning before yours.\n   • Burst Finish (+2) — opponent\'s Bey bursts apart (Blade / Ratchet / Bit detaches).\n   • Knock Out Finish (+2) — opponent\'s Bey knocked into the side knockout zone.\n   • Xtreme Finish (+3) — opponent\'s Bey lands in the central Xtreme zone (Beyblade X exclusive).\n   • Stadium Out (+3, optional) — opt-in on the registration page; not in the official Hasbro / Takara Tomy ruleset.\n\n3-on-3 BEYS\n   • Each battler brings 3 different Beys. No Blade, Ratchet or Bit may repeat between your 3 Beys.\n   • Register Beys via the per-player button on the registration page, or scan a QR you saved from a previous event.\n   • Tournament can start with missing registrations — those battlers get a ⚠ badge in the round view.\n\nHOW TO ENTER RESULTS\n   • Tap a player card → cross popup with 4 finish buttons (motion-based: Xtreme up, Knock Out right, Survivor down, Burst left).\n   • Tap a finish → in 3-on-3 mode, choose which Bey scored (shows real Blade names if Beys are registered).\n   • Live points update; once a side hits the target, match locks. Tap "Undo" to roll back the most recent entry.\n\nPENALTIES & MALFUNCTIONS (per official rules)\n   • Open the ⚠ panel under each match for three counters:\n     – Launch error: 2 in same battle → opponent +1, battle replays\n     – Warning: 1st = warn, 2nd = +1 to opponent, 3rd = DQ (opponent wins match)\n     – Malfunction: 3 in same match → opponent wins\n\nMATCH WIN → STANDINGS\n   • The winner gets the standard match-win (3 points by default scoring) just like TCG matches.\n   • Tiebreakers: Match Points → OWP → OOMW → BattlePts (sum of points scored across all matches).\n   • Standings 7th column shows BattlePts instead of WOScore.\n\nThe pairing engine itself (Swiss buckets, Knockout brackets, byes, OWP/OOMW) works exactly the same as TCG mode — only the per-match result entry and tiebreaker column change.',
+                zh: '陀螺對戰賽事採用 Beyblade X 風格的逐回合計分制度，配對引擎沿用既有的瑞士制／淘汰賽。\n\n對局形式\n   • 每場對局由多回合組成。先達到目標分數（瑞士制預設 4 分；最終 8 強建議改為 7 分）的一方贏得整場對局。\n   • 一方達標後，本場對局自動鎖定。\n\n回合勝法（每回合得分）\n   • 存活擊倒（+1） — 對手的陀螺先你停止旋轉。\n   • 爆裂（+2） — 對手的陀螺解體（Blade／Ratchet／Bit 分離）。\n   • 擊出（+2） — 對手的陀螺被擊入側邊擊倒區。\n   • 中央擊倒（+3） — 對手的陀螺落入中央 Xtreme 凹槽（Beyblade X 限定）。\n   • 台外（+3，可選） — 在報名頁可選擇開啟；非 Hasbro／Takara Tomy 官方規則。\n\n3-on-3 陀螺\n   • 每位選手帶 3 顆陀螺。3 顆陀螺之間，Blade、Ratchet、Bit 三類零件均不可重複。\n   • 報名頁面每位選手卡片旁有「陀螺」按鈕可登記，亦可掃描之前活動儲存的 QR。\n   • 即使未登記陀螺，賽事仍可開始 — 該選手在對局畫面會顯示 ⚠ 標記。\n\n如何輸入結果\n   • 點擊玩家卡片 → 十字面板彈出 4 種勝法（按運動方向擺放：中央在上、擊出在右、存活在下、爆裂在左）。\n   • 點擊勝法 → 3-on-3 模式下再選擇是哪一顆陀螺取勝（已登記時顯示真實 Blade 名稱）。\n   • 分數即時更新；任一方達標後對局自動鎖定。「返回」按鈕可撤銷最近一筆紀錄。\n\n判罰／故障（依官方規則）\n   • 每場對局下方「⚠ 判罰／故障」面板含 3 個計數器：\n     – 發射失誤：同一回合 2 次 → 對手 +1，本回合重打\n     – 警告：第 1 次警告，第 2 次對手 +1，第 3 次直接判負\n     – 器材故障：同一對局 3 次 → 對手贏\n\n對局勝負 → 排名\n   • 整場對局勝者依預設計分獲得勝點（3 分），與 TCG 模式相同。\n   • 決勝順位：勝點 → OWP → OOMW → BattlePts（整個賽事中累積的回合得分）。\n   • 陀螺對戰模式下，排名表第 7 欄顯示 BattlePts 而非 WOScore。\n\n配對引擎本身（瑞士制分組、淘汰賽框架、輪空、OWP／OOMW）與 TCG 模式完全相同，僅有對局結果輸入方式與排名第 7 欄的決勝指標有所不同。'
+            }
         }
     };
 
     function openPairingHelp(format) {
-        const type = format === 'knockout' || (!format && state.tournamentType === 'knockout')
-            ? 'knockout'
-            : 'swiss';
+        let type;
+        if (format && PAIRING_HELP[format]) {
+            type = format;
+        } else if (state.gameType === 'spin-battle') {
+            type = 'spinBattle';
+        } else if (state.tournamentType === 'knockout') {
+            type = 'knockout';
+        } else {
+            type = 'swiss';
+        }
         const help = PAIRING_HELP[type];
         if (!help) return;
         const lang = currentLang === 'zh' ? 'zh' : 'en';
@@ -1192,6 +1524,7 @@ const app = (() => {
 
     // ---- TOURNAMENT MODE PICKER ----
     function startNewTournament(type) {
+        if (viewOnly) return;
         // Coming from home: clear any prior tournament state and go to registration
         // tagged with the chosen type. Don't clear players if user just picked a type
         // change while the registration list already has entries — instead confirm.
@@ -1209,13 +1542,25 @@ const app = (() => {
             };
             stopTimer();
         }
-        state.tournamentType = type;
+        // The home tiles pass either a TCG type ('swiss' / 'knockout') or a spin-battle
+        // type ('spin-swiss' / 'spin-knockout'). Split into (gameType, tournamentType).
+        if (type === 'spin-swiss') {
+            state.gameType = 'spin-battle';
+            state.tournamentType = 'swiss';
+        } else if (type === 'spin-knockout') {
+            state.gameType = 'spin-battle';
+            state.tournamentType = 'knockout';
+        } else {
+            state.gameType = 'tcg';
+            state.tournamentType = type;
+        }
         saveState();
         navigateTo('registration');
     }
 
     // ---- SWISS TOURNAMENT ----
     function startTournament() {
+        if (viewOnly) return;
         if (state.players.length < 2) return;
         if (state.tournamentType === 'knockout') {
             return startKnockoutTournament();
@@ -1247,6 +1592,7 @@ const app = (() => {
 
     // ---- KNOCKOUT TOURNAMENT ----
     function startKnockoutTournament() {
+        if (viewOnly) return;
         if (state.players.length < 2) return;
         if (!confirm(t('reg.confirmStart', { n: state.players.length }))) return;
 
@@ -1452,6 +1798,10 @@ const app = (() => {
         const round = state.rounds[state.currentRound];
         if (!round) return;
 
+        // Toggle a body class so spin-battle mode can hide the round timer (Beyblade matches
+        // are first-to-N points, not time-bound)
+        document.body.classList.toggle('gametype-spin', state.gameType === 'spin-battle');
+
         let roundLabel;
         if (state.tournamentType === 'knockout') {
             const remaining = round.pairings.reduce((n, p) => n + (p.isBye ? 1 : 2), 0);
@@ -1472,6 +1822,17 @@ const app = (() => {
 
         const container = document.getElementById('pairings-container');
         container.innerHTML = '';
+
+        // Knockout: prepend a visual bracket-tree overview above the editable pairing list
+        if (state.tournamentType === 'knockout') {
+            const bracketHtml = renderKnockoutBracket();
+            if (bracketHtml) {
+                const bw = document.createElement('div');
+                bw.className = 'bracket-wrap';
+                bw.innerHTML = bracketHtml;
+                container.appendChild(bw);
+            }
+        }
 
         round.pairings.forEach((pairing, pIdx) => {
             const playerA = getPlayer(pairing.playerA);
@@ -1501,6 +1862,140 @@ const app = (() => {
             else if (pairing.result === 'draw') { playerAClass = 'draw'; playerBClass = 'draw'; }
 
             const disabled = round.resultsSubmitted ? 'style="pointer-events:none;opacity:0.6"' : '';
+
+            if (state.gameType === 'spin-battle') {
+                row.classList.add('pairing-row-spin');
+                const target = state.matchTargetPoints || 4;
+                const pa = pairing.pointsA || 0;
+                const pb = pairing.pointsB || 0;
+                const battles = pairing.battles || [];
+                const matchDone = !!pairing.result;
+                const locked = matchDone || round.resultsSubmitted;
+                const log = battles.map((b, i) => {
+                    const finishLabel = t('battle.' + b.finish);
+                    const winnerPlayer = b.winner === 'a' ? playerA : playerB;
+                    const winnerName = escapeHtml(winnerPlayer.name);
+                    let beyTag = '';
+                    if (b.bey) {
+                        const beyEntry = winnerPlayer.deck && winnerPlayer.deck[b.bey - 1];
+                        if (beyEntry && beyEntry.blade) {
+                            beyTag = `<span class="spin-log-bey" title="${escapeHtml((beyEntry.blade||'') + ' / ' + (beyEntry.ratchet||'') + ' / ' + (beyEntry.bit||''))}">B${b.bey}: ${escapeHtml(beyEntry.blade)}</span> `;
+                        } else {
+                            beyTag = `<span class="spin-log-bey">B${b.bey}</span> `;
+                        }
+                    }
+                    return `<div class="spin-log-row"><span class="spin-log-num">${i + 1}.</span> ${winnerName} ${beyTag}— ${finishLabel} (+${b.points})</div>`;
+                }).join('');
+                // Cross popup HTML — motion-based mapping (Option B):
+                //   ↑ Xtreme +3 (knocked into central pocket)
+                //   → Knock Out +2 (knocked sideways)
+                //   ↓ Survivor +1 (still spinning at bottom)
+                //   ← Burst +2 (parts fly outward)
+                // In 3-on-3 mode, tapping a finish opens a 1-2-3 Bey picker instead of scoring directly.
+                const crossFor = (side) => `
+                    <div class="spin-cross" data-pidx="${pIdx}" data-side="${side}">
+                        <button class="spin-cross-btn spin-cross-top spin-finish-xtreme"   onclick="event.stopPropagation(); app.spinPickFinish(${pIdx}, '${side}', 'xtreme')">${t('battle.xtreme')}</button>
+                        <button class="spin-cross-btn spin-cross-right spin-finish-knockout" onclick="event.stopPropagation(); app.spinPickFinish(${pIdx}, '${side}', 'knockout')">${t('battle.knockout')}</button>
+                        <button class="spin-cross-btn spin-cross-bottom spin-finish-survivor" onclick="event.stopPropagation(); app.spinPickFinish(${pIdx}, '${side}', 'survivor')">${t('battle.survivor')}</button>
+                        <button class="spin-cross-btn spin-cross-left spin-finish-burst"    onclick="event.stopPropagation(); app.spinPickFinish(${pIdx}, '${side}', 'burst')">${t('battle.burst')}</button>
+                        ${state.stadiumOutEnabled ? `<button class="spin-cross-btn spin-cross-extra spin-finish-stadium" onclick="event.stopPropagation(); app.spinPickFinish(${pIdx}, '${side}', 'stadium_out')">${t('battle.stadiumOut')}</button>` : ''}
+                    </div>`;
+                // Bey picker — replaces the cross when 3-on-3 + a finish is pending
+                // If the player has a registered deck, show real Blade names; otherwise fall back to "Bey 1/2/3"
+                const beyPickerFor = () => {
+                    const winnerPlayer = spinPopupSide === 'a' ? playerA : playerB;
+                    const deck = winnerPlayer && winnerPlayer.deck;
+                    const beyBtn = (n) => {
+                        const bey = deck && deck[n - 1];
+                        const label = bey && bey.blade
+                            ? `<span class="spin-bey-num">${n}</span><span class="spin-bey-name">${escapeHtml(bey.blade)}</span>`
+                            : `<span class="spin-bey-num">${n}</span>`;
+                        return `<button class="spin-bey-btn ${bey && bey.blade ? 'spin-bey-btn-named' : ''}" onclick="event.stopPropagation(); app.spinPickBey(${n})">${label}</button>`;
+                    };
+                    return `
+                        <div class="spin-cross spin-bey-picker" data-pidx="${pIdx}" data-side="${spinPopupSide}">
+                            <div class="spin-bey-label">${t('battle.whichBey')}</div>
+                            <div class="spin-bey-row">${beyBtn(1)}${beyBtn(2)}${beyBtn(3)}</div>
+                        </div>`;
+                };
+                const sideAOpen = !locked && spinPopupPairing === pIdx && spinPopupSide === 'a';
+                const sideBOpen = !locked && spinPopupPairing === pIdx && spinPopupSide === 'b';
+                const sideAttrs = (side, isOpen) => locked
+                    ? `class="spin-side spin-side-${side} ${(side === 'a' ? pa : pb) >= target ? 'winner' : ''} spin-side-locked" onclick="app.showTrainerCard('${side === 'a' ? pairing.playerA : pairing.playerB}')"`
+                    : `class="spin-side spin-side-${side} ${isOpen ? 'is-open' : ''}" onclick="app.toggleSpinPopup(${pIdx}, '${side}')"`;
+                // Small "i" info button on each card → opens trainer card popup. stopPropagation
+                // so it doesn't also trigger the card's onclick (toggleSpinPopup / scoring).
+                const infoBtn = (pid) => `<button class="spin-info-btn" onclick="event.stopPropagation(); app.showTrainerCard('${pid}')" title="${t('trainer.viewCard') || 'Player info'}" aria-label="${t('trainer.viewCard') || 'Player info'}">i</button>`;
+                // Missing-Beys warning badge (3-on-3 only) — shown next to each player's name when their Beys aren't registered
+                const beysWarn = (player) => (state.threeOnThreeMode !== false && !validateDeck(player.deck).ok)
+                    ? `<span class="spin-name-warn" title="${t('deck.missing')}">⚠</span>` : '';
+                row.innerHTML = `
+                    <div class="spin-row-header">
+                        <div class="table-number">T${pairing.table}</div>
+                        <div class="spin-row-status">${matchDone ? t('battle.matchComplete') : t('battle.firstTo', { n: target })}</div>
+                    </div>
+                    <div class="spin-scoreboard">
+                        <div ${sideAttrs('a', sideAOpen)}>
+                            ${infoBtn(pairing.playerA)}
+                            <div class="spin-name">${beysWarn(playerA)}${escapeHtml(playerA.name)}</div>
+                            <div class="spin-points"><span class="spin-points-num">${pa}</span><span class="spin-points-target">/${target}</span></div>
+                            ${sideAOpen ? (spinPendingFinish ? beyPickerFor() : crossFor('a')) : ''}
+                        </div>
+                        <div class="spin-vs">vs</div>
+                        <div ${sideAttrs('b', sideBOpen)}>
+                            ${infoBtn(pairing.playerB)}
+                            <div class="spin-name">${beysWarn(playerB)}${escapeHtml(playerB.name)}</div>
+                            <div class="spin-points"><span class="spin-points-num">${pb}</span><span class="spin-points-target">/${target}</span></div>
+                            ${sideBOpen ? (spinPendingFinish ? beyPickerFor() : crossFor('b')) : ''}
+                        </div>
+                    </div>
+                    ${!locked ? `<div class="spin-hint">${t('battle.tapToScore')}</div>` : ''}
+                    ${matchDone && !round.resultsSubmitted ? `<div class="spin-hint spin-hint-locked">${t('battle.lockedHint')}</div>` : ''}
+                    ${battles.length ? `<div class="spin-log">${log}</div>` : ''}
+                    ${!locked ? renderSpinPenaltyBlock(pairing, pIdx) : ''}
+                    <div class="spin-controls ${matchDone && !round.resultsSubmitted ? 'spin-controls-locked' : ''}">
+                        <button class="btn btn-small ${matchDone && !round.resultsSubmitted ? 'btn-primary spin-undo-prominent' : 'btn-secondary'}" ${battles.length === 0 || round.resultsSubmitted ? 'disabled' : ''} onclick="app.undoSpinBattle(${pIdx})">↶ ${t('battle.undo')}</button>
+                    </div>
+                `;
+                container.appendChild(row);
+                return;
+            }
+
+            if (state.bestOfThree) {
+                // Best of 3: render per-game tracker (Game 1, Game 2, Game 3)
+                row.classList.add('pairing-row-bo3');
+                const games = pairing.games || [];
+                const gA = games.filter(g => g === 'a').length;
+                const gB = games.filter(g => g === 'b').length;
+                const matchLockedClass = pairing.result ? 'bo3-locked' : '';
+                const gameRow = (gIdx) => {
+                    const g = games[gIdx] || null;
+                    return `<div class="bo3-game-row">
+                        <span class="bo3-game-label">${t('bo3.game', { n: gIdx + 1 })}</span>
+                        <button class="bo3-btn ${g === 'a' ? 'selected-win-a' : ''}" ${round.resultsSubmitted ? 'disabled' : ''} onclick="app.setBo3Game(${pIdx}, ${gIdx}, 'a')">${t('round.aWins')}</button>
+                        <button class="bo3-btn ${g === 'draw' ? 'selected-draw' : ''}" ${round.resultsSubmitted ? 'disabled' : ''} onclick="app.setBo3Game(${pIdx}, ${gIdx}, 'draw')">${t('round.draw')}</button>
+                        <button class="bo3-btn ${g === 'b' ? 'selected-win-b' : ''}" ${round.resultsSubmitted ? 'disabled' : ''} onclick="app.setBo3Game(${pIdx}, ${gIdx}, 'b')">${t('round.bWins')}</button>
+                    </div>`;
+                };
+                row.innerHTML = `
+                    <div class="bo3-header">
+                        <div class="table-number">T${pairing.table}</div>
+                        <div class="bo3-status ${matchLockedClass}">${pairing.result ? t('bo3.matchScore', { a: gA, b: gB }) : t('bo3.firstTo2')}</div>
+                    </div>
+                    <div class="bo3-players">
+                        <div class="pairing-player side-a ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')"><span class="pairing-player-name">${escapeHtml(playerA.name)}</span></div>
+                        <div class="bo3-vs"><span class="bo3-score-a">${gA}</span> – <span class="bo3-score-b">${gB}</span></div>
+                        <div class="pairing-player side-b ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right"><span class="pairing-player-name">${escapeHtml(playerB.name)}</span></div>
+                    </div>
+                    <div class="bo3-games">
+                        ${gameRow(0)}
+                        ${gameRow(1)}
+                        ${games.length >= 2 && gA < 2 && gB < 2 ? gameRow(2) : ''}
+                    </div>
+                `;
+                container.appendChild(row);
+                return;
+            }
 
             row.innerHTML = `
                 <div class="table-number">T${pairing.table}</div>
@@ -1589,8 +2084,31 @@ const app = (() => {
             html += `<div class="pairing-row bye-row pinned">
                 <div class="table-number">${t('round.bye')}</div>
                 <div>
-                    <span class="pairing-player">${escapeHtml(pa.name)}</span>
+                    <span class="pairing-player" data-player-id="${escapeHtml(pairing.playerA)}">${escapeHtml(pa.name)}</span>
                     <span class="bye-tag">${t('round.byeWin')}</span>
+                </div>
+            </div>`;
+        } else if (state.gameType === 'spin-battle') {
+            // Spin-battle pinned card — read-only scoreboard mirroring the publisher's view.
+            const target = state.matchTargetPoints || 4;
+            const ptsA = pairing.pointsA || 0, ptsB = pairing.pointsB || 0;
+            const aWin = pairing.result === 'a';
+            const bWin = pairing.result === 'b';
+            html += `<div class="pairing-row pairing-row-spin pinned">
+                <div class="spin-row-header">
+                    <div class="table-number">T${pairing.table}</div>
+                    <div class="spin-row-status">${pairing.result ? t('battle.matchComplete') : t('battle.firstTo', { n: target })}</div>
+                </div>
+                <div class="spin-scoreboard">
+                    <div class="spin-side spin-side-a spin-side-locked ${aWin ? 'winner' : ''}" data-player-id="${escapeHtml(pairing.playerA)}">
+                        <div class="spin-name">${escapeHtml(pa.name)}</div>
+                        <div class="spin-points"><span class="spin-points-num">${ptsA}</span><span class="spin-points-target">/${target}</span></div>
+                    </div>
+                    <div class="spin-vs">vs</div>
+                    <div class="spin-side spin-side-b spin-side-locked ${bWin ? 'winner' : ''}" data-player-id="${escapeHtml(pairing.playerB)}">
+                        <div class="spin-name">${escapeHtml(pb.name)}</div>
+                        <div class="spin-points"><span class="spin-points-num">${ptsB}</span><span class="spin-points-target">/${target}</span></div>
+                    </div>
                 </div>
             </div>`;
         } else {
@@ -1600,19 +2118,32 @@ const app = (() => {
             else if (pairing.result === 'draw') { aClass = 'draw'; bClass = 'draw'; }
             html += `<div class="pairing-row pinned">
                 <div class="table-number">T${pairing.table}</div>
-                <div class="pairing-player side-a ${aClass}">${escapeHtml(pa.name)}</div>
+                <div class="pairing-player side-a ${aClass}" data-player-id="${escapeHtml(pairing.playerA)}">${escapeHtml(pa.name)}</div>
                 <div class="result-buttons" style="pointer-events:none;opacity:0.85">
                     <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}">${t('round.aWins')}</button>
                     <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}">${t('round.draw')}</button>
                     <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}">${t('round.bWins')}</button>
                 </div>
-                <div class="pairing-player side-b ${bClass}" style="text-align:right">${escapeHtml(pb.name)}</div>
+                <div class="pairing-player side-b ${bClass}" data-player-id="${escapeHtml(pairing.playerB)}" style="text-align:right">${escapeHtml(pb.name)}</div>
             </div>`;
         }
         result.innerHTML = html;
+
+        // Event delegation — works even if IDs contain characters that would break inline onclick strings.
+        // Re-binds safely because we replaced innerHTML above; we also use a flag so we don't double-bind.
+        if (!result._trainerDelegated) {
+            result.addEventListener('click', (e) => {
+                const el = e.target.closest('.pairing-player[data-player-id]');
+                if (!el) return;
+                const pid = el.getAttribute('data-player-id');
+                if (pid) showTrainerCard(pid);
+            });
+            result._trainerDelegated = true;
+        }
     }
 
     function setResult(pairingIndex, result) {
+        if (viewOnly) return;
         const round = state.rounds[state.currentRound];
         if (!round || round.resultsSubmitted) return;
 
@@ -1627,6 +2158,398 @@ const app = (() => {
         }
         saveState();
         renderRound();
+    }
+
+    // ---- KNOCKOUT BRACKET — visual tree overview above the round view ----
+    function renderKnockoutBracket() {
+        if (state.tournamentType !== 'knockout' || !state.rounds.length) return '';
+        // Compute total bracket size from round 1 (count of seats including byes)
+        const r0 = state.rounds[0];
+        if (!r0) return '';
+        const seats = r0.pairings.reduce((n, p) => n + (p.isBye ? 1 : 2), 0);
+        const totalRounds = Math.ceil(Math.log2(Math.max(2, seats)));
+        const cols = [];
+        for (let r = 0; r < totalRounds; r++) {
+            const round = state.rounds[r];
+            const expectedMatches = seats / Math.pow(2, r + 1);   // power-of-2 bracket size
+            const matches = [];
+            for (let m = 0; m < expectedMatches; m++) {
+                const pairing = round && round.pairings && round.pairings[m];
+                if (!pairing) {
+                    matches.push(`<div class="bracket-match bracket-match-pending">${escapeHtml(t('bracket.tbd'))}</div>`);
+                    continue;
+                }
+                const pa = getPlayer(pairing.playerA);
+                const pb = pairing.playerB ? getPlayer(pairing.playerB) : null;
+                const isBye = pairing.isBye;
+                const aWin = pairing.result === 'a';
+                const bWin = pairing.result === 'b';
+                const isCurrent = r === state.currentRound && !pairing.result && !isBye;
+                const aLabel = pa ? escapeHtml(pa.name) : '—';
+                const bLabel = isBye ? escapeHtml(t('round.bye')) : (pb ? escapeHtml(pb.name) : '—');
+                const aClick = pa ? `onclick="app.showTrainerCard('${escapeHtml(pa.id)}')"` : '';
+                const bClick = pb ? `onclick="app.showTrainerCard('${escapeHtml(pb.id)}')"` : '';
+                matches.push(`
+                    <div class="bracket-match ${isCurrent ? 'bracket-match-current' : ''} ${pairing.result || isBye ? 'bracket-match-done' : ''}">
+                        <div class="bracket-row ${aWin ? 'bracket-winner' : (bWin ? 'bracket-loser' : '')}" ${aClick}>${aLabel}</div>
+                        <div class="bracket-row ${bWin ? 'bracket-winner' : (aWin ? 'bracket-loser' : '')} ${isBye ? 'bracket-bye-row' : ''}" ${bClick}>${bLabel}</div>
+                    </div>
+                `);
+            }
+            cols.push(`
+                <div class="bracket-col" data-round="${r}">
+                    <div class="bracket-col-label">${escapeHtml(knockoutRoundLabel(seats / Math.pow(2, r)))}</div>
+                    <div class="bracket-col-matches">${matches.join('')}</div>
+                </div>
+            `);
+        }
+        return `
+            <details class="bracket-details" open>
+                <summary class="bracket-summary">${escapeHtml(t('bracket.title'))} <span class="bracket-summary-chev">▾</span></summary>
+                <div class="bracket-scroll">
+                    <div class="bracket-grid" data-rounds="${totalRounds}">
+                        ${cols.join('')}
+                    </div>
+                </div>
+            </details>
+        `;
+    }
+
+    // ---- TCG Best-of-3 — per-game tracking ----
+    function setBo3Game(pairingIndex, gameIndex, result) {
+        if (viewOnly) return;
+        const round = state.rounds[state.currentRound];
+        if (!round || round.resultsSubmitted) return;
+        const pairing = round.pairings[pairingIndex];
+        if (!pairing || pairing.isBye) return;
+        pairing.games = pairing.games || [];
+        // Toggle off if clicking the same result on the same game (lets user clear a mis-tap)
+        if (pairing.games[gameIndex] === result) {
+            pairing.games[gameIndex] = null;
+        } else {
+            pairing.games[gameIndex] = result;
+        }
+        // If Game 1 set but Game 2 not yet → that's fine, just stored.
+        // Compute match winner: first to 2 game wins. Draws don't count toward 2.
+        const gA = pairing.games.filter(g => g === 'a').length;
+        const gB = pairing.games.filter(g => g === 'b').length;
+        if (gA >= 2)      pairing.result = 'a';
+        else if (gB >= 2) pairing.result = 'b';
+        else if (pairing.games.length >= 3 && gA === gB) {
+            // 3 games played, no winner (rare in Bo3 with draws) → match draw
+            pairing.result = 'draw';
+        } else {
+            pairing.result = null;
+        }
+        saveState();
+        renderRound();
+        updateSubmitButton();
+    }
+
+    // ---- SPIN BATTLE — per-battle finish entry ----
+    const SPIN_FINISH_POINTS = { survivor: 1, burst: 2, knockout: 2, xtreme: 3, stadium_out: 3 };
+
+    // Module-level popup state: which pairing+side currently has its cross-popup open. UI-only, not persisted.
+    let spinPopupPairing = null;
+    let spinPopupSide = null;
+    // 3-on-3 deck mode: when a finish button is tapped, we hold it pending while the user picks a Bey.
+    let spinPendingFinish = null;   // 'survivor' | 'burst' | 'knockout' | 'xtreme' | null
+    let spinPopupBackdropBound = false;
+
+    function toggleSpinPopup(pairingIndex, side) {
+        if (viewOnly) return;
+        const round = state.rounds[state.currentRound];
+        if (!round || round.resultsSubmitted) return;
+        const pairing = round.pairings[pairingIndex];
+        if (!pairing || pairing.isBye || pairing.result) return;
+        if (spinPopupPairing === pairingIndex && spinPopupSide === side) {
+            // Same target tapped → close
+            closeSpinPopup();
+        } else {
+            spinPopupPairing = pairingIndex;
+            spinPopupSide = side;
+            spinPendingFinish = null;
+            renderRound();
+            // Schedule a backdrop click handler + edge-flip pass after the DOM updates
+            requestAnimationFrame(() => {
+                bindSpinBackdrop();
+                // Wait for the open animation to finish before flipping, so the spring isn't cut short
+                setTimeout(applySpinCrossEdgeFlip, 180);
+            });
+        }
+    }
+
+    function closeSpinPopup() {
+        if (spinPopupPairing === null) return;
+        spinPopupPairing = null;
+        spinPopupSide = null;
+        spinPendingFinish = null;
+        renderRound();
+    }
+
+    // Render the penalty panel block — collapsed toggle by default, expands to show 3 counters per side
+    function renderSpinPenaltyBlock(pairing, pIdx) {
+        const isOpen = spinPenaltyOpen === pIdx;
+        const eA = pairing.errorsA || 0, eB = pairing.errorsB || 0;
+        const wA = pairing.matchWarnsA || 0, wB = pairing.matchWarnsB || 0;
+        const mA = pairing.malfunctionsA || 0, mB = pairing.malfunctionsB || 0;
+        const anyTrigger = eA + eB + wA + wB + mA + mB > 0;
+        const summary = anyTrigger
+            ? `<span class="spin-pen-summary-active">⚠ A:${eA + wA + mA} B:${eB + wB + mB}</span>`
+            : '';
+        return `
+            <div class="spin-penalty-block ${isOpen ? 'is-open' : ''}">
+                <button class="spin-penalty-toggle" onclick="app.toggleSpinPenaltyPanel(${pIdx})">
+                    <span>⚠ ${t('penalty.title')}</span>
+                    ${summary}
+                    <span class="spin-penalty-chev">${isOpen ? '▴' : '▾'}</span>
+                </button>
+                ${isOpen ? `
+                    <div class="spin-penalty-grid">
+                        <div class="spin-penalty-row">
+                            <span class="spin-penalty-label" title="${t('penalty.launchErrorHint')}">${t('penalty.launchError')}</span>
+                            <span class="spin-penalty-counters">
+                                <button onclick="app.spinAddLaunchError(${pIdx},'a')">A <strong>${eA}</strong>/2</button>
+                                <button onclick="app.spinAddLaunchError(${pIdx},'b')">B <strong>${eB}</strong>/2</button>
+                            </span>
+                        </div>
+                        <div class="spin-penalty-row">
+                            <span class="spin-penalty-label" title="${t('penalty.matchWarnHint')}">${t('penalty.matchWarn')}</span>
+                            <span class="spin-penalty-counters">
+                                <button onclick="app.spinAddMatchWarn(${pIdx},'a')">A <strong>${wA}</strong>/3</button>
+                                <button onclick="app.spinAddMatchWarn(${pIdx},'b')">B <strong>${wB}</strong>/3</button>
+                            </span>
+                        </div>
+                        <div class="spin-penalty-row">
+                            <span class="spin-penalty-label" title="${t('penalty.malfunctionHint')}">${t('penalty.malfunction')}</span>
+                            <span class="spin-penalty-counters">
+                                <button onclick="app.spinAddMalfunction(${pIdx},'a')">A <strong>${mA}</strong>/3</button>
+                                <button onclick="app.spinAddMalfunction(${pIdx},'b')">B <strong>${mB}</strong>/3</button>
+                            </span>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // ---- SPIN BATTLE — penalty counters (per official Beyblade X rules) ----
+    // Returns the side that just hit a fatal threshold (DQ at 3rd warn, 3rd malfunction), or null
+    function checkSpinPenaltyEnd(pairing, side, target) {
+        const opp = side === 'a' ? 'b' : 'a';
+        // 3rd DQ warning → opponent wins match
+        if ((side === 'a' ? pairing.matchWarnsA : pairing.matchWarnsB) >= 3) {
+            pairing.result = opp;
+            return opp;
+        }
+        // 3rd malfunction → opponent wins match
+        if ((side === 'a' ? pairing.malfunctionsA : pairing.malfunctionsB) >= 3) {
+            pairing.result = opp;
+            return opp;
+        }
+        return null;
+    }
+
+    // Increment per-battle launch error counter. On 2nd error in same battle: opponent +1pt, counter resets, "battle replayed"
+    function spinAddLaunchError(pairingIndex, side) {
+        if (viewOnly) return;
+        const round = state.rounds[state.currentRound];
+        if (!round || round.resultsSubmitted) return;
+        const pairing = round.pairings[pairingIndex];
+        if (!pairing || pairing.isBye || pairing.result) return;
+        const key = side === 'a' ? 'errorsA' : 'errorsB';
+        pairing[key] = (pairing[key] || 0) + 1;
+        pairing.battles = pairing.battles || [];
+        if (pairing[key] >= 2) {
+            // Award +1 to opponent, reset error counter, log as a 'penalty' battle entry
+            const oppSide = side === 'a' ? 'b' : 'a';
+            const oppPointsKey = oppSide === 'a' ? 'pointsA' : 'pointsB';
+            pairing[oppPointsKey] = (pairing[oppPointsKey] || 0) + 1;
+            pairing[key] = 0;
+            pairing.battles.push({ winner: oppSide, finish: 'penalty', points: 1, ts: Date.now(), kind: 'launchError' });
+            const target = state.matchTargetPoints || 4;
+            if (pairing.pointsA >= target) pairing.result = 'a';
+            else if (pairing.pointsB >= target) pairing.result = 'b';
+        }
+        saveState();
+        renderRound();
+        updateSubmitButton();
+    }
+
+    // Per-match DQ escalation: warn → penalty point → DQ
+    function spinAddMatchWarn(pairingIndex, side) {
+        if (viewOnly) return;
+        const round = state.rounds[state.currentRound];
+        if (!round || round.resultsSubmitted) return;
+        const pairing = round.pairings[pairingIndex];
+        if (!pairing || pairing.isBye || pairing.result) return;
+        const key = side === 'a' ? 'matchWarnsA' : 'matchWarnsB';
+        pairing[key] = (pairing[key] || 0) + 1;
+        pairing.battles = pairing.battles || [];
+        const oppSide = side === 'a' ? 'b' : 'a';
+        if (pairing[key] === 2) {
+            // 2nd warn = +1 to opponent
+            const oppPointsKey = oppSide === 'a' ? 'pointsA' : 'pointsB';
+            pairing[oppPointsKey] = (pairing[oppPointsKey] || 0) + 1;
+            pairing.battles.push({ winner: oppSide, finish: 'penalty', points: 1, ts: Date.now(), kind: 'warnPenalty' });
+            const target = state.matchTargetPoints || 4;
+            if (pairing.pointsA >= target) pairing.result = 'a';
+            else if (pairing.pointsB >= target) pairing.result = 'b';
+        } else if (pairing[key] >= 3) {
+            // 3rd warn = DQ → opponent wins match
+            pairing.result = oppSide;
+            pairing.battles.push({ winner: oppSide, finish: 'dq', points: 0, ts: Date.now(), kind: 'dq' });
+        }
+        saveState();
+        renderRound();
+        updateSubmitButton();
+    }
+
+    // Per-match malfunction counter: 3 → opponent wins match
+    function spinAddMalfunction(pairingIndex, side) {
+        if (viewOnly) return;
+        const round = state.rounds[state.currentRound];
+        if (!round || round.resultsSubmitted) return;
+        const pairing = round.pairings[pairingIndex];
+        if (!pairing || pairing.isBye || pairing.result) return;
+        const key = side === 'a' ? 'malfunctionsA' : 'malfunctionsB';
+        pairing[key] = (pairing[key] || 0) + 1;
+        pairing.battles = pairing.battles || [];
+        if (pairing[key] >= 3) {
+            const oppSide = side === 'a' ? 'b' : 'a';
+            pairing.result = oppSide;
+            pairing.battles.push({ winner: oppSide, finish: 'malfunction', points: 0, ts: Date.now(), kind: 'malfunction' });
+        }
+        saveState();
+        renderRound();
+        updateSubmitButton();
+    }
+
+    // Toggle which pairing's penalty panel is open (mutually exclusive with cross popup)
+    let spinPenaltyOpen = null;   // pairingIndex or null
+    function toggleSpinPenaltyPanel(pairingIndex) {
+        if (viewOnly) return;
+        // Close cross popup if open
+        if (spinPopupPairing !== null) {
+            spinPopupPairing = null;
+            spinPopupSide = null;
+            spinPendingFinish = null;
+        }
+        spinPenaltyOpen = spinPenaltyOpen === pairingIndex ? null : pairingIndex;
+        renderRound();
+    }
+
+    // 3-on-3: tap a finish button → set pending, render Bey picker
+    function spinPickFinish(pairingIndex, side, finish) {
+        if (viewOnly) return;
+        if (state.threeOnThreeMode === false) {
+            // 1-on-1: score immediately
+            addSpinFinish(pairingIndex, side, finish);
+            return;
+        }
+        spinPendingFinish = finish;
+        spinPopupPairing = pairingIndex;
+        spinPopupSide = side;
+        renderRound();
+        requestAnimationFrame(() => setTimeout(applySpinCrossEdgeFlip, 180));
+    }
+
+    // Tapping a Bey finalises the score
+    function spinPickBey(bey) {
+        if (viewOnly || spinPopupPairing === null || !spinPendingFinish) return;
+        addSpinFinish(spinPopupPairing, spinPopupSide, spinPendingFinish, bey);
+    }
+
+    // Click anywhere outside an open popup → close. Also ESC.
+    function bindSpinBackdrop() {
+        if (spinPopupBackdropBound) return;
+        spinPopupBackdropBound = true;
+        document.addEventListener('click', (e) => {
+            if (spinPopupPairing === null) return;
+            const cross = e.target.closest('.spin-cross');
+            const sideCard = e.target.closest('.spin-side');
+            if (cross) return;                        // tap inside the cross — let buttons handle it
+            if (sideCard && sideCard.classList.contains('is-open')) return; // tap on the open card itself — toggleSpinPopup handles
+            closeSpinPopup();
+        }, true);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && spinPopupPairing !== null) {
+                closeSpinPopup();
+            }
+        });
+    }
+
+    // Smart-flip: each cross button is anchored just outside one edge of the player card. If the
+    // LEFT or RIGHT button overflows the viewport, shift the entire popup container horizontally
+    // so all buttons stay on screen. The vertical (top/bottom) buttons rarely overflow because
+    // they sit inline within the round view's scroll area.
+    function applySpinCrossEdgeFlip() {
+        const cross = document.querySelector('.spin-cross');
+        if (!cross) return;
+        const left = cross.querySelector('.spin-cross-left');
+        const right = cross.querySelector('.spin-cross-right');
+        const margin = 8;
+        const vw = window.innerWidth;
+        let dx = 0;
+        if (left) {
+            const r = left.getBoundingClientRect();
+            if (r.left < margin) dx = Math.max(dx, margin - r.left);
+        }
+        if (right) {
+            const r = right.getBoundingClientRect();
+            if (r.right > vw - margin) dx = Math.min(dx, (vw - margin) - r.right);
+        }
+        if (dx !== 0) cross.style.transform = `translateX(${dx}px)`;
+    }
+
+    function addSpinFinish(pairingIndex, side, finish, bey) {
+        if (viewOnly) return;
+        const round = state.rounds[state.currentRound];
+        if (!round || round.resultsSubmitted) return;
+        const pairing = round.pairings[pairingIndex];
+        if (!pairing || pairing.isBye) return;
+        if (pairing.result) return;                       // match already locked
+        const points = SPIN_FINISH_POINTS[finish];
+        if (!points) return;
+        pairing.battles = pairing.battles || [];
+        const entry = { winner: side, finish, points, ts: Date.now() };
+        if (state.threeOnThreeMode !== false && bey) entry.bey = bey;
+        pairing.battles.push(entry);
+        pairing.pointsA = (pairing.pointsA || 0) + (side === 'a' ? points : 0);
+        pairing.pointsB = (pairing.pointsB || 0) + (side === 'b' ? points : 0);
+        // Auto-lock the match when a side reaches the target
+        const target = state.matchTargetPoints || 4;
+        if (pairing.pointsA >= target) pairing.result = 'a';
+        else if (pairing.pointsB >= target) pairing.result = 'b';
+        // Always close the popup after a tap (one-finish-per-tap UX)
+        spinPopupPairing = null;
+        spinPopupSide = null;
+        spinPendingFinish = null;
+        saveState();
+        renderRound();
+        updateSubmitButton();
+    }
+
+    function undoSpinBattle(pairingIndex) {
+        if (viewOnly) return;
+        const round = state.rounds[state.currentRound];
+        if (!round || round.resultsSubmitted) return;
+        const pairing = round.pairings[pairingIndex];
+        if (!pairing || pairing.isBye) return;
+        if (!pairing.battles || pairing.battles.length === 0) return;
+        const last = pairing.battles.pop();
+        if (last.winner === 'a') pairing.pointsA = Math.max(0, (pairing.pointsA || 0) - last.points);
+        else pairing.pointsB = Math.max(0, (pairing.pointsB || 0) - last.points);
+        // If the match was auto-locked, undoing the winning battle should unlock it
+        if (pairing.result) {
+            const target = state.matchTargetPoints || 4;
+            if ((pairing.pointsA || 0) < target && (pairing.pointsB || 0) < target) {
+                pairing.result = null;
+            }
+        }
+        saveState();
+        renderRound();
+        updateSubmitButton();
     }
 
     function isFinalRound() {
@@ -1698,6 +2621,26 @@ const app = (() => {
             if (pairing.result === 'a') { pA.wins += 1; pB.losses += 1; }
             else if (pairing.result === 'b') { pB.wins += 1; pA.losses += 1; }
             else if (pairing.result === 'draw') { pA.draws += 1; pB.draws += 1; }
+
+            // Spin-battle: also accumulate per-player battle points scored / conceded
+            if (state.gameType === 'spin-battle') {
+                const ptsA = pairing.pointsA || 0;
+                const ptsB = pairing.pointsB || 0;
+                pA.battlePointsScored = (pA.battlePointsScored || 0) + ptsA;
+                pA.battlePointsConceded = (pA.battlePointsConceded || 0) + ptsB;
+                pB.battlePointsScored = (pB.battlePointsScored || 0) + ptsB;
+                pB.battlePointsConceded = (pB.battlePointsConceded || 0) + ptsA;
+            }
+
+            // Best-of-3 TCG: also accumulate per-game wins/losses
+            if (state.gameType === 'tcg' && state.bestOfThree && pairing.games) {
+                const gA = pairing.games.filter(g => g === 'a').length;
+                const gB = pairing.games.filter(g => g === 'b').length;
+                pA.gameWins = (pA.gameWins || 0) + gA;
+                pA.gameLosses = (pA.gameLosses || 0) + gB;
+                pB.gameWins = (pB.gameWins || 0) + gB;
+                pB.gameLosses = (pB.gameLosses || 0) + gA;
+            }
         });
     }
 
@@ -1756,6 +2699,7 @@ const app = (() => {
                         total_rounds: state.rounds.length,
                         player_count: state.players.length
                     });
+                    fireChampionCelebration();
                     navigateTo('standings');
                     return;
                 }
@@ -1785,6 +2729,7 @@ const app = (() => {
                 total_rounds: state.rounds.length,
                 player_count: state.players.length
             });
+            fireChampionCelebration();
             navigateTo('standings');
             return;
         }
@@ -1799,7 +2744,20 @@ const app = (() => {
         navigateTo('round');
     }
 
+    // Fire confetti + celebration once per tournament end, re-armable if user starts a new one.
+    let championCelebrationFired = false;
+    function fireChampionCelebration() {
+        if (championCelebrationFired) return;
+        championCelebrationFired = true;
+        if (typeof confetti !== 'function') return;
+        const colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#FF7324', '#22D3EE'];
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.3 }, colors });
+        setTimeout(() => confetti({ particleCount: 80, spread: 120, angle: 60, origin: { x: 0, y: 0.5 }, colors }), 250);
+        setTimeout(() => confetti({ particleCount: 80, spread: 120, angle: 120, origin: { x: 1, y: 0.5 }, colors }), 500);
+    }
+
     function endTournament() {
+        if (viewOnly) return;
         const round = state.rounds[state.currentRound];
         if (round && !round.resultsSubmitted) {
             const allSet = round.pairings.every(p => p.isBye || p.result !== null);
@@ -1828,6 +2786,7 @@ const app = (() => {
             total_rounds: state.rounds.length,
             player_count: state.players.length
         });
+        fireChampionCelebration();
         navigateTo('standings');
     }
 
@@ -1957,7 +2916,9 @@ const app = (() => {
             if (totalGames === 0) {
                 totalOppWinPct += 0.25;
             } else {
-                const winPct = opp.matchPoints / (totalGames * 3);
+                // Official Pokémon TCG match-win %: (wins + 0.5*draws) / games
+                // Independent of scoring mode (draw=0 or draw=1 point).
+                const winPct = (opp.wins + 0.5 * opp.draws) / totalGames;
                 totalOppWinPct += Math.max(0.25, winPct);
             }
             oppCount++;
@@ -1967,18 +2928,57 @@ const app = (() => {
     }
 
     function getStandings() {
+        // Pass 1: everyone's OWP
+        const owpById = {};
+        state.players.forEach(p => { owpById[p.id] = calculateOWP(p); });
+
+        // Byes received per player (scan submitted rounds once)
+        const byesById = {};
+        state.rounds.forEach(round => {
+            if (!round.resultsSubmitted) return;
+            round.pairings.forEach(pairing => {
+                if (pairing.isBye && pairing.playerA) {
+                    byesById[pairing.playerA] = (byesById[pairing.playerA] || 0) + 1;
+                }
+            });
+        });
+
+        // Pass 2: OOMW = average of opponents' OWP (0.25 floor per opponent, standard TCG rule)
+        //          WOScore = sum of opponents' match points
         const standings = state.players.map(p => {
-            const owp = calculateOWP(p);
+            const owp = owpById[p.id];
+            let oomw = 0;
+            let woscore = 0;
+            if (p.opponents.length > 0) {
+                let oomwTotal = 0, oomwCount = 0;
+                p.opponents.forEach(oppId => {
+                    const opp = getPlayer(oppId);
+                    if (opp) woscore += opp.matchPoints;
+                    if (!(oppId in owpById)) return;
+                    oomwTotal += Math.max(0.25, owpById[oppId]);
+                    oomwCount++;
+                });
+                oomw = oomwCount > 0 ? oomwTotal / oomwCount : 0;
+            }
             return {
                 ...p,
                 owp,
+                oomw,
+                woscore,
+                battlePoints: p.battlePointsScored || 0,
+                gameRecord: (p.gameWins != null || p.gameLosses != null) ? `${p.gameWins || 0}-${p.gameLosses || 0}` : '—',
+                byes: byesById[p.id] || 0,
                 record: `${p.wins}-${p.losses}-${p.draws}`
             };
         });
 
         standings.sort((a, b) => {
             if (b.matchPoints !== a.matchPoints) return b.matchPoints - a.matchPoints;
-            return b.owp - a.owp;
+            if (b.owp !== a.owp) return b.owp - a.owp;
+            if (b.oomw !== a.oomw) return b.oomw - a.oomw;
+            // Spin-battle uses BattlePoints as a 4th tiebreaker; TCG falls through to original order
+            if (state.gameType === 'spin-battle') return b.battlePoints - a.battlePoints;
+            return 0;
         });
 
         return standings;
@@ -1999,6 +2999,352 @@ const app = (() => {
         if (!cb) return;
         state.scoringDrawBonus = !!cb.checked;
         saveState();
+    }
+
+    function setMatchTargetPoints(value) {
+        if (viewOnly || state.tournamentStarted) return;
+        const n = Math.max(2, Math.min(20, parseInt(value, 10) || 4));
+        state.matchTargetPoints = n;
+        saveState();
+    }
+
+    function toggleThreeOnThreeMode() {
+        if (viewOnly || state.tournamentStarted) return;
+        const cb = document.getElementById('spin-three-on-three');
+        if (!cb) return;
+        state.threeOnThreeMode = !!cb.checked;
+        saveState();
+    }
+
+    function toggleStadiumOut() {
+        if (viewOnly || state.tournamentStarted) return;
+        const cb = document.getElementById('spin-stadium-out');
+        if (!cb) return;
+        state.stadiumOutEnabled = !!cb.checked;
+        saveState();
+    }
+
+    // ---- DECK REGISTRATION (3-on-3 spin-battle, v1) ----
+    // A deck = 3 Beys, each Bey = { blade, ratchet, bit }. Within one deck no part may repeat.
+    function validateDeck(deck) {
+        if (!deck || !Array.isArray(deck) || deck.length !== 3) return { ok: false, reason: 'incomplete' };
+        const seen = { blade: new Set(), ratchet: new Set(), bit: new Set() };
+        for (let i = 0; i < 3; i++) {
+            const bey = deck[i] || {};
+            for (const part of ['blade', 'ratchet', 'bit']) {
+                const v = (bey[part] || '').trim().toLowerCase();
+                if (!v) return { ok: false, reason: 'missing-part', beyIndex: i, part };
+                if (seen[part].has(v)) return { ok: false, reason: 'duplicate-' + part, part: bey[part] };
+                seen[part].add(v);
+            }
+        }
+        return { ok: true };
+    }
+
+    let deckEditorPlayerId = null;
+
+    function openDeckEditor(playerId) {
+        if (viewOnly || state.tournamentStarted) return;
+        const player = getPlayer(playerId);
+        if (!player) return;
+        deckEditorPlayerId = playerId;
+        renderDeckEditor();
+        const ov = document.getElementById('deck-editor-overlay');
+        if (ov) ov.classList.add('open');
+    }
+
+    function closeDeckEditor() {
+        stopDeckScanner();
+        deckQrPanelOpen = false;
+        deckEditorPlayerId = null;
+        const ov = document.getElementById('deck-editor-overlay');
+        if (ov) ov.classList.remove('open');
+    }
+
+    function renderDeckEditor() {
+        const body = document.getElementById('deck-editor-body');
+        if (!body || !deckEditorPlayerId) return;
+        const player = getPlayer(deckEditorPlayerId);
+        if (!player) return;
+        // Pull current draft (kept in DOM until save) or fall back to player.deck or empty
+        const deck = player._draftDeck || player.deck || [{}, {}, {}];
+        // Ensure exactly 3 entries
+        while (deck.length < 3) deck.push({});
+        const beyRow = (i) => `
+            <div class="deck-bey-row">
+                <span class="deck-bey-num">Bey ${i + 1}</span>
+                <input type="text" data-bey="${i}" data-part="blade"   placeholder="${escapeHtml(t('deck.bladePh'))}"   value="${escapeHtml(deck[i].blade || '')}"   oninput="app.updateDeckDraft()" />
+                <input type="text" data-bey="${i}" data-part="ratchet" placeholder="${escapeHtml(t('deck.ratchetPh'))}" value="${escapeHtml(deck[i].ratchet || '')}" oninput="app.updateDeckDraft()" />
+                <input type="text" data-bey="${i}" data-part="bit"     placeholder="${escapeHtml(t('deck.bitPh'))}"     value="${escapeHtml(deck[i].bit || '')}"     oninput="app.updateDeckDraft()" />
+            </div>
+        `;
+        const v = validateDeck(deck);
+        let statusHtml;
+        if (v.ok) {
+            statusHtml = `<div class="deck-status deck-status-ok">✓ ${t('deck.valid')}</div>`;
+        } else if (v.reason === 'incomplete' || v.reason === 'missing-part') {
+            statusHtml = `<div class="deck-status deck-status-warn">⚠ ${t('deck.incomplete')}</div>`;
+        } else {
+            const partKey = v.reason.replace('duplicate-', '');
+            statusHtml = `<div class="deck-status deck-status-error">⚠ ${t('deck.duplicate', { part: t('deck.' + partKey), value: v.part })}</div>`;
+        }
+        const code = encodeBeysCode(deck);
+        const supportsScan = ('BarcodeDetector' in window);
+        const qrPanel = deckQrPanelOpen ? `
+            <div class="deck-qr-panel">
+                <div class="deck-qr-row">
+                    <div class="deck-qr-col">
+                        <label class="deck-qr-label">${t('qr.codeLabel')}</label>
+                        <div id="deck-qr-svg" class="deck-qr-svg"></div>
+                        <input type="text" class="deck-qr-code-text" readonly value="${escapeHtml(code)}" onclick="this.select()" />
+                    </div>
+                    <div class="deck-qr-col deck-qr-col-import">
+                        ${supportsScan ? `<button class="btn btn-small btn-secondary" onclick="app.startDeckScanner()">${t('qr.scan')}</button>` : ''}
+                        <video id="deck-scan-video" class="deck-scan-video" muted playsinline></video>
+                        <label class="deck-qr-label">${t('qr.pasteCode')}</label>
+                        <textarea id="deck-paste-input" class="deck-paste-input" rows="2" placeholder="gshk-bey:..."></textarea>
+                        <button class="btn btn-small btn-secondary" onclick="app.importDeckFromPaste()">${t('qr.import')}</button>
+                    </div>
+                </div>
+                <p id="deck-qr-note" class="info-text"></p>
+            </div>
+        ` : '';
+        body.innerHTML = `
+            <h3>${t('deck.title', { name: escapeHtml(player.name) })}</h3>
+            <p class="info-text deck-rules-hint">${t('deck.rulesHint')}</p>
+            <div class="deck-grid">
+                <div class="deck-bey-header">
+                    <span></span>
+                    <span>${t('deck.blade')}</span>
+                    <span>${t('deck.ratchet')}</span>
+                    <span>${t('deck.bit')}</span>
+                </div>
+                ${beyRow(0)}
+                ${beyRow(1)}
+                ${beyRow(2)}
+            </div>
+            <div id="deck-status-line">${statusHtml}</div>
+            ${qrPanel}
+            <div class="deck-actions">
+                <button class="btn btn-secondary btn-small" onclick="app.toggleDeckQrPanel()">${deckQrPanelOpen ? '✕ QR' : '⊞ QR'}</button>
+                <span style="flex:1"></span>
+                <button class="btn btn-secondary" onclick="app.closeDeckEditor()">${t('common.cancel')}</button>
+                <button class="btn btn-primary" ${v.ok ? '' : 'disabled'} onclick="app.saveDeckEditor()">${t('deck.save')}</button>
+            </div>
+        `;
+        // After DOM update, render the QR if the panel is open
+        if (deckQrPanelOpen) {
+            const svgHost = document.getElementById('deck-qr-svg');
+            renderQrInto(svgHost, code);
+        }
+    }
+
+    function updateDeckDraft() {
+        if (!deckEditorPlayerId) return;
+        const player = getPlayer(deckEditorPlayerId);
+        if (!player) return;
+        const deck = [{}, {}, {}];
+        document.querySelectorAll('#deck-editor-body input[data-bey]').forEach(inp => {
+            const i = parseInt(inp.dataset.bey, 10);
+            const p = inp.dataset.part;
+            deck[i][p] = inp.value;
+        });
+        player._draftDeck = deck;
+        // Re-validate + update status line + save button enable state without rebuilding inputs (preserves focus)
+        const v = validateDeck(deck);
+        const line = document.getElementById('deck-status-line');
+        if (line) {
+            let statusHtml;
+            if (v.ok) {
+                statusHtml = `<div class="deck-status deck-status-ok">✓ ${t('deck.valid')}</div>`;
+            } else if (v.reason === 'incomplete' || v.reason === 'missing-part') {
+                statusHtml = `<div class="deck-status deck-status-warn">⚠ ${t('deck.incomplete')}</div>`;
+            } else {
+                const partKey = v.reason.replace('duplicate-', '');
+                statusHtml = `<div class="deck-status deck-status-error">⚠ ${t('deck.duplicate', { part: t('deck.' + partKey), value: v.part })}</div>`;
+            }
+            line.innerHTML = statusHtml;
+        }
+        const saveBtn = document.querySelector('#deck-editor-body .deck-actions .btn-primary');
+        if (saveBtn) saveBtn.disabled = !v.ok;
+        // Live-update QR + code text if panel is open
+        if (deckQrPanelOpen) {
+            const code = encodeBeysCode(deck);
+            const svg = document.getElementById('deck-qr-svg');
+            const codeInput = document.querySelector('.deck-qr-code-text');
+            if (svg) renderQrInto(svg, code);
+            if (codeInput) codeInput.value = code;
+        }
+    }
+
+    // ---- BEYS QR — encode / decode / generate / scan ----
+    const BEY_CODE_PREFIX = 'gshk-bey:';
+    function encodeBeysCode(deck) {
+        const parts = (deck || []).slice(0, 3).map(b => {
+            const blade = (b && b.blade || '').trim();
+            const ratchet = (b && b.ratchet || '').trim();
+            const bit = (b && b.bit || '').trim();
+            // pipes are illegal in part names; strip them defensively
+            return [blade, ratchet, bit].map(s => s.replace(/\|/g, '/').replace(/;/g, ',')).join('|');
+        });
+        return BEY_CODE_PREFIX + parts.join(';');
+    }
+    function decodeBeysCode(code) {
+        if (!code || typeof code !== 'string') return null;
+        const trimmed = code.trim();
+        if (!trimmed.startsWith(BEY_CODE_PREFIX)) return null;
+        const body = trimmed.slice(BEY_CODE_PREFIX.length);
+        const parts = body.split(';');
+        if (parts.length < 1 || parts.length > 3) return null;
+        const deck = [];
+        for (let i = 0; i < 3; i++) {
+            const triplet = parts[i] ? parts[i].split('|') : ['', '', ''];
+            deck.push({
+                blade: (triplet[0] || '').trim(),
+                ratchet: (triplet[1] || '').trim(),
+                bit: (triplet[2] || '').trim(),
+            });
+        }
+        return deck;
+    }
+
+    // Render a QR <table> into the given container element using qrcode-generator
+    function renderQrInto(containerEl, text) {
+        if (!containerEl || !text) return;
+        if (typeof qrcode !== 'function') {
+            containerEl.innerHTML = '<p class="info-text">QR library not loaded yet — please retry in a moment.</p>';
+            return;
+        }
+        const qr = qrcode(0, 'M');
+        qr.addData(text);
+        qr.make();
+        // 4 px per cell, no margin — bey codes are tiny so this fits comfortably
+        containerEl.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    }
+
+    // Toggle the QR/scan/paste section inside the deck editor (shown beneath the inputs)
+    let deckQrPanelOpen = false;
+    let deckScannerStream = null;
+    let deckScannerInterval = null;
+
+    function toggleDeckQrPanel() {
+        deckQrPanelOpen = !deckQrPanelOpen;
+        if (!deckQrPanelOpen) stopDeckScanner();
+        renderDeckEditor();
+    }
+
+    function applyImportedDeckCode(code) {
+        const decoded = decodeBeysCode(code);
+        if (!decoded) {
+            const note = document.getElementById('deck-qr-note');
+            if (note) { note.textContent = t('qr.invalidCode'); note.className = 'info-text deck-qr-note-error'; }
+            return false;
+        }
+        const player = getPlayer(deckEditorPlayerId);
+        if (!player) return false;
+        player._draftDeck = decoded;
+        renderDeckEditor();
+        const note = document.getElementById('deck-qr-note');
+        if (note) { note.textContent = t('qr.imported'); note.className = 'info-text deck-qr-note-ok'; }
+        return true;
+    }
+
+    function importDeckFromPaste() {
+        const input = document.getElementById('deck-paste-input');
+        if (!input) return;
+        applyImportedDeckCode(input.value);
+    }
+
+    async function startDeckScanner() {
+        if (!('BarcodeDetector' in window)) {
+            const note = document.getElementById('deck-qr-note');
+            if (note) { note.textContent = t('qr.scanUnsupported'); note.className = 'info-text deck-qr-note-error'; }
+            return;
+        }
+        const video = document.getElementById('deck-scan-video');
+        if (!video) return;
+        try {
+            deckScannerStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }, audio: false
+            });
+            video.srcObject = deckScannerStream;
+            await video.play();
+            const detector = new BarcodeDetector({ formats: ['qr_code'] });
+            const note = document.getElementById('deck-qr-note');
+            if (note) { note.textContent = t('qr.scanInstr'); note.className = 'info-text'; }
+            deckScannerInterval = setInterval(async () => {
+                try {
+                    const codes = await detector.detect(video);
+                    if (codes && codes.length > 0) {
+                        const raw = codes[0].rawValue || '';
+                        if (applyImportedDeckCode(raw)) {
+                            stopDeckScanner();
+                        }
+                    }
+                } catch (e) { /* keep trying */ }
+            }, 400);
+        } catch (e) {
+            const note = document.getElementById('deck-qr-note');
+            if (note) { note.textContent = t('qr.scanFail'); note.className = 'info-text deck-qr-note-error'; }
+            stopDeckScanner();
+        }
+    }
+
+    function stopDeckScanner() {
+        if (deckScannerInterval) { clearInterval(deckScannerInterval); deckScannerInterval = null; }
+        if (deckScannerStream) {
+            deckScannerStream.getTracks().forEach(t => t.stop());
+            deckScannerStream = null;
+        }
+        const video = document.getElementById('deck-scan-video');
+        if (video) { video.pause(); video.srcObject = null; }
+    }
+
+    function saveDeckEditor() {
+        if (!deckEditorPlayerId) return;
+        const player = getPlayer(deckEditorPlayerId);
+        if (!player) return;
+        const deck = player._draftDeck || player.deck;
+        const v = validateDeck(deck);
+        if (!v.ok) return;
+        player.deck = deck.map(b => ({
+            blade: (b.blade || '').trim(),
+            ratchet: (b.ratchet || '').trim(),
+            bit: (b.bit || '').trim(),
+        }));
+        delete player._draftDeck;
+        saveState();
+        closeDeckEditor();
+        renderPlayerList();   // refresh ✓/⚠ badge
+    }
+
+    function toggleBestOfThree() {
+        if (viewOnly || state.tournamentStarted) return;
+        const cb = document.getElementById('scoring-bo3');
+        if (!cb) return;
+        state.bestOfThree = !!cb.checked;
+        saveState();
+    }
+
+    // Toggle the spin-battle banner + sync UI on registration page based on gameType.
+    function syncRegistrationGameType() {
+        const banner = document.getElementById('reg-spin-banner');
+        const bo3Block = document.getElementById('reg-bo3');
+        if (state.gameType === 'spin-battle') {
+            if (banner) banner.style.display = '';
+            if (bo3Block) bo3Block.style.display = 'none';   // Bo3 doesn't apply in spin-battle (matches are points-target)
+            const tpInput = document.getElementById('spin-target-points');
+            if (tpInput) tpInput.value = state.matchTargetPoints || 4;
+            const tttCb = document.getElementById('spin-three-on-three');
+            if (tttCb) tttCb.checked = state.threeOnThreeMode !== false;
+            const soCb = document.getElementById('spin-stadium-out');
+            if (soCb) soCb.checked = !!state.stadiumOutEnabled;
+        } else {
+            if (banner) banner.style.display = 'none';
+            if (bo3Block) bo3Block.style.display = '';
+            const bo3Cb = document.getElementById('scoring-bo3');
+            if (bo3Cb) bo3Cb.checked = !!state.bestOfThree;
+        }
     }
 
     function formatTournamentDate(iso) {
@@ -2031,6 +3377,16 @@ const app = (() => {
         const prefix = tournamentTitlePrefix();
         title.textContent = prefix ? `${prefix} ${baseTitle}` : baseTitle;
 
+        // Swap the 7th column header dynamically based on mode
+        const ths = document.querySelectorAll('#standings-table thead th');
+        if (ths && ths.length >= 7) {
+            let col7Label;
+            if (state.gameType === 'spin-battle')  col7Label = t('standings.battlePts');
+            else if (state.bestOfThree)            col7Label = t('standings.gw');
+            else                                   col7Label = t('standings.woscore');
+            ths[6].textContent = col7Label;
+        }
+
         tbody.innerHTML = '';
         standings.forEach((p, i) => {
             const tr = document.createElement('tr');
@@ -2041,12 +3397,26 @@ const app = (() => {
             const nameCell = isDropped
                 ? `${escapeHtml(p.name)} <span class="dropped-tag">${t('trainer.droppedTag')}</span>`
                 : escapeHtml(p.name);
+            const medal = state.tournamentEnded && !isDropped
+                ? (i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '')
+                : '';
+            // Column 7 swaps based on mode:
+            //   spin-battle → BattlePts (sum scored across matches)
+            //   tcg + bestOfThree → GW-GL (per-game record)
+            //   default tcg → WOScore
+            let tiebreakCol;
+            if (state.gameType === 'spin-battle') tiebreakCol = p.battlePoints;
+            else if (state.bestOfThree)           tiebreakCol = p.gameRecord;
+            else                                  tiebreakCol = p.woscore;
             tr.innerHTML = `
-                <td>${i + 1}</td>
+                <td>${medal}${i + 1}</td>
                 <td>${nameCell}</td>
                 <td>${p.record}</td>
                 <td>${p.matchPoints}</td>
                 <td>${(p.owp * 100).toFixed(1)}%</td>
+                <td>${(p.oomw * 100).toFixed(1)}%</td>
+                <td>${tiebreakCol}</td>
+                <td>${p.byes}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -2059,10 +3429,51 @@ const app = (() => {
             alert(t('standings.htmlMissing'));
             return;
         }
+        // The wrapper has overflow-x:auto on phone, so the table is horizontally scrolled
+        // and html2canvas would only capture what's visible. Two-pass approach:
+        //   1. Switch wrapper to overflow:visible + width:max-content so the layout reflows
+        //      to its true full width (table + padding + cell right-edges all included).
+        //   2. Read the now-accurate scrollWidth and use it for capture.
+        //   3. Add a safety buffer for sub-pixel rounding + last-column right padding.
+        // This guarantees every tiebreaker column lands in the saved PNG no matter how
+        // narrow the viewport is.
+        const origStyle = {
+            width: wrapper.style.width,
+            minWidth: wrapper.style.minWidth,
+            maxWidth: wrapper.style.maxWidth,
+            overflow: wrapper.style.overflow,
+            display: wrapper.style.display
+        };
+        wrapper.style.overflow = 'visible';
+        wrapper.style.maxWidth = 'none';
+        wrapper.style.width = 'max-content';
+        wrapper.style.minWidth = 'max-content';
+        // Force a synchronous reflow so getBoundingClientRect/scrollWidth give the new layout
+        // eslint-disable-next-line no-unused-expressions
+        wrapper.offsetHeight;
+        const measuredWidth = Math.max(
+            wrapper.scrollWidth,
+            wrapper.getBoundingClientRect().width
+        );
+        const safetyBuffer = 24;            // sub-pixel + last-column right padding
+        const captureWidth = Math.ceil(measuredWidth + safetyBuffer);
+        // Re-pin the wrapper at the measured width so html2canvas sees a stable element
+        wrapper.style.width = captureWidth + 'px';
+        wrapper.style.minWidth = captureWidth + 'px';
+        const restoreWrapper = () => {
+            wrapper.style.width = origStyle.width;
+            wrapper.style.minWidth = origStyle.minWidth;
+            wrapper.style.maxWidth = origStyle.maxWidth;
+            wrapper.style.overflow = origStyle.overflow;
+            wrapper.style.display = origStyle.display;
+        };
         html2canvas(wrapper, {
             backgroundColor: '#0a0e27',
-            scale: 2
+            scale: 2,
+            width: captureWidth,
+            windowWidth: Math.max(captureWidth, window.innerWidth)
         }).then(srcCanvas => {
+            restoreWrapper();
             const scale = 2;
             const pad = 24 * scale;
 
@@ -2127,21 +3538,54 @@ const app = (() => {
             ctx.fillStyle = '#FF7324';
             ctx.font = `bold ${22 * scale}px "JetBrains Mono", ui-monospace, monospace`;
             ctx.textAlign = 'left';
-            ctx.fillText('tcgtm.web.app', pad, footerY + footerH / 2);
+            ctx.fillText('gameset-hk.com', pad, footerY + footerH / 2);
             ctx.fillStyle = '#888';
             ctx.font = `${14 * scale}px Inter, sans-serif`;
             ctx.textAlign = 'right';
-            ctx.fillText('Generated by TCG Tournament Manager', out.width - pad, footerY + footerH / 2);
+            ctx.fillText('Generated by GameSet HK', out.width - pad, footerY + footerH / 2);
 
-            const link = document.createElement('a');
             const roundNum = state.rounds.filter(r => r.resultsSubmitted).length;
             const safeName = tName ? tName.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 40) : '';
-            link.download = safeName
+            const filename = safeName
                 ? `${safeName}_Standings_Round${roundNum}.png`
                 : `Standings_Round${roundNum}.png`;
-            link.href = out.toDataURL('image/png');
-            link.click();
+
+            // Convert canvas → Blob → try the Web Share API first. On iOS/iPadOS Safari this
+            // opens the native share sheet whose "Save Image" entry writes to Photos (not Files,
+            // which is what a plain <a download> on iOS does — file ends up in iCloud Drive).
+            // Desktop browsers / Android-without-share fall back to the classic download anchor.
+            out.toBlob((blob) => {
+                if (!blob) { alert(t('standings.snapFail')); return; }
+                const triggerDownload = () => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 1500);
+                };
+                try {
+                    const file = new File([blob], filename, { type: 'image/png' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: tName || 'GameSet HK',
+                            text: tName ? `${tName} — ${roundLabel}` : roundLabel
+                        }).catch(err => {
+                            // User cancelled the share sheet — don't fall back, that's intentional
+                            if (err && err.name === 'AbortError') return;
+                            // Any other share-API failure → use the classic download as fallback
+                            triggerDownload();
+                        });
+                        return;
+                    }
+                } catch (_) { /* File constructor or canShare unsupported — fall through */ }
+                triggerDownload();
+            }, 'image/png');
         }).catch(err => {
+            restoreWrapper();
             console.error('Screenshot failed:', err);
             alert(t('standings.snapFail'));
         });
@@ -2177,6 +3621,9 @@ const app = (() => {
                 losses: p.losses,
                 draws: p.draws,
                 owp: p.owp,
+                oomw: p.oomw,
+                woscore: p.woscore,
+                byes: p.byes,
                 dropped: !!p.dropped,
             })),
             rounds,
@@ -2199,10 +3646,17 @@ const app = (() => {
         const player = getPlayer(playerId);
         if (!player) return;
 
-        const owp = calculateOWP(player);
+        // Pull tiebreakers from the same getStandings pipeline so values are consistent
+        const standingEntry = getStandings().find(s => s.id === playerId);
+        const owp = standingEntry ? standingEntry.owp : calculateOWP(player);
+        const oomw = standingEntry ? standingEntry.oomw : 0;
+        const woscore = standingEntry ? standingEntry.woscore : 0;
+        const byes = standingEntry ? standingEntry.byes : 0;
         const body = document.getElementById('modal-body');
 
         let timeline = '';
+        // Aggregate finish counts (spin-battle only) — used for the "Finish breakdown" stat box
+        const finishCounts = { survivor: 0, burst: 0, knockout: 0, xtreme: 0, stadium_out: 0, penalty: 0 };
         state.rounds.forEach((round, rIdx) => {
             if (!round.resultsSubmitted) return;
             round.pairings.forEach(pairing => {
@@ -2235,11 +3689,35 @@ const app = (() => {
                     resultClass = 'timeline-result-loss';
                 }
 
+                // Sub-detail: per-battle list for spin-battle, per-game list for Bo3 TCG
+                let subDetail = '';
+                if (state.gameType === 'spin-battle' && pairing.battles && pairing.battles.length > 0) {
+                    const items = pairing.battles.map((b, i) => {
+                        const won = (b.winner === 'a' && isA) || (b.winner === 'b' && !isA);
+                        if (won && b.finish && finishCounts[b.finish] != null) finishCounts[b.finish]++;
+                        const cls = won ? 'timeline-sub-win' : 'timeline-sub-loss';
+                        const finishLabel = t('battle.' + b.finish) || b.finish;
+                        const beyTag = b.bey ? ` <span class="timeline-sub-bey">B${b.bey}</span>` : '';
+                        return `<div class="timeline-sub-item ${cls}">${i + 1}. ${won ? '✓' : '✗'} ${finishLabel}${beyTag}</div>`;
+                    }).join('');
+                    subDetail = `<div class="timeline-sub">${items}</div>`;
+                } else if (state.gameType === 'tcg' && state.bestOfThree && pairing.games && pairing.games.length > 0) {
+                    const items = pairing.games.map((g, i) => {
+                        let txt, cls;
+                        if (g === 'draw') { txt = t('trainer.draw'); cls = 'timeline-sub-draw'; }
+                        else if ((g === 'a' && isA) || (g === 'b' && !isA)) { txt = t('trainer.win'); cls = 'timeline-sub-win'; }
+                        else { txt = t('trainer.loss'); cls = 'timeline-sub-loss'; }
+                        return `<div class="timeline-sub-item ${cls}">${t('bo3.game', { n: i + 1 })}: ${txt}</div>`;
+                    }).join('');
+                    subDetail = `<div class="timeline-sub">${items}</div>`;
+                }
+
                 timeline += `
                     <div class="timeline-item">
                         <span class="timeline-round">${t('trainer.round', { n: rIdx + 1 })}</span>
                         ${t('trainer.vs')} ${escapeHtml(oppName)} -
                         <span class="${resultClass}">${resultText}</span>
+                        ${subDetail}
                     </div>`;
             });
         });
@@ -2256,6 +3734,18 @@ const app = (() => {
                     <div class="stat-value">${(owp * 100).toFixed(1)}%</div>
                 </div>
                 <div class="stat-box">
+                    <div class="stat-label">${t('trainer.oomw')}</div>
+                    <div class="stat-value">${(oomw * 100).toFixed(1)}%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">${t('trainer.woscore')}</div>
+                    <div class="stat-value">${woscore}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">${t('trainer.byes')}</div>
+                    <div class="stat-value">${byes}</div>
+                </div>
+                <div class="stat-box">
                     <div class="stat-label">${t('trainer.record')}</div>
                     <div class="stat-value">${player.wins}-${player.losses}-${player.draws}</div>
                 </div>
@@ -2263,6 +3753,37 @@ const app = (() => {
                     <div class="stat-label">${t('trainer.games')}</div>
                     <div class="stat-value">${player.wins + player.losses + player.draws}</div>
                 </div>
+                ${state.gameType === 'spin-battle' && player.deck && validateDeck(player.deck).ok ? `
+                <div class="stat-box stat-box-wide stat-box-deck">
+                    <div class="stat-label">${t('trainer.deck')}</div>
+                    <div class="stat-value stat-deck-list">
+                        ${player.deck.map((b, i) => `<div class="stat-deck-row"><span class="stat-deck-num">B${i + 1}</span><strong>${escapeHtml(b.blade)}</strong> <em>${escapeHtml(b.ratchet)}</em> <em>${escapeHtml(b.bit)}</em></div>`).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                ${state.gameType === 'spin-battle' && (player.battlePointsScored || 0) > 0 ? `
+                <div class="stat-box stat-box-wide">
+                    <div class="stat-label">${t('trainer.battlePts')}</div>
+                    <div class="stat-value">${player.battlePointsScored || 0}</div>
+                </div>
+                <div class="stat-box stat-box-wide stat-box-finishes">
+                    <div class="stat-label">${t('trainer.finishBreakdown')}</div>
+                    <div class="stat-value stat-finish-breakdown">
+                        <span title="${t('battle.xtreme')}"><b>${finishCounts.xtreme}</b><em>×3</em></span>
+                        <span title="${t('battle.knockout')}"><b>${finishCounts.knockout}</b><em>K</em></span>
+                        <span title="${t('battle.burst')}"><b>${finishCounts.burst}</b><em>B</em></span>
+                        <span title="${t('battle.survivor')}"><b>${finishCounts.survivor}</b><em>S</em></span>
+                        ${finishCounts.stadium_out > 0 ? `<span title="${t('battle.stadiumOut')}"><b>${finishCounts.stadium_out}</b><em>SO</em></span>` : ''}
+                        ${finishCounts.penalty > 0 ? `<span title="${t('penalty.title')}" class="finish-penalty"><b>${finishCounts.penalty}</b><em>P</em></span>` : ''}
+                    </div>
+                </div>
+                ` : ''}
+                ${state.gameType === 'tcg' && state.bestOfThree && (player.gameWins || 0) + (player.gameLosses || 0) > 0 ? `
+                <div class="stat-box stat-box-wide">
+                    <div class="stat-label">${t('standings.gw')}</div>
+                    <div class="stat-value">${player.gameWins || 0}-${player.gameLosses || 0}</div>
+                </div>
+                ` : ''}
             </div>
             ${timeline ? `<h4 style="margin-bottom:0.5rem;color:var(--text-dim)">${t('trainer.history')}</h4><div class="trainer-timeline">${timeline}</div>` : `<p style="color:var(--text-dim)">${t('trainer.none')}</p>`}
             ${(!viewOnly && state.tournamentStarted && !state.tournamentEnded) ? `
@@ -2641,6 +4162,32 @@ const app = (() => {
 
     // Back-compat no-ops (modal removed)
     function closeShareModal() {}
+
+    // ---- VIEWER TABS — flip between live round + full standings on the viewer page ----
+    // Visible only in view-only mode (CSS hides for owners). Tabs are also hidden when
+    // the tournament hasn't started yet (registration view) or when there are no rounds.
+    function updateViewerTabs() {
+        const nav = document.getElementById('viewer-tabs');
+        if (!nav) return;
+        // Only show in view mode AND when round/standings are meaningful
+        const hasRounds = state.rounds && state.rounds.length > 0;
+        if (!viewOnly || !hasRounds) {
+            nav.style.display = 'none';
+            return;
+        }
+        nav.style.display = '';
+        // Mark active based on currentView
+        nav.querySelectorAll('.viewer-tab').forEach(btn => {
+            const target = btn.getAttribute('data-target');
+            btn.classList.toggle('viewer-tab-active', target === state.currentView);
+        });
+    }
+
+    function viewerSwitchTab(target) {
+        if (!viewOnly) return;
+        if (target !== 'round' && target !== 'standings') return;
+        navigateTo(target);
+    }
 
     // ---- VIEWER SHARE QR (player-to-player link sharing in view-only mode) ----
     function viewerShareOpen() {
@@ -3442,7 +4989,7 @@ const app = (() => {
                 if (games === 0) {
                     total += 0.25;
                 } else {
-                    const winPct = opp.matchPoints / (games * 3);
+                    const winPct = (opp.wins + 0.5 * opp.draws) / games;
                     total += Math.max(0.25, winPct);
                 }
                 count++;
@@ -3450,22 +4997,45 @@ const app = (() => {
             return count > 0 ? total / count : 0;
         }
 
-        const rows = previewPlayers.map(p => ({
-            name: p.name,
-            record: `${p.wins}-${p.losses}-${p.draws}`,
-            points: p.matchPoints,
-            owp: previewOWP(p)
-        }));
+        // Pass 1: OWP for everyone; Pass 2: OOMW + WOScore from those OWPs
+        const owpByTempId = {};
+        previewPlayers.forEach(p => { owpByTempId[p.tempId] = previewOWP(p); });
+
+        const rows = previewPlayers.map(p => {
+            let oomw = 0;
+            let woscore = 0;
+            if (p.opponents.length > 0) {
+                let total = 0, count = 0;
+                p.opponents.forEach(oppId => {
+                    const opp = byTempId[oppId];
+                    if (opp) woscore += opp.matchPoints;
+                    if (!(oppId in owpByTempId)) return;
+                    total += Math.max(0.25, owpByTempId[oppId]);
+                    count++;
+                });
+                oomw = count > 0 ? total / count : 0;
+            }
+            return {
+                name: p.name,
+                record: `${p.wins}-${p.losses}-${p.draws}`,
+                points: p.matchPoints,
+                owp: owpByTempId[p.tempId],
+                oomw,
+                woscore,
+                byes: p.byes || 0,
+            };
+        });
         rows.sort((a, b) => {
             if (b.points !== a.points) return b.points - a.points;
-            return b.owp - a.owp;
+            if (b.owp !== a.owp) return b.owp - a.owp;
+            return b.oomw - a.oomw;
         });
 
         let html = `<table class="standings-table"><thead><tr>` +
-            `<th>${t('standings.rank')}</th><th>${t('standings.player')}</th><th>${t('standings.record')}</th><th>${t('standings.points')}</th><th>${t('standings.owp')}</th>` +
+            `<th>${t('standings.rank')}</th><th>${t('standings.player')}</th><th>${t('standings.record')}</th><th>${t('standings.points')}</th><th>${t('standings.owp')}</th><th>${t('standings.oomw')}</th><th>${t('standings.woscore')}</th><th>${t('standings.byes')}</th>` +
             `</tr></thead><tbody>`;
         rows.forEach((r, i) => {
-            html += `<tr><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>${r.record}</td><td>${r.points}</td><td>${(r.owp * 100).toFixed(1)}%</td></tr>`;
+            html += `<tr><td>${i + 1}</td><td>${escapeHtml(r.name)}</td><td>${r.record}</td><td>${r.points}</td><td>${(r.owp * 100).toFixed(1)}%</td><td>${(r.oomw * 100).toFixed(1)}%</td><td>${r.woscore}</td><td>${r.byes}</td></tr>`;
         });
         html += '</tbody></table>';
         area.innerHTML = html;
@@ -3732,7 +5302,16 @@ const app = (() => {
         // Keyboard events
         document.addEventListener('keydown', handleKeydown);
 
-        // Import players from SHOWDOWN via URL param (check before view-mode)
+        // VIEW MODE first — if a tournament ID is in the URL, this tab is a read-only
+        // viewer. Skip every owner-side bootstrap path (SHOWDOWN import, resume, etc.)
+        // so a malicious or malformed link can't accidentally drop a viewer into owner UI.
+        const earlyTid = getUrlTournamentId();
+        if (earlyTid && state.publishedTournamentId !== earlyTid) {
+            enterViewMode(earlyTid);
+            return;
+        }
+
+        // Import players from SHOWDOWN via URL param (owner-only — viewers handled above)
         const importParam = new URLSearchParams(window.location.search).get('import');
         if (importParam) {
             try {
@@ -3770,13 +5349,6 @@ const app = (() => {
             } catch (e) {
                 console.error('SHOWDOWN import failed:', e);
             }
-        }
-
-        // Detect view-mode (URL has ?t=<id>) — but only if we're not the owner
-        const urlTid = getUrlTournamentId();
-        if (urlTid && state.publishedTournamentId !== urlTid) {
-            enterViewMode(urlTid);
-            return;
         }
 
         // Re-attach to a previously-published tournament after reload
@@ -3840,6 +5412,16 @@ const app = (() => {
         startTournament,
         startNewTournament,
         setResult,
+        setBo3Game,
+        addSpinFinish,
+        undoSpinBattle,
+        toggleSpinPopup,
+        spinPickFinish,
+        spinPickBey,
+        toggleSpinPenaltyPanel,
+        spinAddLaunchError,
+        spinAddMatchWarn,
+        spinAddMalfunction,
         submitResults,
         reshufflePairings,
         openUpdatesList,
@@ -3875,12 +5457,24 @@ const app = (() => {
         wheelPickExcludeTop3,
         wheelPickApply,
         viewerPinSearch,
+        viewerSwitchTab,
         viewerPinClear,
         viewerShareOpen,
         viewerShareClose,
         viewerShareCopy,
         updateTournamentMeta,
         toggleScoringDrawBonus,
+        toggleBestOfThree,
+        setMatchTargetPoints,
+        toggleThreeOnThreeMode,
+        toggleStadiumOut,
+        openDeckEditor,
+        closeDeckEditor,
+        updateDeckDraft,
+        saveDeckEditor,
+        toggleDeckQrPanel,
+        importDeckFromPaste,
+        startDeckScanner,
         toggleNoAds,
         wheelReset,
         spinWheel,
