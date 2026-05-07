@@ -7,7 +7,7 @@
 - **Stack**: Static HTML / CSS / vanilla JS. Optional Firebase Firestore backend for live view-only sharing.
 - **State**: `localStorage` (per-device). Optionally mirrored to Firestore when a tournament is published.
 - **Repo**: `https://github.com/wical112/PTCG` (origin).
-- **Working dir**: `/Users/wical/PTCG`.
+- **Working dir**: `/Users/wical/gameset-hk`.
 - **Live URLs**: `https://gameset-hk.com` (current, multi-site under same Firebase project) + `https://ptcgstm.web.app` (legacy, still serving).
 
 ## Branches
@@ -38,7 +38,7 @@ Docs:
 All user-visible PTCG / Pokémon / Nintendo / Game Freak / Creatures Inc. / The Pokémon Company references have been **removed** (title, logo, footer disclaimers, FAQ, terms, about, hero copy, download filenames). The app presents as **"TCG Tournament Manager"** (renamed from "Swiss Tournament Manager" on 2026-04-14 to make room for the Knockout format).
 
 Still named `PTCG` internally but invisible to users:
-- Folder `/Users/wical/PTCG/` and GitHub repo name.
+- Folder `/Users/wical/gameset-hk/` and GitHub repo name.
 - `localStorage` keys (`ptcg_state`, `ptcg_round_N`, `ptcg_lang`, `ptcg_advanced_staging`) — kept to preserve existing users' saved data.
 - Comment/internal references in `CONTEXT.md`.
 
@@ -384,7 +384,7 @@ git checkout income              # or main
 node -e "new Function(require('fs').readFileSync('app.js','utf8')); console.log('OK')"
 
 # Serve locally (Firebase needs http://, not file://)
-cd /Users/wical/PTCG && python3 -m http.server 8000
+cd /Users/wical/gameset-hk && python3 -m http.server 8000
 
 # LAN access (for phone testing)
 ipconfig getifaddr en0

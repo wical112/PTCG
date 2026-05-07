@@ -51,7 +51,7 @@ Done in this session, all sitting on disk awaiting one `firebase deploy`:
 ## Deploy command, when SSL is ready
 
 ```bash
-cd /Users/wical/PTCG
+cd /Users/wical/gameset-hk
 firebase deploy --only hosting,functions
 ```
 

@@ -1,0 +1,16 @@
+import admin from 'firebase-admin';
+import { readFileSync } from 'node:fs';
+const sa = JSON.parse(readFileSync('/Users/wical/topcut-sa.json', 'utf8'));
+admin.initializeApp({ credential: admin.credential.cert(sa) });
+const db = admin.firestore();
+const ref = db.doc('posts/YEAzA5EzuHLDgQvSqEUp');
+const snap = await ref.get();
+const d = snap.data();
+const ts = (millis) => admin.firestore.Timestamp.fromMillis(millis);
+const update = {};
+if (typeof d.createdAt === 'number') update.createdAt = ts(d.createdAt);
+if (typeof d.lastEngagementAt === 'number') update.lastEngagementAt = ts(d.lastEngagementAt);
+if (typeof d.editedAt === 'number') update.editedAt = ts(d.editedAt);
+console.log('Will patch:', Object.keys(update));
+if (Object.keys(update).length) await ref.update(update);
+console.log('✅ done');

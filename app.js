@@ -48,6 +48,8 @@ const app = (() => {
             'home.tournament': 'Tournament',
             'home.wheel': 'Lucky Wheel',
             'home.advanced': 'Advanced',
+            'home.hostEvent': 'Host PTCG Event',
+            'home.hostEventHint': 'Open registration · Promo · Sign-ups',
             'home.inProgress': 'You have a tournament in progress.',
             'home.resume': 'Resume Tournament',
             'reg.title': 'Player Registration',
@@ -115,6 +117,15 @@ const app = (() => {
             'standings.final_plural': 'Final Standings (After {n} Rounds)',
             'standings.afterRound': 'Standings After Round {n}',
             'standings.download': 'Download as Image',
+            'standings.toWheel': '🎡 Lucky Wheel',
+            'standings.wheelTitle': 'Lucky Wheel',
+            'standings.wheelSub': 'Hand out bonus prizes — players auto-loaded',
+            'standings.confirmTitle': '📣 Confirm result + send to TopCut HK',
+            'standings.confirmSub': 'Locks the post on TopCut feed. Safe to re-send after rename.',
+            'standings.confirmDone': '✅ Sent to TopCut HK',
+            'standings.confirmResend': '↻ Re-send updated result',
+            'standings.tapToRename': 'Tap to rename',
+            'standings.editHint': '💡 Tap any player name to rename — the latest name is what gets sent to TopCut.',
             'standings.rank': 'Rank',
             'standings.player': 'Player',
             'standings.record': 'Record',
@@ -248,6 +259,9 @@ const app = (() => {
             'wheel.empty': 'Add names to spin!',
             'wheel.winner': 'Winner!',
             'wheel.noPlayers': 'No tournament players registered.',
+            'event.publishing': '📣 Sending result to TopCut HK…',
+            'event.published': '✅ Result posted to TopCut HK',
+            'event.publishFail': '⚠️ Result not sent — tap "Confirm result" to retry',
             'wheel.confirmReset': 'Clear all winners and reset the wheel?',
             'reset.confirm': 'Are you sure you want to reset everything? This cannot be undone.',
             'adv.title': 'Advanced — Recover Tournament',
@@ -371,6 +385,8 @@ const app = (() => {
             'home.tournament': '賽事',
             'home.wheel': '幸運轉盤',
             'home.advanced': '進階',
+            'home.hostEvent': '舉辦 PTCG 活動',
+            'home.hostEventHint': '開放報名 · 推廣 · 簽到',
             'home.inProgress': '你有一場進行中的賽事。',
             'home.resume': '繼續賽事',
             'reg.title': '玩家登記',
@@ -438,6 +454,15 @@ const app = (() => {
             'standings.final_plural': '最終排名(共 {n} 輪)',
             'standings.afterRound': '第 {n} 輪後排名',
             'standings.download': '下載為圖片',
+            'standings.toWheel': '🎡 抽獎',
+            'standings.wheelTitle': '完賽抽獎環節',
+            'standings.wheelSub': '頒完獎之後加碼派禮物，自動帶入今日玩家',
+            'standings.confirmTitle': '📣 確定賽果並發送到 TopCut HK',
+            'standings.confirmSub': '結果會以 @gameset_hk 出 post。改名後可隨時重新發送。',
+            'standings.confirmDone': '✅ 已發送到 TopCut HK',
+            'standings.confirmResend': '↻ 重新發送（已更新嘅排名）',
+            'standings.tapToRename': '撳一下改名',
+            'standings.editHint': '💡 撳玩家名可以即時改 — 改完發送結果嘅時候會用最新名落 TopCut。',
             'standings.rank': '名次',
             'standings.player': '玩家',
             'standings.record': '戰績',
@@ -571,6 +596,9 @@ const app = (() => {
             'wheel.empty': '請新增名單以開始抽獎!',
             'wheel.winner': '得獎者!',
             'wheel.noPlayers': '尚未登記任何賽事玩家。',
+            'event.publishing': '📣 將比賽結果發送到 TopCut HK…',
+            'event.published': '✅ 結果已 post 上 TopCut HK',
+            'event.publishFail': '⚠️ 發送失敗 — 撳一下「確定賽果」再試',
             'wheel.confirmReset': '清除所有得獎者並重設轉盤?',
             'reset.confirm': '確定要重設所有資料?此操作無法復原。',
             'adv.title': '進階 — 還原賽事',
@@ -952,6 +980,14 @@ const app = (() => {
 
     // ---- NAVIGATION ----
     function navigateTo(view) {
+        // Leaving the standings page is a strong "I'm done with this
+        // tournament" signal — fire publish if we still owe TopCut a result.
+        // Wheel page already triggers via standingsToWheel(), but a user who
+        // hits Home / Back to Round wouldn't otherwise.
+        if (state.currentView === 'standings' && view !== 'standings'
+            && state.hostEventId && !state.hostEventResultPublished) {
+            publishEventResultIfNeeded();
+        }
         if (view === 'home') checkResumeState();
         if (view === 'registration') { renderPlayerList(); syncRegistrationGameType(); }
         if (view === 'round') renderRound();
@@ -1030,10 +1066,15 @@ const app = (() => {
         }
     }
 
-    function createPlayer(name, trainerId) {
+    function createPlayer(name, trainerId, extras) {
+        const e = extras || {};
         return {
             name,
             trainerId: trainerId || '',
+            // Optional event-handoff fields. Empty for tournaments started directly
+            // from registration (no host event). Used by P5 result post (deck %).
+            deckSpecies1: e.deckSpecies1 || '',
+            deckSpecies2: e.deckSpecies2 || '',
             id: name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             matchPoints: 0,
             wins: 0,
@@ -2700,6 +2741,7 @@ const app = (() => {
                         player_count: state.players.length
                     });
                     fireChampionCelebration();
+                    if (state.hostEventId) pushEventResultSnapshot();
                     navigateTo('standings');
                     return;
                 }
@@ -2730,6 +2772,7 @@ const app = (() => {
                 player_count: state.players.length
             });
             fireChampionCelebration();
+            if (state.hostEventId) pushEventResultSnapshot();
             navigateTo('standings');
             return;
         }
@@ -2787,7 +2830,74 @@ const app = (() => {
             player_count: state.players.length
         });
         fireChampionCelebration();
+        // If this tournament originated from a host event, push a result
+        // snapshot back so the organizer can preview + publish to TopCut.
+        // Non-blocking — failure just means manual re-trigger from host UI.
+        if (state.hostEventId) pushEventResultSnapshot();
         navigateTo('standings');
+    }
+
+    // Compose + send a tournament-result snapshot to the originating event
+    // doc. Includes ranked standings (with player decks) + a top-N + others
+    // deck-distribution roll-up. The host UI polls events/{eid}.tournamentResultSnapshot
+    // to render its preview-and-publish modal.
+    async function pushEventResultSnapshot() {
+        if (!state.hostEventId) return;
+        if (!window.cloud || !window.cloud.isConfigured() || !window.cloud.isReady()) return;
+        try {
+            const standings = getStandings();
+            const ranked = standings.map((p, i) => {
+                const player = state.players.find(pp => pp.id === p.id) || {};
+                return {
+                    rank: i + 1,
+                    name: p.name,
+                    trainerId: player.trainerId || '',
+                    record: p.record,
+                    points: p.matchPoints || 0,
+                    deckSpecies1: player.deckSpecies1 || '',
+                    deckSpecies2: player.deckSpecies2 || ''
+                };
+            });
+
+            // Aggregate by (species1, species2) pair → top 5 + others
+            const buckets = new Map();
+            ranked.forEach(p => {
+                if (!p.deckSpecies1) return;
+                const key = p.deckSpecies1 + '__' + (p.deckSpecies2 || '');
+                if (!buckets.has(key)) {
+                    buckets.set(key, { species1: p.deckSpecies1, species2: p.deckSpecies2 || '', count: 0 });
+                }
+                buckets.get(key).count++;
+            });
+            const total = Array.from(buckets.values()).reduce((s, b) => s + b.count, 0);
+            const sorted = Array.from(buckets.values()).sort((a, b) => b.count - a.count);
+            const top = sorted.slice(0, 5);
+            const others = sorted.slice(5);
+            const deckDistribution = top.map(b => ({
+                species1: b.species1, species2: b.species2, count: b.count,
+                percent: total > 0 ? Math.round((b.count / total) * 100) : 0
+            }));
+            if (others.length > 0) {
+                const otherCount = others.reduce((s, b) => s + b.count, 0);
+                deckDistribution.push({
+                    species1: '', species2: '', count: otherCount,
+                    percent: total > 0 ? Math.round((otherCount / total) * 100) : 0
+                });
+            }
+
+            const snapshot = {
+                eventName: state.tournamentName || '',
+                date: state.tournamentDate || new Date().toISOString().split('T')[0],
+                format: (state.tournamentType === 'knockout' ? 'knockout' : 'swiss'),
+                totalPlayers: state.players.length,
+                totalRounds: state.rounds.length,
+                standings: ranked,
+                deckDistribution
+            };
+            await window.cloud.setEventResultSnapshot(state.hostEventId, snapshot);
+        } catch (e) {
+            console.error('[event] pushEventResultSnapshot failed', e);
+        }
     }
 
     // Go back to the previous round with its results pre-filled for editing
@@ -3366,6 +3476,9 @@ const app = (() => {
     }
 
     function renderStandings() {
+        // Update the confirm-CTA visibility / state on every render so
+        // editing a name + saving correctly flips it back to "re-send".
+        updateStandingsConfirmCta();
         const standings = getStandings();
         const tbody = document.getElementById('standings-body');
         const title = document.getElementById('standings-title');
@@ -3388,18 +3501,32 @@ const app = (() => {
         }
 
         tbody.innerHTML = '';
+        // Editable name only when the bracket has wrapped — viewer-mode still
+        // shows read-only. The pencil affordance pops on hover so the table
+        // doesn't look "noisy" but organisers know it's tap-to-edit.
+        const allowEdit = !viewOnly && state.tournamentEnded;
         standings.forEach((p, i) => {
             const tr = document.createElement('tr');
-            tr.onclick = () => showTrainerCard(p.id);
+            tr.onclick = (e) => {
+                if (e.target && e.target.closest('.standings-name-edit')) return;
+                showTrainerCard(p.id);
+            };
             const playerObj = getPlayer(p.id);
             const isDropped = playerObj && playerObj.dropped;
             if (isDropped) tr.classList.add('player-dropped');
-            const nameCell = isDropped
-                ? `${escapeHtml(p.name)} <span class="dropped-tag">${t('trainer.droppedTag')}</span>`
-                : escapeHtml(p.name);
+            const droppedTag = isDropped
+                ? ` <span class="dropped-tag">${t('trainer.droppedTag')}</span>`
+                : '';
             const medal = state.tournamentEnded && !isDropped
                 ? (i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : '')
                 : '';
+            const nameCell = allowEdit
+                ? `<span class="standings-name standings-name-edit"
+                          data-pid="${p.id}"
+                          contenteditable="plaintext-only"
+                          spellcheck="false"
+                          title="${t('standings.tapToRename')}">${escapeHtml(p.name)}</span>${droppedTag}`
+                : `${escapeHtml(p.name)}${droppedTag}`;
             // Column 7 swaps based on mode:
             //   spin-battle → BattlePts (sum scored across matches)
             //   tcg + bestOfThree → GW-GL (per-game record)
@@ -3420,6 +3547,38 @@ const app = (() => {
             `;
             tbody.appendChild(tr);
         });
+        // Wire inline rename — commit on blur or Enter.
+        if (allowEdit) {
+            tbody.querySelectorAll('.standings-name-edit').forEach(el => {
+                const pid = el.getAttribute('data-pid');
+                let original = el.textContent;
+                el.addEventListener('focus', () => { original = el.textContent; });
+                el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+                    if (e.key === 'Escape') { el.textContent = original; el.blur(); }
+                });
+                el.addEventListener('blur', () => {
+                    const next = el.textContent.trim().slice(0, 60);
+                    if (!next || next === original) { el.textContent = original; return; }
+                    const player = getPlayer(pid);
+                    if (!player) return;
+                    player.name = next;
+                    saveState();
+                    // Renaming may shuffle equal-rank rows since name isn't a
+                    // sort key, but it does invalidate the result snapshot —
+                    // refresh standings + clear the published flag so the
+                    // updated name re-syncs to TopCut next opportunity.
+                    if (state.hostEventId) {
+                        state.hostEventResultPublished = false;
+                        saveState();
+                        // Re-push snapshot so the next publish carries the
+                        // new name without waiting for a fresh tournament-end.
+                        if (typeof pushEventResultSnapshot === 'function') pushEventResultSnapshot();
+                    }
+                    renderStandings();
+                });
+            });
+        }
         updateShowdownButton();
     }
 
@@ -3629,7 +3788,7 @@ const app = (() => {
             rounds,
         };
         const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-        const showdownUrl = window.SHOWDOWN_URL || 'https://showdown-hk.web.app';
+        const showdownUrl = window.SHOWDOWN_URL || 'https://topcut-hk.com';
         const urlId = state.showdownEventId || 'new';
         window.open(`${showdownUrl}/en/dashboard/results?id=${urlId}&tcgtm=${encodeURIComponent(encoded)}`, '_blank');
     }
@@ -4048,6 +4207,134 @@ const app = (() => {
             return;
         }
         openWheelPicker();
+    }
+
+    // Standings → Wheel handoff: jump to wheel view with picker auto-open and
+    // every tournament player pre-checked. Organizer can untick top 3 / VIP /
+    // already-prized players, then confirm — same flow as wheelSyncFromTournament
+    // but launches from the standings page.
+    //
+    // When this tournament originated from a host event, starting the wheel
+    // is treated as the organizer signalling "ranking finalised". We fire a
+    // background publishEventResult so the gamesetResult post + per-player
+    // tournamentRecords land on TopCut without forcing the organizer to flip
+    // back to /host/?e=. The call is idempotent — a re-publish updates the
+    // existing post via topcutResultPostId.
+    function standingsToWheel() {
+        if (state.players.length === 0) {
+            alert(t('wheel.noPlayers'));
+            return;
+        }
+        publishEventResultIfNeeded();
+        navigateTo('wheel');
+        // Defer one frame so the wheel view DOM is ready before we open the picker.
+        setTimeout(openWheelPicker, 30);
+    }
+
+    async function publishEventResultIfNeeded(opts) {
+        const force = opts && opts.force;
+        const silent = opts && opts.silent;
+        const tag = '[event.publish]';
+        if (!state.hostEventId) {
+            console.info(tag, 'skip: not event-sourced (no hostEventId)');
+            return;
+        }
+        if (!force && state.hostEventResultPublished) {
+            console.info(tag, 'skip: already published, no force flag');
+            return;
+        }
+        if (!window.cloud || !window.cloud.isConfigured()) {
+            console.warn(tag, 'skip: cloud not configured');
+            if (!silent) showToast('⚠️ Firebase 未設置 — 無法發送');
+            return;
+        }
+        if (!window.cloud.isReady()) {
+            console.warn(tag, 'skip: cloud not ready, retrying init');
+            try { await window.cloud.init(); } catch (e) { console.error(tag, 'init failed', e); }
+            if (!window.cloud.isReady()) {
+                if (!silent) showToast('⚠️ 連線未就緒 — 請刷新再試');
+                return;
+            }
+        }
+        if (!window.cloud.publishEventResult) {
+            console.warn(tag, 'skip: publishEventResult helper missing (old cache?)');
+            if (!silent) showToast('⚠️ 版本太舊，請 hard refresh');
+            return;
+        }
+        if (!state.tournamentEnded) {
+            console.info(tag, 'skip: tournament not ended');
+            if (!silent) showToast('⚠️ 比賽未結束');
+            return;
+        }
+
+        console.info(tag, 'publishing', { eventId: state.hostEventId, force });
+
+        // Mark optimistically so we don't fire repeatedly on re-entry into the
+        // wheel page — flag is rolled back if the call actually fails.
+        state.hostEventResultPublished = true;
+        saveState();
+        if (!silent) showToast(t('event.publishing'));
+        updateStandingsConfirmCta();
+        try {
+            // The Cloud Function refuses to publish without a result snapshot
+            // on the event doc. Push the latest one (idempotent overwrite)
+            // before invoking the function so old sessions that ended before
+            // the snapshot pipeline existed still publish successfully, and
+            // any post-rename edits land in the same call.
+            await pushEventResultSnapshot();
+            const res = await window.cloud.publishEventResult(state.hostEventId);
+            console.info('[event] result published', res);
+            if (!opts || !opts.silent) showToast(t('event.published'));
+            updateStandingsConfirmCta();
+            return res;
+        } catch (err) {
+            console.error('[event] publishEventResult failed', err);
+            state.hostEventResultPublished = false;                  // allow retry
+            saveState();
+            showToast(t('event.publishFail'));
+            updateStandingsConfirmCta();
+            throw err;
+        }
+    }
+
+    /* Manual "Confirm + send" button in the standings page. Behaves the
+       same as the auto-trigger but always fires (force) so the organizer
+       can re-publish after editing names inline. Catches errors so a
+       failure doesn't surface as the unhandled-promise warning. */
+    function confirmStandingsToTopCut() {
+        console.info('[event.publish] manual confirm clicked', {
+            hostEventId: state.hostEventId,
+            tournamentEnded: state.tournamentEnded,
+            published: state.hostEventResultPublished,
+            cloudReady: !!(window.cloud && window.cloud.isReady && window.cloud.isReady()),
+        });
+        if (!state.hostEventId) {
+            alert('呢場比賽唔係由 GameSet 活動開始，所以無法 publish 去 TopCut。');
+            return;
+        }
+        publishEventResultIfNeeded({ force: true }).catch(() => {
+            /* error toast already shown */
+        });
+    }
+
+    function updateStandingsConfirmCta() {
+        const btn = document.getElementById('btn-standings-confirm-result');
+        if (!btn) return;
+        const showBtn = !!state.hostEventId && state.tournamentEnded;
+        btn.hidden = !showBtn;
+        if (!showBtn) return;
+        const titleEl = btn.querySelector('.standings-confirm-title');
+        const subEl = btn.querySelector('.standings-confirm-sub');
+        const iconEl = btn.querySelector('.standings-confirm-icon');
+        const isPublished = !!state.hostEventResultPublished;
+        btn.classList.toggle('is-published', isPublished);
+        if (titleEl) titleEl.textContent = isPublished
+            ? t('standings.confirmDone')
+            : t('standings.confirmTitle');
+        if (subEl) subEl.textContent = isPublished
+            ? t('standings.confirmResend')
+            : t('standings.confirmSub');
+        if (iconEl) iconEl.textContent = isPublished ? '✅' : '📣';
     }
 
     // Picker modal — choose which tournament players go onto the wheel.
@@ -5351,6 +5638,44 @@ const app = (() => {
             }
         }
 
+        // Hosted-event handoff — when organizer hits "▶ 開始比賽" on /host/?e=...
+        // we land here with ?event=<EID> + localStorage.ptcg_event_handoff payload.
+        const handoffEid = new URLSearchParams(window.location.search).get('event');
+        if (handoffEid) {
+            try {
+                const raw = localStorage.getItem('ptcg_event_handoff');
+                const payload = raw ? JSON.parse(raw) : null;
+                if (payload && payload.eventId === handoffEid && Array.isArray(payload.players) && payload.players.length > 0) {
+                    for (let i = 0; i < 50; i++) localStorage.removeItem(`ptcg_round_${i}`);
+                    const keepWheel = { wheelNames: state.wheelNames, wheelHistory: state.wheelHistory };
+                    state = { ...DEFAULT_STATE, ...keepWheel, players: [], rounds: [] };
+                    stopTimer();
+
+                    state.tournamentType = 'swiss';
+                    state.tournamentName = payload.tournamentName || '';
+                    state.tournamentDate = payload.tournamentDate || new Date().toISOString().split('T')[0];
+                    state.hostEventId = payload.eventId;
+                    payload.players.forEach(p => {
+                        if (p.name) {
+                            state.players.push(createPlayer(p.name, p.trainerId || '', {
+                                deckSpecies1: p.deckSpecies1 || '',
+                                deckSpecies2: p.deckSpecies2 || ''
+                            }));
+                        }
+                    });
+                    saveState();
+                    localStorage.removeItem('ptcg_event_handoff');
+                    window.history.replaceState({}, '', window.location.pathname);
+                    navigateTo('registration');
+                    showToast(t('reg.added', { n: payload.players.length }));
+                    renderTimer();
+                    return;
+                }
+            } catch (e) {
+                console.error('Event handoff failed:', e);
+            }
+        }
+
         // Re-attach to a previously-published tournament after reload
         if (state.publishedTournamentId && window.cloud && window.cloud.isConfigured()) {
             (async () => {
@@ -5360,6 +5685,22 @@ const app = (() => {
                     window.cloud.syncState(state);
                 }
             })();
+        }
+
+        // Belt-and-suspenders: if the previous session ended a host-event
+        // tournament but never managed to push the result (offline, tab
+        // closed mid-flight, function unreachable), retry on this fresh load.
+        // Silent so we don't toast every refresh; the toast still fires if
+        // the user-driven publish path runs concurrently.
+        if (state.hostEventId && state.tournamentEnded && !state.hostEventResultPublished) {
+            const tryPublish = async () => {
+                if (!window.cloud || !window.cloud.isConfigured()) return;
+                try { await window.cloud.init(); } catch (_) { return; }
+                if (!window.cloud.isReady()) return;
+                publishEventResultIfNeeded({ silent: true }).catch(() => {/* swallowed */});
+            };
+            // Defer so init() can finish first and Firebase has a moment to settle.
+            setTimeout(tryPublish, 1500);
         }
 
         // Restore view
@@ -5382,7 +5723,18 @@ const app = (() => {
         }
 
         // Final flush on tab hide / close — guards against any in-flight changes
-        window.addEventListener('pagehide', saveState);
+        window.addEventListener('pagehide', () => {
+            saveState();
+            // Last-chance attempt to send the result before the tab dies.
+            // Fire-and-forget; the Cloud Function call has already issued the
+            // network request by the time the tab is gone, so even if we
+            // can't observe success it should land server-side. The retry on
+            // next init covers the rare case where the network was actually
+            // dropped before the request flushed.
+            if (state.hostEventId && state.tournamentEnded && !state.hostEventResultPublished) {
+                publishEventResultIfNeeded({ silent: true });
+            }
+        });
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') saveState();
         });
@@ -5447,6 +5799,8 @@ const app = (() => {
         toggleCompactMode,
         wheelSetNames,
         wheelSyncFromTournament,
+        standingsToWheel,
+        confirmStandingsToTopCut,
         closeWheelPicker,
         cloudPublishToggle,
         cloudUnpublish,

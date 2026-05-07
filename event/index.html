@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0e27">
+    <meta name="description" content="GameSet HK 活動報名">
+    <title>活動報名 — GameSet HK</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230a0e27'/%3E%3Cpath%20d='M20%2014h24v10a12%2012%200%200%201-24%200V14z'%20fill='%23FF7324'/%3E%3Crect%20x='26'%20y='36'%20width='12'%20height='8'%20fill='%23FF7324'/%3E%3Crect%20x='20'%20y='44'%20width='24'%20height='6'%20rx='2'%20fill='%23FFC107'/%3E%3C/svg%3E">
+    <script>(function(){try{var t=localStorage.getItem('ptcg_theme')||'original';if(t==='original')document.documentElement.classList.add('theme-original');else document.documentElement.classList.add('theme-'+t);}catch(e){}})();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+    <link rel="stylesheet" href="/style.css?v=20260507t">
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
+    <script src="/firebase-config.js" defer></script>
+    <script src="/cloud.js?v=20260507t" defer></script>
+    <script src="/pokemon-picker.js?v=20260507t" defer></script>
+</head>
+<body class="event-body">
+    <header id="app-header" class="event-header">
+        <a href="/" class="event-back" aria-label="GameSet HK">
+            <span class="logo logo-tiny"><span>GameSet HK</span></span>
+        </a>
+        <span class="event-header-tag" id="event-mode-tag" hidden>場內 walk-in</span>
+    </header>
+
+    <main class="event-main">
+        <!-- LOADING -->
+        <section id="event-loading" class="event-state">
+            <p class="info-text">載入活動資料中…</p>
+        </section>
+
+        <!-- NOT FOUND -->
+        <section id="event-not-found" class="event-state" hidden>
+            <div class="panel">
+                <h2>搵唔到呢個活動</h2>
+                <p class="info-text">Event ID 可能輸錯，或者活動已經結束 / 過期。</p>
+                <a href="/" class="btn btn-secondary">返回首頁</a>
+            </div>
+        </section>
+
+        <!-- CANCELLED -->
+        <section id="event-cancelled" class="event-state" hidden>
+            <div class="panel event-cancelled-panel">
+                <h2>⛔ 活動已取消</h2>
+                <p id="event-cancelled-name" class="info-text"></p>
+                <p class="info-text">如有疑問請聯絡舉辦方。</p>
+            </div>
+        </section>
+
+        <!-- MAIN VIEW -->
+        <section id="event-content" class="event-state" hidden>
+            <article class="event-card">
+                <div id="event-image-wrap" class="event-image-wrap" hidden>
+                    <img id="event-image" src="" alt="">
+                </div>
+                <div class="event-card-body">
+                    <p id="event-org" class="event-org"></p>
+                    <h1 id="event-name" class="event-title"></h1>
+                    <div class="event-meta-grid">
+                        <div class="event-meta-item">
+                            <span class="event-meta-label">📅 日期</span>
+                            <span id="event-date" class="event-meta-value"></span>
+                        </div>
+                        <div class="event-meta-item" id="event-time-item" hidden>
+                            <span class="event-meta-label">⏰ 時間</span>
+                            <span id="event-time" class="event-meta-value"></span>
+                        </div>
+                        <div class="event-meta-item">
+                            <span class="event-meta-label">📍 地點</span>
+                            <span id="event-address" class="event-meta-value"></span>
+                        </div>
+                        <div class="event-meta-item" id="event-fee-item">
+                            <span class="event-meta-label">💰 入場費</span>
+                            <span id="event-fee" class="event-meta-value"></span>
+                        </div>
+                    </div>
+
+                    <div id="event-desc-block" class="event-desc-block" hidden>
+                        <h3>活動詳情</h3>
+                        <p id="event-desc"></p>
+                    </div>
+
+                    <div id="event-prizes-block" class="event-prizes-block" hidden>
+                        <h3>🏆 獎品</h3>
+                        <ul id="event-prizes-list" class="event-prizes-list"></ul>
+                        <p id="event-lucky" class="event-lucky" hidden></p>
+                    </div>
+
+                    <div id="event-contact-block" class="event-contact-block" hidden>
+                        <h3>📧 查詢</h3>
+                        <p id="event-contact"></p>
+                    </div>
+                </div>
+            </article>
+
+            <div id="event-signup-wrap" class="event-signup-wrap">
+                <button id="btn-open-signup" class="btn btn-primary btn-large" type="button">
+                    🎟 立即報名
+                </button>
+                <p id="event-signup-closed" class="info-text" hidden>網上報名已暫停。請現場聯絡舉辦方。</p>
+            </div>
+        </section>
+
+        <!-- SIGNUP SUCCESS -->
+        <section id="event-success" class="event-state" hidden>
+            <div class="panel event-success-panel">
+                <h2>✅ 報名成功！</h2>
+                <p>多謝報名，活動當日請準時到場簽到。</p>
+                <p id="event-success-walkin" class="info-text" hidden>Walk-in 報名已記錄到舉辦者後台 ✨</p>
+                <p class="info-text">下面係你嘅資料 —— 截圖留底以備不時之需。</p>
+                <div id="event-success-summary" class="event-success-summary"></div>
+                <div class="event-success-actions">
+                    <a id="event-tc-feed" href="https://topcut-hk.com/feed" class="btn btn-primary">
+                        返回 TopCut HK 動態
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- SIGNUP MODAL -->
+    <div id="event-signup-overlay" class="modal-overlay">
+        <div class="modal-content event-signup-modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="eventApp.closeSignup()">&times;</button>
+            <h3>報名表</h3>
+            <p class="info-text">電話 / Trainer ID / 用 deck 主角僅供舉辦方參考，比賽完結前不會公開。</p>
+
+            <form id="event-signup-form" onsubmit="return false;">
+                <div class="reg-meta-field">
+                    <label for="signup-name">姓名 / 暱稱 <span class="required">*</span></label>
+                    <input id="signup-name" type="text" required maxlength="60">
+                </div>
+
+                <div class="reg-meta-field">
+                    <label>PTCG Trainer ID <span class="required">*</span></label>
+                    <div class="trainer-id-input">
+                        <span class="trainer-id-prefix">hk</span>
+                        <input id="signup-trainer-id" type="text" inputmode="numeric"
+                               maxlength="8" placeholder="12345678" required>
+                    </div>
+                    <span class="info-text input-hint">輸入你嘅 8 位 PTCG Live ID（例：12345678 → hk12345678）。如果未有 TopCut 帳號都可以輸入，比賽戰績會綁定呢個 ID 等你日後 claim。</span>
+                    <span id="signup-trainer-id-error" class="trainer-id-error" hidden></span>
+                </div>
+
+                <div class="reg-meta-field">
+                    <label for="signup-phone">聯絡電話 <span class="required">*</span></label>
+                    <input id="signup-phone" type="tel" inputmode="numeric" required maxlength="20" placeholder="9123 4567">
+                </div>
+
+                <div class="reg-meta-field">
+                    <label>Deck 主角 Pokémon <span class="required">*</span></label>
+                    <span class="info-text input-hint">最多揀兩隻（一主一副）。比賽完結前不會公開，只供 TopCut Meta 統計用。</span>
+                    <div class="deck-picker-row">
+                        <button type="button" id="btn-pick-species1" class="deck-picker-slot">
+                            <span class="deck-picker-empty">＋ 主角</span>
+                        </button>
+                        <button type="button" id="btn-pick-species2" class="deck-picker-slot">
+                            <span class="deck-picker-empty">＋ 副 (可選)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="signup-submit-error" class="host-error" hidden></div>
+
+                <div class="event-signup-footer">
+                    <button type="button" class="btn btn-secondary" onclick="eventApp.closeSignup()">取消</button>
+                    <button id="btn-submit-signup" type="button" class="btn btn-primary">提交報名</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="event.js?v=20260507t" defer></script>
+</body>
+</html>

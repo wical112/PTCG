@@ -13,7 +13,7 @@ Static site served by Firebase Hosting. No build step — files are served direc
 ## Step 1 — Sanity-check the working tree
 
 ```bash
-cd /Users/wical/PTCG
+cd /Users/wical/gameset-hk
 git status
 git diff
 ```

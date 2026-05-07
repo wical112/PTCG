@@ -1,0 +1,24 @@
+{
+  "name": "gameset-hk",
+  "version": "1.0.0",
+  "description": "Browser-based tournament manager for Trading Card Games. Supports **Swiss** (round-robin + standings) and **Knockout** (single-elimination bracket) formats.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wical112/PTCG.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/wical112/PTCG/issues"
+  },
+  "homepage": "https://github.com/wical112/PTCG#readme",
+  "dependencies": {
+    "firebase-admin": "^13.8.0"
+  }
+}

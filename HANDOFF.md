@@ -17,7 +17,7 @@
 - **Viewer**: <https://gameset-hk.com/view/?t=ABC123>
 - **Aliases that auto-redirect**: `tcgtm.web.app`, `tcgtm.firebaseapp.com`, `ptcgstm.web.app`, `ptcgstm.firebaseapp.com` — anything non-canonical bounces to `gameset-hk.com`
 - **Repo**: `https://github.com/wical112/PTCG`, branch `income`
-- **Working dir**: `/Users/wical/PTCG`
+- **Working dir**: `/Users/wical/gameset-hk`
 
 ## Stack
 
@@ -124,7 +124,7 @@ Sort order: **Match Points → OWP → OOMW → BattlePts (or WOScore for TCG) �
 ## Deployment
 
 ```bash
-# From /Users/wical/PTCG
+# From /Users/wical/gameset-hk
 firebase deploy --only hosting              # both tcgtm + ptcgstm sites
 firebase deploy --only functions            # TG alert function
 firebase deploy --only hosting,functions    # both at once

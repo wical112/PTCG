@@ -37,15 +37,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20260425c">
+    <link rel="stylesheet" href="style.css?v=20260507t">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js" defer></script>
     <script src="firebase-config.js" defer></script>
-    <script src="cloud.js?v=20260421a" defer></script>
+    <script src="cloud.js?v=20260507t" defer></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-44W3GZTCS4"></script>
     <script>
@@ -202,6 +203,21 @@
                             </svg>
                         </span>
                         <span class="home-tile-label" data-i18n="home.spinKO">Spin Battle Knockout</span>
+                    </button>
+                    <button class="btn btn-primary btn-large home-tile home-tile-primary home-tile-host" onclick="window.location.href='/host/'">
+                        <span class="home-tile-glow" aria-hidden="true"></span>
+                        <span class="home-tile-new" aria-hidden="true">NEW</span>
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M8 3v4M16 3v4"/>
+                                <circle cx="12" cy="14" r="2"/>
+                                <path d="M9 18h6"/>
+                            </svg>
+                        </span>
+                        <span class="home-tile-label" data-i18n="home.hostEvent">Host PTCG Event</span>
+                        <span class="home-tile-sub" data-i18n="home.hostEventHint">Open registration · Promo · Sign-ups</span>
                     </button>
                     <button class="btn btn-secondary btn-large home-tile home-tile-secondary" onclick="app.navigateTo('wheel')">
                         <span class="home-tile-glow" aria-hidden="true"></span>
@@ -451,6 +467,21 @@
                     <button class="btn btn-small btn-accent view-safe" onclick="app.downloadStandings()" data-i18n="standings.download">Download as Image</button>
                     <button id="btn-send-showdown" class="btn btn-small btn-primary" onclick="app.sendToShowdown()" style="display:none">Send to SHOWDOWN</button>
                 </div>
+
+                <!-- Post-tournament wheel CTA — golden banner so 抽獎 doesn't
+                     get lost beside the utilitarian "Download Image" link.
+                     Hidden in viewer mode (.view-safe). -->
+                <button class="standings-wheel-cta view-safe" type="button" onclick="app.standingsToWheel()">
+                    <span class="standings-wheel-emoji" aria-hidden="true">🎡</span>
+                    <span class="standings-wheel-text">
+                        <span class="standings-wheel-title" data-i18n="standings.wheelTitle">完賽抽獎環節</span>
+                        <span class="standings-wheel-sub" data-i18n="standings.wheelSub">頒完獎之後加碼派禮物，自動帶入今日玩家</span>
+                    </span>
+                    <span class="standings-wheel-arrow" aria-hidden="true">→</span>
+                </button>
+                <p id="standings-edit-hint" class="standings-edit-hint view-safe" data-i18n-html="standings.editHint">
+                    💡 撳玩家名可以即時改 — 改完發送結果嘅時候會用最新名落 TopCut。
+                </p>
                 <div id="standings-table-wrapper">
                     <table id="standings-table" class="standings-table">
                         <thead>
@@ -468,6 +499,17 @@
                         <tbody id="standings-body"></tbody>
                     </table>
                 </div>
+                <!-- Confirm + send result CTA — phase-gated, only renders for
+                     event-sourced tournaments (hostEventId set + ended). The
+                     button itself becomes a status badge once published, with
+                     a re-send affordance for post-publish edits. -->
+                <button id="btn-standings-confirm-result" class="standings-confirm-cta view-safe" type="button" hidden onclick="app.confirmStandingsToTopCut()">
+                    <span class="standings-confirm-icon" aria-hidden="true">📣</span>
+                    <span class="standings-confirm-text">
+                        <span class="standings-confirm-title" data-i18n="standings.confirmTitle">📣 確定賽果並發送到 TopCut HK</span>
+                        <span class="standings-confirm-sub" data-i18n="standings.confirmSub">結果會以 @gameset_hk 出 post；改名後可隨時重新發送</span>
+                    </span>
+                </button>
                 <div class="standings-footer">
                     <button class="btn btn-secondary" onclick="app.navigateTo('home')" data-i18n="common.home">Home</button>
                     <button class="btn btn-primary" onclick="app.backToLastRound()" data-i18n="standings.backRound">Back to Round</button>
@@ -698,6 +740,6 @@
         <p class="footer-note">&copy; 2026 GameSet HK &mdash; All rights reserved.</p>
     </footer>
 
-    <script src="app.js?v=20260425e"></script>
+    <script src="app.js?v=20260507t"></script>
 </body>
 </html>

@@ -1,0 +1,12 @@
+import admin from 'firebase-admin';
+import { readFileSync } from 'node:fs';
+const sa = JSON.parse(readFileSync('/Users/wical/topcut-sa.json', 'utf8'));
+admin.initializeApp({ credential: admin.credential.cert(sa) });
+const db = admin.firestore();
+const post = await db.doc('posts/YEAzA5EzuHLDgQvSqEUp').get();
+const d = post.data();
+console.log('lastEngagementAt:', d.lastEngagementAt, '(type:', typeof d.lastEngagementAt, ')');
+console.log('createdAt:', d.createdAt, '(type:', typeof d.createdAt, ')');
+console.log('status:', d.status);
+console.log('postType:', d.postType);
+console.log('All keys:', Object.keys(d).sort().join(', '));

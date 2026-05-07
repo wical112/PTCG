@@ -1,0 +1,12 @@
+import admin from 'firebase-admin';
+import { readFileSync } from 'node:fs';
+const sa = JSON.parse(readFileSync('/Users/wical/topcut-sa.json', 'utf8'));
+admin.initializeApp({ credential: admin.credential.cert(sa) });
+const db = admin.firestore();
+const ref = db.doc('posts/YEAzA5EzuHLDgQvSqEUp');
+const snap = await ref.get();
+const d = snap.data();
+console.log('Before — lastEngagementAt:', d.lastEngagementAt);
+await ref.update({ lastEngagementAt: d.createdAt || Date.now() });
+const snap2 = await ref.get();
+console.log('After  — lastEngagementAt:', snap2.data().lastEngagementAt);

@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Firebase Cloud Storage rules — used only for hosted-event promo images.
+// Images are publicly readable (organizer pastes link in promo text / TopCut
+// post syndication). Writes require anonymous auth + content-type / size guard.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Hosted event promotional images.
+    //   Path:  event-images/{eventId}/{filename}
+    //   Lifecycle: deleted when the event expires (handled by app /
+    //              admin tooling — Firebase Storage has no built-in TTL).
+    match /event-images/{eventId}/{filename} {
+      allow read: if true;
+
+      // Anyone signed in (anonymous OK) can upload. We can't tie it to the
+      // event's ownerUid here without a Firestore lookup, so the size /
+      // type guards are the main defence. If abuse becomes a problem,
+      // tighten via a Cloud Function upload mediator.
+      allow write: if request.auth != null
+                   && request.resource.size < 2 * 1024 * 1024  // 2 MB
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
