@@ -58,11 +58,35 @@ window.hostApp = (() => {
             return;
         }
 
-        // P1 auth: same-browser ownerUid required for edit. We don't expose
-        // currentUid through the public cloud API, so we proceed optimistically;
-        // any cross-device attempt will fail at the first updateEvent and the
-        // banner above the signups list will surface the limitation. P2 adds
-        // a Cloud Function that verifies editKey hash and re-claims ownerUid.
+        // Cross-device claim: if the caller's anonymous UID isn't the
+        // recorded owner (e.g. opened the host link on a new browser /
+        // after clearing cookies) AND the URL carries the editKey, send
+        // it to the claimEvent Cloud Function. The CF verifies the hash
+        // matches the stored editKeyHash and transfers ownerUid via Admin
+        // SDK. Without this the very next update would fail with
+        // permission-denied even though the user has the right URL.
+        const myUid = window.cloud.getCurrentUid && window.cloud.getCurrentUid();
+        if (editKey && myUid && eventData.ownerUid !== myUid) {
+            try {
+                const res = await window.cloud.claimEventOwnership(eventId, editKey);
+                if (res && res.claimed) {
+                    console.info('[host] ownership transferred via editKey');
+                    eventData = await window.cloud.fetchEvent(eventId);
+                }
+            } catch (err) {
+                const code = err?.code || '';
+                if (code === 'permission-denied') {
+                    showCreateError('Edit key 唔啱 — 呢條 URL 嘅編輯權限已失效。請聯絡原本舉辦人。');
+                    showView('host-create');
+                    wireCreateScreen();
+                    return;
+                }
+                console.warn('[host] claimEvent failed', err);
+                // Non-permission errors (network, etc) — proceed and let
+                // updateEvent surface the issue when user actually edits.
+            }
+        }
+
         showView('host-editor');
         wireEditor();
         renderEditor();

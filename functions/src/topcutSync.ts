@@ -481,6 +481,194 @@ export async function reverseMetaForEvent(
   return { speciesReversed: speciesCounts.size, decksReversed: deckCounts.size };
 }
 
+/* Mirror the GameSet result into each player's TopCut trainer card so the
+   public trainer profile (`/players?handle=...`) reflects events run on
+   GameSet. Two writes per player:
+     1. trainerCards/{normalizedTrainerId} (parent) — stats roll-up
+        (totalEvents / championships / topFour / topCutFinishes via the
+        existing bucketize logic shared with TopCut's onResultsForTrainerCards
+        trigger). Uses an event-marker subdoc for idempotent re-publish.
+     2. trainerCards/{tid}/tournamentLogs/{logId} — full log entry shown in
+        the trainer's tournament history. logId is deterministic
+        (`gameset_${eventId}`) so re-sync overwrites in place.
+   The log carries `source: 'gameset'` so TopCut's onTournamentLogPopularity
+   trigger can skip it (popularity is already credited via
+   creditMetaCountersForEvent — letting the trigger fire would double-count). */
+function normalizeTrainerId(raw: string): string {
+  return raw.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function bucketize(rank: number) {
+  return {
+    champ: rank === 1 ? 1 : 0,
+    top4: rank > 0 && rank <= 4 ? 1 : 0,
+    top8: rank > 0 && rank <= 8 ? 1 : 0,
+  };
+}
+
+function parseRecord(record: string): { wins: number; losses: number; ties: number } {
+  // Accepts "3-1-0" or "3-1" forms; bad input yields zeros.
+  const parts = (record || '').split('-').map((p) => parseInt(p.trim(), 10));
+  return {
+    wins: Number.isFinite(parts[0]) ? parts[0] : 0,
+    losses: Number.isFinite(parts[1]) ? parts[1] : 0,
+    ties: Number.isFinite(parts[2]) ? parts[2] : 0,
+  };
+}
+
+export async function writeTrainerCardEntries(
+  serviceAccountJson: string,
+  card: GamesetResultCardData,
+): Promise<{ logsWritten: number; statsApplied: number }> {
+  const app = initTopCut(serviceAccountJson);
+  const db = admin.firestore(app);
+  let logsWritten = 0;
+  let statsApplied = 0;
+
+  // GameSet event date is 'YYYY-MM-DD' string — convert to Timestamp at
+  // local midnight HK time so the trainer card timeline sorts correctly.
+  let eventDate: admin.firestore.Timestamp | null = null;
+  if (card.date) {
+    const d = new Date(card.date + 'T00:00:00+08:00');
+    if (!Number.isNaN(d.getTime())) eventDate = admin.firestore.Timestamp.fromDate(d);
+  }
+  const logId = `gameset_${card.eventId}`;
+  const ts = admin.firestore.FieldValue.serverTimestamp();
+
+  for (const s of card.standings) {
+    const tid = normalizeTrainerId(s.trainerId || '');
+    if (!tid) continue;
+    const rank = s.rank;
+
+    const cardRef = db.collection('trainerCards').doc(tid);
+    const markerRef = cardRef.collection('events').doc(card.eventId);
+    const logRef = cardRef.collection('tournamentLogs').doc(logId);
+
+    // ── Stats roll-up (idempotent via marker doc) ──
+    try {
+      await db.runTransaction(async (tx) => {
+        const [markerSnap, cardSnap] = await Promise.all([tx.get(markerRef), tx.get(cardRef)]);
+        const oldRank = markerSnap.exists ? Number(markerSnap.data()?.rank ?? 0) : 0;
+        if (oldRank === rank && markerSnap.exists) return;
+
+        const before = bucketize(oldRank);
+        const after = bucketize(rank);
+
+        const update: Record<string, unknown> = {
+          trainerId: s.trainerId,
+          normalizedTrainerId: tid,
+          latestPlayerName: s.name || tid,
+          updatedAt: ts,
+        };
+        if (eventDate) update.lastSeenAt = eventDate;
+        const eventsDelta = oldRank === 0 ? 1 : 0;
+        if (eventsDelta) update.totalEvents = admin.firestore.FieldValue.increment(eventsDelta);
+        const champDelta = after.champ - before.champ;
+        if (champDelta) update.championships = admin.firestore.FieldValue.increment(champDelta);
+        const top4Delta = after.top4 - before.top4;
+        if (top4Delta) update.topFour = admin.firestore.FieldValue.increment(top4Delta);
+        const top8Delta = after.top8 - before.top8;
+        if (top8Delta) update.topCutFinishes = admin.firestore.FieldValue.increment(top8Delta);
+        if (!cardSnap.exists || !cardSnap.data()?.firstSeenAt) {
+          if (eventDate) update.firstSeenAt = eventDate;
+        }
+        tx.set(cardRef, update, { merge: true });
+        tx.set(markerRef, {
+          rank,
+          eventDate: eventDate ?? null,
+          source: 'gameset',
+          recordedAt: ts,
+        });
+      });
+      statsApplied++;
+    } catch (e) {
+      logger.error(`[topcutSync] applyStanding failed for ${tid} on ${card.eventId}`, e);
+    }
+
+    // ── Tournament log entry ──
+    const { wins, losses, ties } = parseRecord(s.record);
+    try {
+      await logRef.set({
+        logId,
+        name: card.eventName,
+        date: eventDate,
+        format: 'irl',
+        game: 'ptcg',
+        mode: 'bo1',
+        myDeck: {
+          species1: s.deckSpecies1 || '',
+          species2: s.deckSpecies2 || '',
+        },
+        wins,
+        losses,
+        ties,
+        roundsCount: card.totalRounds,
+        linkedEventId: card.eventId,
+        visibility: 'public',
+        source: 'gameset',
+        finalRank: s.rank,
+        updatedAt: ts,
+        createdAt: ts,
+      }, { merge: true });
+      logsWritten++;
+    } catch (e) {
+      logger.error(`[topcutSync] log write failed for ${tid} on ${card.eventId}`, e);
+    }
+  }
+
+  logger.info(`[topcutSync] trainer cards updated for ${card.eventId}: stats=${statsApplied} logs=${logsWritten}`);
+  return { logsWritten, statsApplied };
+}
+
+/* Reverse the trainer-card contributions made by writeTrainerCardEntries.
+   Walks each per-event marker, decrements counters back to oldRank=0, and
+   deletes the corresponding tournament log entry. Called when an event is
+   cancelled / deleted or admin removes the result post. */
+export async function reverseTrainerCardEntries(
+  serviceAccountJson: string,
+  eventId: string,
+): Promise<{ logsRemoved: number; statsReverted: number }> {
+  const app = initTopCut(serviceAccountJson);
+  const db = admin.firestore(app);
+  // Find every trainer card that has a marker for this event.
+  const markersQuery = await db.collectionGroup('events')
+    .where('source', '==', 'gameset')
+    .get();
+  const targets = markersQuery.docs.filter((d) => d.id === eventId);
+  let logsRemoved = 0;
+  let statsReverted = 0;
+  const ts = admin.firestore.FieldValue.serverTimestamp();
+  for (const m of targets) {
+    const cardRef = m.ref.parent.parent;
+    if (!cardRef) continue;
+    const oldRank = Number(m.data()?.rank ?? 0);
+    if (oldRank === 0) continue;
+    const before = bucketize(oldRank);
+    const update: Record<string, unknown> = { updatedAt: ts };
+    update.totalEvents = admin.firestore.FieldValue.increment(-1);
+    if (before.champ) update.championships = admin.firestore.FieldValue.increment(-before.champ);
+    if (before.top4) update.topFour = admin.firestore.FieldValue.increment(-before.top4);
+    if (before.top8) update.topCutFinishes = admin.firestore.FieldValue.increment(-before.top8);
+    try {
+      await db.runTransaction(async (tx) => {
+        tx.set(cardRef, update, { merge: true });
+        tx.delete(m.ref);
+      });
+      statsReverted++;
+    } catch (e) {
+      logger.error(`[topcutSync] reverse stats failed for ${cardRef.id} on ${eventId}`, e);
+    }
+    try {
+      await cardRef.collection('tournamentLogs').doc(`gameset_${eventId}`).delete();
+      logsRemoved++;
+    } catch (e) {
+      logger.warn(`[topcutSync] log delete already missing for ${cardRef.id}`, e);
+    }
+  }
+  logger.info(`[topcutSync] trainer cards reverted for ${eventId}: stats=${statsReverted} logs=${logsRemoved}`);
+  return { logsRemoved, statsReverted };
+}
+
 /* Per-player tournament record — written to TopCut so a trainer can later
    claim their historical results when they sign up there. We use a known
    doc id pattern so re-syncs of the same event are idempotent.

@@ -497,6 +497,24 @@ window.cloud = (() => {
         return res.data;
     }
 
+    /* Cross-device editKey claim — mints ownerUid for the caller after
+       verifying the SHA-256 hash matches the stored editKeyHash. Returns
+       { ok, alreadyOwner?, claimed? } so the caller can decide whether to
+       refresh the event subscription. Throws on bad key (permission-denied)
+       or missing event (not-found). */
+    async function claimEventOwnership(eid, editKey) {
+        if (!isReady()) throw new Error('Cloud not ready');
+        if (!firebase.functions) throw new Error('Functions SDK not loaded');
+        const fn = firebase.app().functions('asia-east1').httpsCallable('claimEvent');
+        const res = await fn({ eventId: eid, editKey });
+        return res.data;
+    }
+
+    /* Surface the current anonymous UID so host.js can compare against
+       eventData.ownerUid before calling claimEventOwnership (skip the
+       network round-trip when already owner). */
+    function getCurrentUid() { return currentUid; }
+
     return {
         init, isConfigured, isReady,
         publish, attachExisting, getActiveTournamentId,
@@ -507,6 +525,7 @@ window.cloud = (() => {
         // Hosted events
         createEvent, fetchEvent, updateEvent, subscribeEvent,
         setEventResultSnapshot, publishEventResult, deleteEvent,
+        claimEventOwnership, getCurrentUid,
         submitSignup, listSignups, subscribeSignups, updateSignup, deleteSignup,
         uploadEventImage, deleteEventImage,
         buildEventHostUrl, buildEventPublicUrl,

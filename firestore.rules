@@ -63,6 +63,9 @@ service cloud.firestore {
                && request.auth.uid == resource.data.ownerUid;
       }
       function immutablesIntact() {
+        // ownerUid is normally immutable on client writes; the cross-device
+        // claimEvent Cloud Function uses Admin SDK to transfer it (rules
+        // bypassed there). editKeyHash + eventId are absolute immutables.
         return request.resource.data.ownerUid == resource.data.ownerUid
                && request.resource.data.editKeyHash == resource.data.editKeyHash
                && request.resource.data.eventId == resource.data.eventId;

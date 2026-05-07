@@ -6,6 +6,7 @@ import * as admin from 'firebase-admin';
 import {
   syncEventPost, syncResultPost, writeTournamentRecords, deleteEventPost,
   creditMetaCountersForEvent, reverseMetaForEvent,
+  writeTrainerCardEntries, reverseTrainerCardEntries,
   type GamesetEventCardData, type GamesetResultCardData, type PrizeTier,
 } from './topcutSync';
 
@@ -245,6 +246,12 @@ export const onEventWritten = onDocumentWritten(
       } catch (e) {
         logger.error(`[onEventWritten] ${eid} cancel meta reverse failed`, e);
       }
+      try {
+        const reverted = await reverseTrainerCardEntries(serviceAccount, eid);
+        logger.info(`[onEventWritten] ${eid} cancelled — trainerCards reverted`, reverted);
+      } catch (e) {
+        logger.error(`[onEventWritten] ${eid} cancel trainerCard revert failed`, e);
+      }
       // fall through so the gamesetEvent post status flips to 'cancelled'
     }
 
@@ -373,12 +380,21 @@ export const publishEventResult = onCall<PublishResultRequest, Promise<PublishRe
     } catch (e) {
       logger.error(`[publishEventResult] meta credit failed for ${eventId}`, e);
     }
+    // Mirror standings into each player's trainer card so the public trainer
+    // profile reflects GameSet event participation. Idempotent — re-publish
+    // overwrites the deterministic per-event log + diffs the rank stats.
+    let trainerCardsUpdated = { logsWritten: 0, statsApplied: 0 };
+    try {
+      trainerCardsUpdated = await writeTrainerCardEntries(serviceAccount, card);
+    } catch (e) {
+      logger.error(`[publishEventResult] trainerCard write failed for ${eventId}`, e);
+    }
     await eventRef.update({
       topcutResultPostId: postId,
       phase: 'ended',
     });
 
-    return { ok: true, postId, recordsWritten, metaCredited };
+    return { ok: true, postId, recordsWritten, metaCredited, trainerCardsUpdated };
   }
 );
 
@@ -460,6 +476,11 @@ export const deleteEvent = onCall<DeleteEventRequest, Promise<DeleteEventRespons
       }
       const r = await reverseMetaForEvent(sa, eventId);
       metaReversed = (r.speciesReversed + r.decksReversed) > 0;
+      try {
+        await reverseTrainerCardEntries(sa, eventId);
+      } catch (e) {
+        logger.error(`[deleteEvent] trainerCard revert failed for ${eventId}`, e);
+      }
     } catch (e) {
       logger.error(`[deleteEvent] cross-project cleanup failed for ${eventId}`, e);
     }
@@ -468,6 +489,54 @@ export const deleteEvent = onCall<DeleteEventRequest, Promise<DeleteEventRespons
     logger.info(`[deleteEvent] ${eventId} deleted by ${req.auth.uid}`,
       { signupsDeleted, imagesDeleted, topcutPostRemoved, metaReversed });
     return { ok: true, signupsDeleted, imagesDeleted, topcutPostRemoved, metaReversed };
+  }
+);
+
+/* claimEvent — cross-device editor handoff.
+
+   The host URL `/host/?e=<id>&k=<editKey>` contains the editKey but
+   Firestore rules require ownerUid == auth.uid to update the event doc.
+   When an organizer clears cookies / opens the link on a different device
+   their anonymous UID no longer matches the recorded ownerUid, so they
+   can't edit.
+
+   This callable verifies the supplied editKey against the stored
+   `editKeyHash` (SHA-256, computed client-side at create time) and
+   transfers ownerUid to the caller via the Admin SDK (bypassing rules).
+
+   Idempotent — already-owner callers get { ok: true, alreadyOwner: true }
+   without rewriting the doc. */
+import { createHash } from 'node:crypto';
+
+interface ClaimEventRequest { eventId: string; editKey: string }
+interface ClaimEventResponse { ok: boolean; alreadyOwner?: boolean; claimed?: boolean }
+
+export const claimEvent = onCall<ClaimEventRequest, Promise<ClaimEventResponse>>(
+  {
+    region: REGION,
+  },
+  async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Must be signed in');
+    const eventId = req.data?.eventId;
+    const editKey = req.data?.editKey;
+    if (!eventId || !editKey) throw new HttpsError('invalid-argument', 'eventId + editKey required');
+
+    const ref = admin.firestore().doc(`events/${eventId}`);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError('not-found', 'event not found');
+    const data = snap.data() as { ownerUid?: string; editKeyHash?: string };
+
+    if (data.ownerUid === req.auth.uid) {
+      return { ok: true, alreadyOwner: true };
+    }
+    const storedHash = (data.editKeyHash || '').trim().toLowerCase();
+    const incomingHash = createHash('sha256').update(editKey).digest('hex');
+    if (!storedHash || storedHash !== incomingHash) {
+      throw new HttpsError('permission-denied', 'edit key invalid');
+    }
+    await ref.update({ ownerUid: req.auth.uid });
+    logger.info(`[claimEvent] ${eventId} ownerUid → ${req.auth.uid}`);
+    return { ok: true, claimed: true };
   }
 );
 
