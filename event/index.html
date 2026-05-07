@@ -6,19 +6,38 @@
     <meta name="theme-color" content="#0a0e27">
     <meta name="description" content="GameSet HK 活動報名">
     <title>活動報名 — GameSet HK</title>
+
+    <!-- Public signup is now hosted on TopCut HK (one canonical signup
+         surface, deeper trainer-card integration). Legacy QR codes that
+         still point at gameset-hk.com/event/?e=ID auto-redirect here.
+         The ?nogo=1 escape hatch lets us bypass the redirect during
+         debugging — drop it from prod URLs. -->
+    <script>
+    (function(){
+        try {
+            var p = new URLSearchParams(window.location.search);
+            var eid = p.get('e');
+            if (!eid || p.get('nogo') === '1') return;
+            var url = 'https://topcut-hk.com/event/?e=' + encodeURIComponent(eid);
+            if (p.get('w') === '1') url += '&w=1';
+            window.location.replace(url);
+        } catch (e) { /* fall through to legacy GameSet event page */ }
+    })();
+    </script>
+
     <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230a0e27'/%3E%3Cpath%20d='M20%2014h24v10a12%2012%200%200%201-24%200V14z'%20fill='%23FF7324'/%3E%3Crect%20x='26'%20y='36'%20width='12'%20height='8'%20fill='%23FF7324'/%3E%3Crect%20x='20'%20y='44'%20width='24'%20height='6'%20rx='2'%20fill='%23FFC107'/%3E%3C/svg%3E">
     <script>(function(){try{var t=localStorage.getItem('ptcg_theme')||'original';if(t==='original')document.documentElement.classList.add('theme-original');else document.documentElement.classList.add('theme-'+t);}catch(e){}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="/style.css?v=20260507v">
+    <link rel="stylesheet" href="/style.css?v=20260507x">
 
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
     <script src="/firebase-config.js" defer></script>
-    <script src="/cloud.js?v=20260507v" defer></script>
-    <script src="/pokemon-picker.js?v=20260507v" defer></script>
+    <script src="/cloud.js?v=20260507x" defer></script>
+    <script src="/pokemon-picker.js?v=20260507x" defer></script>
 </head>
 <body class="event-body">
     <header id="app-header" class="event-header">
@@ -175,6 +194,6 @@
         </div>
     </div>
 
-    <script src="event.js?v=20260507v" defer></script>
+    <script src="event.js?v=20260507x" defer></script>
 </body>
 </html>

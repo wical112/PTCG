@@ -228,13 +228,17 @@ window.cloud = (() => {
         return u.toString();
     }
 
+    /* Public signup link — points at TopCut HK so promo URLs funnel
+       directly to TopCut (no GameSet round-trip). The legacy
+       gameset-hk.com/event/?e= page still works as a redirect for any
+       QR code already printed in the wild. */
     function buildEventPublicUrl(eid) {
-        const u = new URL(window.location.href);
-        u.pathname = '/event/';
-        u.search = '';
-        u.hash = '';
-        u.searchParams.set('e', eid);
-        return u.toString();
+        return 'https://topcut-hk.com/event/?e=' + encodeURIComponent(eid);
+    }
+    /* Walk-in flavour — same TopCut surface with the &w=1 flag so the
+       signup row gets marked source='walkin'. */
+    function buildEventWalkinUrl(eid) {
+        return 'https://topcut-hk.com/event/?e=' + encodeURIComponent(eid) + '&w=1';
     }
 
     function defaultEventMeta() {
@@ -528,7 +532,7 @@ window.cloud = (() => {
         claimEventOwnership, getCurrentUid,
         submitSignup, listSignups, subscribeSignups, updateSignup, deleteSignup,
         uploadEventImage, deleteEventImage,
-        buildEventHostUrl, buildEventPublicUrl,
+        buildEventHostUrl, buildEventPublicUrl, buildEventWalkinUrl,
         sha256Hex
     };
 })();

@@ -368,8 +368,10 @@ window.hostApp = (() => {
             editKey ? window.cloud.buildEventHostUrl(eventData.eventId, editKey) : window.location.href;
         document.getElementById('host-public-url').value = window.cloud.buildEventPublicUrl(eventData.eventId);
 
-        // Walk-in URL = public URL + ?w=1 — appears on Signups tab
-        const walkinUrl = window.cloud.buildEventPublicUrl(eventData.eventId) + '&w=1';
+        // Walk-in URL — TopCut surface with the &w=1 flag so on-site QR
+        // scans land in the same signup modal (and the row is tagged
+        // source='walkin' for organizer reports).
+        const walkinUrl = window.cloud.buildEventWalkinUrl(eventData.eventId);
         const walkinUrlEl = document.getElementById('host-walkin-url');
         if (walkinUrlEl) walkinUrlEl.value = walkinUrl;
         const walkinQrWrap = document.getElementById('host-walkin-qr');
