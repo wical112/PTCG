@@ -1,5 +1,6 @@
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
@@ -489,6 +490,86 @@ export const deleteEvent = onCall<DeleteEventRequest, Promise<DeleteEventRespons
     logger.info(`[deleteEvent] ${eventId} deleted by ${req.auth.uid}`,
       { signupsDeleted, imagesDeleted, topcutPostRemoved, metaReversed });
     return { ok: true, signupsDeleted, imagesDeleted, topcutPostRemoved, metaReversed };
+  }
+);
+
+/* cleanupExpiredEvents — nightly scheduled sweep.
+
+   Each event doc carries `expiresAt` (90 days from last update). When that
+   timestamp is in the past the doc + signups subcollection + Storage
+   promo image become dead weight. We delete them here so Storage costs
+   stay bounded.
+
+   We deliberately DON'T reverse meta credit: the historical Meta page
+   should keep reflecting events that ran successfully — only the raw
+   organizer-side data is purged. Same logic for TopCut posts: the
+   feed post stays as a historical artifact unless an admin removes it.
+
+   Idempotent: re-runs find no expired docs. Safe to run more often than
+   needed. */
+const CLEANUP_BATCH = 25;          // events per cron invocation; keeps each
+                                    // run under the 9-min function ceiling
+                                    // even with large signup subcolls.
+
+export const cleanupExpiredEvents = onSchedule(
+  {
+    schedule: 'every day 04:00',     // HK 12:00 — quiet hours either way
+    timeZone: 'Asia/Hong_Kong',
+    region: REGION,
+    timeoutSeconds: 540,
+    memory: '512MiB',
+  },
+  async () => {
+    const now = admin.firestore.Timestamp.now();
+    const snap = await admin.firestore().collection('events')
+      .where('expiresAt', '<', now)
+      .limit(CLEANUP_BATCH)
+      .get();
+    if (snap.empty) {
+      logger.info('[cleanup] no expired events');
+      return;
+    }
+    logger.info(`[cleanup] purging ${snap.size} expired event(s)`);
+    const bucket = admin.storage().bucket();
+
+    for (const evDoc of snap.docs) {
+      const eid = evDoc.id;
+      try {
+        // Wipe signups subcoll in pages.
+        let signupsDeleted = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const page = await admin.firestore()
+            .collection(`events/${eid}/signups`).limit(400).get();
+          if (page.empty) break;
+          const batch = admin.firestore().batch();
+          page.docs.forEach((d) => batch.delete(d.ref));
+          await batch.commit();
+          signupsDeleted += page.size;
+          if (page.size < 400) break;
+        }
+
+        // Wipe storage promo images under event-images/{eid}/.
+        let imagesDeleted = 0;
+        try {
+          const [files] = await bucket.getFiles({ prefix: `event-images/${eid}/` });
+          await Promise.all(files.map((f) => f.delete().catch((e) => {
+            logger.warn(`[cleanup] failed delete ${f.name}`, e);
+          })));
+          imagesDeleted = files.length;
+        } catch (e) {
+          logger.error(`[cleanup] storage list/delete failed for ${eid}`, e);
+        }
+
+        // Drop the event doc itself last — if anything above failed we want
+        // a retry on the next cron run rather than an orphaned cleanup.
+        await evDoc.ref.delete();
+        logger.info(`[cleanup] purged ${eid}: signups=${signupsDeleted} images=${imagesDeleted}`);
+      } catch (e) {
+        logger.error(`[cleanup] event ${eid} failed`, e);
+        // Keep going — one bad event shouldn't stall the whole batch.
+      }
+    }
   }
 );
 

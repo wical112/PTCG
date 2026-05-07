@@ -263,6 +263,7 @@ window.hostApp = (() => {
         // Bulk + start tournament
         document.getElementById('btn-bulk-check').addEventListener('click', bulkCheckIn);
         document.getElementById('btn-bulk-paid-cash').addEventListener('click', bulkMarkPaidCash);
+        document.getElementById('btn-export-csv').addEventListener('click', exportSignupsCsv);
         document.getElementById('btn-start-tournament').addEventListener('click', startTournament);
         document.getElementById('btn-publish-result').addEventListener('click', openResultPreview);
         document.getElementById('btn-confirm-publish').addEventListener('click', confirmPublishResult);
@@ -1094,6 +1095,89 @@ window.hostApp = (() => {
         }
 
         function showWalkinError(msg) { errEl.textContent = msg; errEl.hidden = false; }
+    }
+
+    /* ── CSV export ───────────────────────────────────────────────────────── */
+    function exportSignupsCsv() {
+        if (!signupsList || signupsList.length === 0) {
+            alert('仲未有報名，無野好 export。');
+            return;
+        }
+        const meta = eventData.meta || {};
+        const eventLabel = (meta.org ? meta.org + ' — ' : '') + (meta.name || eventId);
+
+        // Header rows: event metadata block, then signups table.
+        const lines = [];
+        lines.push(`# ${eventLabel}`);
+        if (meta.date) lines.push(`# 日期: ${meta.date}${meta.time ? ' ' + meta.time : ''}`);
+        if (meta.address) lines.push(`# 地點: ${meta.address}`);
+        if (meta.fee) lines.push(`# 入場費: HK$${meta.fee}`);
+        lines.push(`# 匯出時間: ${new Date().toLocaleString('zh-HK')}`);
+        lines.push(`# 報名總數: ${signupsList.length} (簽到 ${signupsList.filter(s => s.checkedIn).length} · 已付 ${signupsList.filter(s => s.paid).length})`);
+        lines.push('');
+        // Signup table header.
+        lines.push([
+            '#', '姓名', 'Trainer ID', '電話',
+            'Deck 主角', 'Deck 副角', '來源',
+            '簽到', '簽到時間', '付款',
+            '付款方式', '付款金額', '備註', '報名時間'
+        ].map(csvCell).join(','));
+
+        const fmtTs = (v) => {
+            if (!v) return '';
+            try {
+                if (v.toDate) return v.toDate().toLocaleString('zh-HK');
+                if (typeof v === 'number') return new Date(v).toLocaleString('zh-HK');
+                if (v.seconds) return new Date(v.seconds * 1000).toLocaleString('zh-HK');
+            } catch (_) { /* ignore */ }
+            return '';
+        };
+        const speciesLabel = (id) => {
+            if (!id) return '';
+            const sp = window.pokemonPicker?.getById(id);
+            return sp ? `${sp.zh} (${sp.en})` : id;
+        };
+        signupsList.forEach((s, i) => {
+            lines.push([
+                i + 1,
+                s.name || '',
+                s.trainerId || '',
+                s.phone || '',
+                speciesLabel(s.species1),
+                speciesLabel(s.species2),
+                s.source === 'walkin' ? 'Walk-in' : '網上',
+                s.checkedIn ? '✓' : '',
+                fmtTs(s.checkedInAt),
+                s.paid ? '✓' : '',
+                s.paid ? (PAYMENT_LABELS[s.paidMethod] || s.paidMethod || '') : '',
+                s.paid && s.paidAmount ? 'HK$' + s.paidAmount : '',
+                s.notes || '',
+                fmtTs(s.joinedAt)
+            ].map(csvCell).join(','));
+        });
+
+        // UTF-8 BOM keeps Excel from mojibake-ing the Chinese columns.
+        const csv = '﻿' + lines.join('\r\n') + '\r\n';
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const safeLabel = eventLabel.replace(/[^\w一-鿿-]+/g, '_').slice(0, 60) || eventId;
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${safeLabel}_${dateStamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('📥 CSV 已下載');
+    }
+
+    function csvCell(v) {
+        const s = String(v ?? '');
+        // Per RFC 4180: wrap in quotes if contains comma, quote, or newline;
+        // double-up internal quotes.
+        if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+        return s;
     }
 
     /* ── Bulk actions ─────────────────────────────────────────────────────── */
