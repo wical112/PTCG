@@ -157,6 +157,7 @@ window.hostApp = (() => {
         document.getElementById('signup-open-toggle').addEventListener('change', () => scheduleSave());
         document.getElementById('sync-topcut-toggle').addEventListener('change', () => scheduleSave());
         document.getElementById('btn-cancel-event').addEventListener('click', toggleCancel);
+        document.getElementById('btn-delete-event').addEventListener('click', deleteEventNow);
         document.getElementById('btn-publish-event').addEventListener('click', publishEvent);
         document.getElementById('btn-unpublish-event').addEventListener('click', unpublishEvent);
 
@@ -300,6 +301,12 @@ window.hostApp = (() => {
         document.getElementById('sync-topcut-toggle').checked = eventData.syncToTopCut !== false;
         const cancelBtn = document.getElementById('btn-cancel-event');
         cancelBtn.textContent = eventData.phase === 'cancelled' ? '還原活動' : '取消活動';
+
+        // Delete-event danger row — only visible while still in signup phase.
+        // After 「開始比賽」(live) or 「比賽完結」(ended) the rule blocks delete
+        // anyway; we hide the button so organizers don't confuse themselves.
+        const deleteRow = document.getElementById('host-delete-event-row');
+        if (deleteRow) deleteRow.hidden = eventData.phase !== 'signup';
 
         // Publish state — drives the publish cluster in the save row.
         const publishBtn = document.getElementById('btn-publish-event');
@@ -523,6 +530,45 @@ window.hostApp = (() => {
             showToast('↩ 已取消發佈，TopCut post 將被移除');
         } catch (e) {
             alert('操作失敗：' + (e.message || e));
+        }
+    }
+
+    /* ── Delete event entirely (organizer-only, signup phase only) ────────── */
+    async function deleteEventNow() {
+        if (!eventData) return;
+        if (eventData.phase !== 'signup') {
+            alert('比賽已開始 / 完結 / 取消，無法自行刪除。請聯絡 admin。');
+            return;
+        }
+        const signupCount = eventData.signupCount || 0;
+        const eventName = eventData.meta?.name || '(未命名)';
+        const msg = `永久刪除「${eventName}」？\n\n` +
+            `會清除：\n` +
+            `  • ${signupCount} 個報名\n` +
+            `  • 宣傳圖片（如有）\n` +
+            `  • TopCut HK 上嘅相關 post\n\n` +
+            `呢個操作完全不可復原。確定？`;
+        if (!confirm(msg)) return;
+        // Second confirm — type the eventId to nuke.
+        const typed = prompt(`為咗安全，請輸入 event ID「${eventId}」確認：`);
+        if (typed !== eventId) {
+            if (typed !== null) alert('Event ID 唔啱，已取消。');
+            return;
+        }
+        try {
+            markSaving('刪除中...');
+            const res = await window.cloud.deleteEvent(eventId);
+            console.info('[host] deleteEvent result', res);
+            alert(`✅ 已刪除（${res.signupsDeleted} 個 signup, ${res.imagesDeleted} 張圖${res.topcutPostRemoved ? ', TopCut post 已移除' : ''}${res.metaReversed ? ', meta 已撤回' : ''}）`);
+            window.location.replace('/');
+        } catch (e) {
+            console.error(e);
+            const code = e?.code || '';
+            const m = e?.message || String(e);
+            if (code === 'failed-precondition') alert('比賽已開始或完結，無法刪除。');
+            else if (code === 'permission-denied') alert('唔係 owner，無權刪除。');
+            else alert('刪除失敗：' + m);
+            markSaving('');
         }
     }
 

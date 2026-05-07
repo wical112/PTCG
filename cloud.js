@@ -354,13 +354,17 @@ window.cloud = (() => {
         );
     }
 
-    /* Public anonymous signup. Schema enforced by Firestore rule. */
-    async function submitSignup(eid, signup) {
-        if (!isReady()) throw new Error('Cloud not ready');
-        const ref = db.collection(EVENTS_COLLECTION).doc(eid).collection('signups').doc();
-        const data = {
+    /* Public anonymous signup. Schema enforced by Firestore rule.
+
+       Doc ID = trainerId (e.g. 'hk12345678') so a second signup attempt
+       with the same trainer ID maps to the same doc — Firestore's create
+       semantics in a transaction reject the duplicate, giving us per-event
+       uniqueness at the data layer with no extra index. The legacy auto-id
+       path is kept as a fallback for callers that haven't normalized. */
+    function buildSignupPayload(signup) {
+        return {
             name: signup.name,
-            trainerId: signup.trainerId,            // already normalized (e.g. 'hk12345678')
+            trainerId: signup.trainerId,            // hk + 8 digits, normalised
             phone: signup.phone || '',
             species1: signup.species1,
             species2: signup.species2 || '',
@@ -374,8 +378,39 @@ window.cloud = (() => {
             notes: '',
             joinedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
-        await ref.set(data);
-        return ref.id;
+    }
+
+    async function submitSignup(eid, signup) {
+        if (!isReady()) throw new Error('Cloud not ready');
+        const trainerId = (signup.trainerId || '').toLowerCase();
+        const data = buildSignupPayload({ ...signup, trainerId });
+        const signupsCol = db.collection(EVENTS_COLLECTION).doc(eid).collection('signups');
+
+        if (!trainerId) {
+            // Defensive: client should never call this without a trainerId,
+            // but if it does, fall through to auto-id so we don't lose the
+            // data. Duplicate-check skipped.
+            const ref = signupsCol.doc();
+            await ref.set(data);
+            return ref.id;
+        }
+
+        const ref = signupsCol.doc(trainerId);
+        try {
+            await db.runTransaction(async (tx) => {
+                const existing = await tx.get(ref);
+                if (existing.exists) {
+                    const err = new Error('TRAINER_ID_ALREADY_SIGNED_UP');
+                    err.code = 'already-exists';
+                    throw err;
+                }
+                tx.set(ref, data);
+            });
+            return ref.id;
+        } catch (e) {
+            if (e && e.code === 'already-exists') throw e;
+            throw e;
+        }
     }
 
     /* Owner-only listing. Returns array of {sid, ...data} sorted by joinedAt. */
@@ -451,6 +486,17 @@ window.cloud = (() => {
         return res.data;
     }
 
+    /* Hard-delete a not-yet-started event. Cloud Function gate-checks
+       phase == 'signup' and cascade-cleans signups + storage image +
+       TopCut post + meta credit. Throws on permission / phase failure. */
+    async function deleteEvent(eid) {
+        if (!isReady()) throw new Error('Cloud not ready');
+        if (!firebase.functions) throw new Error('Functions SDK not loaded');
+        const fn = firebase.app().functions('asia-east1').httpsCallable('deleteEvent');
+        const res = await fn({ eventId: eid });
+        return res.data;
+    }
+
     return {
         init, isConfigured, isReady,
         publish, attachExisting, getActiveTournamentId,
@@ -460,7 +506,7 @@ window.cloud = (() => {
         buildViewUrl,
         // Hosted events
         createEvent, fetchEvent, updateEvent, subscribeEvent,
-        setEventResultSnapshot, publishEventResult,
+        setEventResultSnapshot, publishEventResult, deleteEvent,
         submitSignup, listSignups, subscribeSignups, updateSignup, deleteSignup,
         uploadEventImage, deleteEventImage,
         buildEventHostUrl, buildEventPublicUrl,

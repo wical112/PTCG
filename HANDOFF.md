@@ -1,202 +1,262 @@
 # GameSet HK — Project Handoff
 
-> Snapshot of the project as of **2026-04-25**. Pick this up to resume work without re-reading the chat history. For deep history of earlier sessions, see `CONTEXT.md`.
+> Snapshot as of **2026-05-07**. Pick this up to resume work without re-reading chat history. For pre-host-event session log see `CONTEXT.md`. The 2026-04-25 version of this file is preserved in git history.
 
 ---
 
 ## What it is
 
-**GameSet HK** (formerly TCGTM / Pokémon TCG Tournament Manager) — a single-page, browser-based tournament manager for **Pokémon TCG** and **Beyblade X (Spin Battle)**. Free, no signup, runs entirely in the browser with optional Firebase Firestore for live spectator sync.
+**GameSet HK** — a single-page, browser-based tournament manager for **Pokémon TCG** and **Beyblade X (Spin Battle)**. Free, no signup, runs entirely in the browser with optional Firebase Firestore for live spectator sync.
 
-- **Owner side**: register players, run Swiss / knockout brackets, score matches, manage timer + projector, publish a live spectator link.
-- **Viewer side**: spectators open a tournament link, see live pairings + standings synced in real time.
+As of **2026-05-07** there are now **three product surfaces**:
+
+1. **Tournament tool** (original) — `/`, `/view/?t=ID` — register players, run brackets, score matches, publish live to spectators.
+2. **Hosted PTCG events** (NEW) — `/host/?e=ID&k=KEY`, `/event/?e=ID` — organizer-side event editor + public participant signup. Events feed the bracket tool when「開始比賽」 is hit.
+3. **TopCut HK syndication** (NEW) — events + tournament results auto-post to <https://topcut-hk.com> feed under verified `@gameset_hk` system user; deck distribution credits TopCut's Meta page popularity counters.
 
 ## Live URLs
 
-- **Canonical**: <https://gameset-hk.com> (owner)
-- **Viewer**: <https://gameset-hk.com/view/?t=ABC123>
-- **Aliases that auto-redirect**: `tcgtm.web.app`, `tcgtm.firebaseapp.com`, `ptcgstm.web.app`, `ptcgstm.firebaseapp.com` — anything non-canonical bounces to `gameset-hk.com`
-- **Repo**: `https://github.com/wical112/PTCG`, branch `income`
+| Surface | URL |
+|---|---|
+| Owner home | <https://gameset-hk.com> |
+| Tournament viewer | `https://gameset-hk.com/view/?t=ABC123` |
+| Host event editor | `https://gameset-hk.com/host/?e=AAB123&k=K-XXXX-XXXX-XXXX-XXXX` |
+| Public signup | `https://gameset-hk.com/event/?e=AAB123` |
+| Walk-in QR mode | `https://gameset-hk.com/event/?e=AAB123&w=1` |
+| TopCut feed | <https://topcut-hk.com/feed> (gameset posts surface here) |
+| TopCut admin | <https://topcut-hk.com/admin> → Posts tab (moderate gameset posts) |
+| TopCut user's events | <https://topcut-hk.com/account/events> |
+
+Aliases `tcgtm.web.app` / `ptcgstm.web.app` / `tcgtm.firebaseapp.com` / `ptcgstm.firebaseapp.com` all redirect to `gameset-hk.com`.
+
+- **Repo**: `https://github.com/wical112/PTCG`, working branch `feat/host-event` (off `income`)
 - **Working dir**: `/Users/wical/gameset-hk`
+- **TopCut counterpart**: `/Users/wical/topcut-hk`, branch `feat/player-only-pivot`
 
 ## Stack
 
 | Layer | Tech |
 |---|---|
 | Frontend | Static HTML + vanilla JS (IIFE pattern) + CSS — no build step |
-| Hosting | Firebase Hosting (project `ptcgstm`, two sites: `tcgtm` primary + `ptcgstm` legacy redirect) |
-| State (local) | `localStorage` keys `ptcg_state`, `ptcg_round_N`, `ptcg_lang`, `ptcg_theme`, `ptcg_advanced_staging` |
-| State (cloud) | Firestore `tournaments/{id}` (anonymous auth, 30-day TTL on `expiresAt`) |
-| Functions | Firebase Functions v2 (Node 20, TypeScript) — `onTournamentStarted` Telegram alert |
-| Analytics | GA4 property `G-44W3GZTCS4` |
-| Telegram bot | `@develop_sup` admin chat for tournament-started alerts |
+| Hosting | Firebase Hosting (project `ptcgstm`, sites `tcgtm` primary + `ptcgstm` legacy) |
+| State (local) | `localStorage`: `ptcg_state`, `ptcg_round_N`, `ptcg_lang`, `ptcg_theme`, `ptcg_pwa_dismissed`, `ptcg_event_handoff` |
+| State (cloud) | Firestore `tournaments/{id}` (live tournament publish, 30-day TTL) + `events/{eid}` (hosted events, 90-day TTL) |
+| Storage | `event-images/{eid}/promo-*.{ext}` (≤2 MB, public read) |
+| Functions | Node 20 TS — `onTournamentStarted` (TG alert), `onEventWritten` (TopCut sync), `publishEventResult` (callable, organizer trigger), `deleteEvent` (callable, organizer cascade-delete) |
+| Cross-project | GameSet Functions write to TopCut Firestore via secondary Admin SDK app (`TOPCUT_SERVICE_ACCOUNT` secret). One-shot setup script at `scripts/setup-topcut-system-user.mjs`. |
+| Analytics | GA4 `G-44W3GZTCS4` |
+| Telegram | `@gameset_hk_bot` start-tournament alert chat |
 
 ## File / folder layout
 
 ```
 /index.html              — Owner entry (home + all admin views)
 /view/index.html         — Viewer entry (forces view-only mode)
-/app.js                  — App logic (~5400 lines, single IIFE on `const app`)
-/cloud.js                — Firestore wrapper (publish / subscribe / sync)
-/firebase-config.js      — Web SDK config (API key safe to expose)
-/firestore.rules         — Read-anyone, write-owner-only
-/style.css               — Base + appended polish layers (~5200 lines)
+/host/                   — Hosted-event organizer editor (NEW 2026-05-06)
+  index.html             — 3-tab editor: 活動資料 / 推廣文本 / 報名清單
+  host.js                — Editor logic + walk-in tools + result preview
+/event/                  — Public participant signup page (NEW)
+  index.html             — Event display + signup modal
+  event.js               — Form + Pokémon picker glue + trainer-id validation
+/data/pokemon-species.json — ~1300 species, Pokemon names + sprite URLs
+                            (copied from TopCut HK; lazy-loaded by picker)
+/pokemon-picker.js       — Vanilla-JS bottom-sheet picker, mirrors TopCut UX
+/app.js                  — App logic (~6000 lines, single IIFE on `const app`)
+/cloud.js                — Firestore wrapper (tournaments + events helpers)
+/firebase-config.js      — Web SDK config for ptcgstm
+/firestore.rules         — events + tournaments + signups (phase-aware locks)
+/storage.rules           — event-images upload (2MB image-content guard)
+/style.css               — ~6700 lines; host/event/picker styles appended
 /manifest.webmanifest    — PWA install metadata
-/firebase.json           — Hosting (multi-site) + Functions config
-/functions/src/index.ts  — Cloud Functions (TG alert on publish)
-/landing.html            — Marketing home
-/about.html, faq.html, contact.html, legal.html, privacy.html, terms.html
-                         — Standalone marketing/legal pages (do NOT load app.js)
+/firebase.json           — Hosting + Firestore + Storage + Functions config
+/functions/src/
+  index.ts               — Cloud Functions entry (4 callables + 2 triggers)
+  topcutSync.ts          — Cross-project Admin SDK helpers (TopCut writes)
+/scripts/                — One-shot ops scripts (setup, backfill, debug)
+  setup-topcut-system-user.mjs — Bootstrap @gameset_hk identity on TopCut
+  reverse-meta.mjs       — Backfill cleanup for orphan meta contributions
+  ...                    — Various dump/check helpers
+SETUP_TOPCUT_SYNC.md     — Operator runbook for TopCut sync setup
 HANDOFF.md               — This file
-CONTEXT.md               — Historical session log (deep detail)
+CONTEXT.md               — Historical session log (deep detail, pre-host)
 DEPLOY.md, README.md     — Public-facing docs
-DOMAIN_MIGRATION.md      — One-time rebrand record (TCGTM → GameSet HK)
-ADD_REDIRECT_DOMAIN.md   — Step-by-step for pointing a new domain → gameset-hk.com
-BEYBLADE_X_FEATURE_PLAN.md — Beyblade X v1 plan + answers locked in
+DOMAIN_MIGRATION.md, ADD_REDIRECT_DOMAIN.md — Domain ops
+BEYBLADE_X_FEATURE_PLAN.md — Spin Battle v1 spec
 ```
 
-## Architecture — owner vs viewer page
+## Hosted event lifecycle (NEW)
 
-There are **two HTML entry points** sharing the same `app.js`:
+```
+┌────────────────────────────────────────────────────────────┐
+│ Organizer (no login)                                       │
+│                                                            │
+│  /host/?e=NEW                                              │
+│      │                                                     │
+│      ▼                                                     │
+│  Create event → 6-char eventId + 16-char editKey            │
+│      │   Owner saves "主辦人專用連結" /host/?e=ID&k=KEY     │
+│      ▼                                                     │
+│  /host/?e=ID&k=KEY  (3 tabs)                                │
+│  • 活動資料 — meta/prizes/image (auto-saves)               │
+│  • 推廣文本 — multi-lang generated promo text + copy        │
+│  • 報名清單 — walk-in QR + manual entry + signup table      │
+│              filter chips, check-in / payment chips,        │
+│              「開始比賽」 button (≥2 checked-in)            │
+│      │                                                     │
+│      ▼                                                     │
+│  「📣 發佈活動」 toggle → events/{eid}.published = true     │
+│      │   onEventWritten Cloud Function fires:               │
+│      │     • syncEventPost → posts/{newId} on TopCut       │
+│      │     • events doc.topcutPostId = newId                │
+│      ▼                                                     │
+│  Players sign up via /event/?e=ID  OR  TopCut feed modal    │
+│      │   submitSignup → events/{eid}/signups/{tid} (rule    │
+│      │   uses trainerId as docId for per-event uniqueness)  │
+│      ▼                                                     │
+│  Organizer checks-in arrivals → 「▶ 開始比賽」              │
+│      │   localStorage.ptcg_event_handoff written, redirect  │
+│      │   to /?event=ID — app.js reads handoff, prefills     │
+│      │   state.players (with deckSpecies1/2), navigates     │
+│      │   to registration → tournament starts.               │
+│      ▼                                                     │
+│  Tournament runs (existing /round/standings flow)           │
+│      │   On tournament end app.js calls                     │
+│      │   pushEventResultSnapshot() → events/{eid}.          │
+│      │   tournamentResultSnapshot                           │
+│      ▼                                                     │
+│  Standings page                                             │
+│      │   Inline player rename · 5-layer auto-publish:       │
+│      │     1. wheel banner click                            │
+│      │     2. 「📣 確定賽果並發送」 button                   │
+│      │     3. navigateTo() leaving standings                │
+│      │     4. pagehide                                      │
+│      │     5. next-init retry                               │
+│      ▼                                                     │
+│  publishEventResult Cloud Function:                         │
+│  • syncResultPost — posts/{newId} on TopCut (gamesetResult) │
+│  • writeTournamentRecords — claimable records by trainer ID │
+│  • creditMetaCountersForEvent — diff-based contribution to  │
+│    pokemonPopularity / deckPopularity                      │
+└────────────────────────────────────────────────────────────┘
 
-| URL | Loads | Mode | Bug class |
-|---|---|---|---|
-| `/` | `app.js` | Owner — full editing | All handlers callable |
-| `/view/?t=ABC` | `app.js` | Viewer — `body.view-only` baked in | Mutation handlers gate on `viewOnly` |
+Phase transitions:
+  signup → live    (organizer hits 「開始比賽」)
+  signup → cancelled (organizer 「取消活動」)
+  live → ended     (auto on bracket end)
+  ended → ended    (re-publish on rename)
+  cancelled → signup (organizer 「還原活動」)
+  any → cancelled  (cancel triggers cross-project meta reverse)
+```
 
-**URL routing rules**:
-- `/?t=ABC` (legacy QR codes) → inline-script bounces to `/view/?t=ABC`
-- `/view/` (no `?t`) → bounces back to `/`
-- `cloud.buildViewUrl(tid)` always generates `/view/?t=ABC` for new shares
+## Phase-aware locks (Firestore rules)
 
-**Phase 1 done. Phase 2+ pending** — viewer still loads the full `app.js`. Future work: extract shared `core.js`, slim viewer bundle by ~43%. See "Pending work" below.
+`events/{eid}.update` rules enforce:
 
-## Game modes
+| Phase | Editable fields |
+|---|---|
+| `signup` | Everything (full owner edit) |
+| `live` / `ended` | Only allowlist: phase, tournamentResultSnapshot, tournamentId, topcutPostId, topcutResultPostId, published, syncToTopCut, signupCount, updatedAt, expiresAt, _resyncNonce. Meta / prizes / image / capacity / signupOpen are FROZEN. |
+| `cancelled` | Same allowlist; phase can flip back to `signup` to un-cancel. |
 
-| Game | Format | Key state |
-|---|---|---|
-| TCG (default) | Swiss / Knockout / Best-of-3 (opt-in) | `gameType: 'tcg'`, `bestOfThree` |
-| Beyblade X "Spin Battle" | Swiss / Knockout, 1-on-1 or 3-on-3 | `gameType: 'spin-battle'`, `matchTargetPoints` (4 default), `threeOnThreeMode`, `stadiumOutEnabled` |
+`events/{eid}.delete` allowed only when `phase=='signup'`. Started / completed / cancelled events stay in DB; admin removal happens via TopCut admin Posts tab (`hardDeletePost` callable).
 
-**Beyblade X specifics**:
-- Cross popup with motion-based finish picker (Xtreme up, Knock Out right, Survivor down, Burst left)
-- Penalty system: launch errors (2 in same battle → +1 opp), match warnings (3 → DQ), malfunctions (3 → opp wins)
-- 3-on-3 deck registration with QR generate + scan + paste-code (BarcodeDetector API)
-- Tournaments can start without full Bey registration — missing players get a ⚠ badge in round view
-- Standings show **BattlePts** (sum of finish points) instead of WOScore
-- Home tiles for Spin Battle Swiss/Knockout still carry **TESTING** yellow diagonal badges (drop when ready — task is parked)
+## TopCut HK syndication
 
-## Standings / tiebreakers
+### System user
+- Email: `system+gameset@topcut-hk.com`
+- UID: `fOhLOGS52QOUSMELkYD18Kn3X983`
+- Handle: `@gameset_hk` (in `RESERVED_HANDLES` allowlist exception, isVerified, isSystem)
+- Setup script: `scripts/setup-topcut-system-user.mjs <topcut-sa.json>`
 
-Sort order: **Match Points → OWP → OOMW → BattlePts (or WOScore for TCG) → Byes**
+### Cloud Functions secrets (on `ptcgstm`)
+- `TOPCUT_SERVICE_ACCOUNT` — JSON of service account on `tournamet-platform` with Cloud Datastore User + Firebase Authentication Admin roles
+- `TOPCUT_SYSTEM_UID` = `fOhLOGS52QOUSMELkYD18Kn3X983`
+- `TOPCUT_SYSTEM_HANDLE` = `gameset_hk`
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` — for legacy onTournamentStarted
 
-- **OWP**: Pokémon TCG official formula `(opp.wins + 0.5*opp.draws) / opp.totalGames` with 0.25 floor per opponent
-- **OOMW**: Average of opponents' OWPs
-- **WOScore**: Win-out score (TCG only, secondary tiebreaker reference column)
-- **BattlePts**: Sum of finish points across all matches (Spin Battle only)
-- Top 3 get gold / silver / bronze medal emoji 🥇🥈🥉
+### TopCut posts schema additions
+- `posts/{id}.postType` extended with `'gamesetEvent' | 'gamesetResult'`
+- `posts/{id}.gamesetEvent` — { eventId, org, name, date, time, address, fee, paymentMethods, imageUrl, prizes, phase, signupOpen, signupCount }
+- `posts/{id}.gamesetResult` — { eventId, eventName, format, totalPlayers, totalRounds, standings[], deckDistribution[] }
 
-## Recent session (2026-04-25) — what landed
+### Meta credit pipeline
+1. `publishEventResult` calls `creditMetaCountersForEvent(card)` after writing posts.
+2. Reads previous snapshot at `metaContributions/{eventId}` (TopCut firestore).
+3. Diffs current standings' decks vs snapshot, applies atomic increment to `pokemonPopularity/{species}` and `deckPopularity/{sortedKey}`.
+4. Writes new snapshot.
+5. Re-publishes are idempotent (zero-delta = zero changes).
+6. **Reverse paths**: organizer cancels event (`onEventWritten` detects phase→cancelled → reverseMetaForEvent), event self-deleted by organizer (`deleteEvent` callable cascade), admin hides/hard-deletes gamesetResult post (TopCut posts.ts `setPostStatus` / `hardDeletePost`).
 
-### Critical bug fixes
-1. **View-mode editability** — 10 mutation handlers were missing `viewOnly` guards (`setResult`, `bulkAddPlayers`, `deletePlayer`, `editPlayerName`, `setRoundCount`, `startTournament`, `startNewTournament`, `startKnockoutTournament`, `endTournament`, `resetTournament`). Added guards + CSS to disable spin/Bo3/penalty/deck UI in view mode.
-2. **Bo3 re-edit** — Once a TCG Best-of-3 match auto-locked at 2 game wins, all game buttons disabled. Now any game re-tappable; recompute match result on each change.
-3. **Spin locked-card UX** — When match auto-locks at target points, prominent ↶ Undo CTA replaces the small undo button.
-4. **`?t=ABC&import=XYZ` race** — Viewers with combined params accidentally ran SHOWDOWN import. Fixed by checking `?t=` first in `init()`.
+## Walk-in 3 modes
 
-### Viewer improvements
-5. **Phase 1 view/owner split** — `/view/index.html` separate page, `cloud.buildViewUrl` points there, root inline-script redirects `?t=*` legacy URLs.
-6. **Viewer Round/Standings tabs** — `<nav id="viewer-tabs">` under header, lets viewers flip between live pairings and full standings without breadcrumb.
-7. **Mobile header fix** — GAMESET HK title was clipped on phone. Hidden "Original" theme-name label on ≤480px (chevron only), reduced lang-toggle padding, freed ~64px for the logo.
-8. **No flash on viewer load** — `<body class="view-only">` baked into `view/index.html` so admin-hide CSS applies frame 1.
-
-### Polish
-9. **Share panel hint** mentions Beys ("配對、結果、排名同陀螺資料都會即時同步")
-10. **Telegram start alert** — refreshed to GameSet HK + game type (🃏 TCG / 🌀 Spin Battle) + sub-modes (first-to-N, 3-on-3, Stadium Out, Best of 3) + Swiss/Knockout
-11. **iOS download → Photos** — `downloadStandings()` now uses `navigator.share({files})` so iOS opens the native share sheet ("Save Image" → Photos). Falls back to `<a download>` on desktop.
-12. **Standings PNG full-width capture** — temporarily expand wrapper to `max-content` + read scrollWidth + 24px buffer so every tiebreaker column lands in the saved image regardless of viewport.
-
-### Telegram bot (already shipped earlier in week)
-- Bot: `@gameset_hk_bot` (admin chat in env, secret stored in Firebase Functions Secret Manager)
-- Fires on `tournaments/{id}` `tournamentStarted` flipping false → true
-- Posts: name, game type, format, player count, round count, sub-modes, view URL
+1. Same public link `/event/?e=ID` (signup still open at event time).
+2. Walk-in QR `/event/?e=ID&w=1` — organizer shows on screen, player scans on phone, signup auto-marks `source: 'walkin'`.
+3. Manual entry — organizer fills form themselves on host page → 報名清單 tab → 「🎟 場內 Walk-in 工具」 panel.
 
 ## Deployment
 
 ```bash
 # From /Users/wical/gameset-hk
+firebase use ptcgstm
 firebase deploy --only hosting              # both tcgtm + ptcgstm sites
-firebase deploy --only functions            # TG alert function
-firebase deploy --only hosting,functions    # both at once
-
-# Cache-bust pattern in index.html / view/index.html:
-#   <script src="app.js?v=20260425e">      ← bump letter on every JS change
-#   <link  href="style.css?v=20260425c">   ← bump letter on every CSS change
+firebase deploy --only functions            # all 4 callables + 2 triggers
+firebase deploy --only firestore:rules,storage  # rules-only push
+firebase deploy --only firestore:indexes    # composite index updates
 ```
 
-**Branch model**: working on `income` (paid/commercial track). `main` is the public/free release line — much older, no cloud features. **Don't push `income` → `main`.**
+Cache-bust pattern in HTML: `?v=YYYYMMDD<letter>` — bump letter on every JS/CSS change so phones reload immediately.
 
 ## Common commands
 
 ```bash
 node -c app.js                              # syntax check
-python3 -m http.server 8000                 # serve locally (Firebase needs http://, not file://)
-ipconfig getifaddr en0                      # phone testing IP
 cd functions && npm run build               # TS → JS for Functions
+python3 -m http.server 8000                 # serve locally
+firebase functions:log -n 30                # tail Cloud Function logs
+firebase functions:secrets:get TOPCUT_SYSTEM_UID  # inspect secret state
+node scripts/setup-topcut-system-user.mjs ~/topcut-sa.json  # one-shot
 git status / git log --oneline -10
 ```
 
-## Pending work (next priorities)
+## Pending work
 
-### Immediate / quick
-- **Drop TESTING badges on Spin Battle home tiles** — user has been waiting to confirm v1 stable. Just remove `home-tile-testing` class + `<span class="testing-badge">` from index.html.
-- **Update `README.md` and `DEPLOY.md`** — still reference TCGTM project naming (cosmetic, not broken).
+### 🔴 High value next session
+- **Cross-device editKey claim** — `claimEvent({eid, editKey})` Cloud Function. Verifies SHA-256 hash, transfers ownerUid → enables organizer edit from a different device. Currently same-browser only.
+- **trainerCards/tournamentLogs integration** — `publishEventResult` extension to write to `trainerCards/{tid}/tournamentLogs/{logId}` so a trainer's TopCut profile reflects GameSet tournament participation. Original spec line.
+- **Player claim UI** — TopCut `/account/events` extension showing unclaimed `tournamentRecords` for the trainer ID linked to the user account; one-tap claim writes records into the trainerCard.
 
-### View/owner split — Phase 2+ (if pursuing)
-Phase 1 (URL split) shipped this session. Remaining phases:
-1. **Phase 2**: extract `core.js` with shared modules (i18n table ~620 lines, theme/lang init, helpers) — ~half day, medium risk (refactor).
-2. **Phase 3**: extract `getStandings`, `calculateOWP/OOMW`, `validateDeck`, `cleanState` to core.
-3. **Phase 4**: move render functions (`renderRound`, `renderStandings`, `renderPlayerList`, `showTrainerCard`) to core, parameterised so admin/viewer pass appropriate handlers — ~1 day, **medium-high risk** (easy to break round view).
-4. **Phase 5**: slim `view.js` to subscribe + tabs + pin + share. Drop registration/editor/wheel/etc. from viewer bundle. ~43% viewer bundle reduction.
-5. **Phase 6**: rename `app.js` → `owner.js`.
+### 🟠 Important
+- **Storage TTL cleanup** — scheduled Cloud Function scanning expired events to delete `event-images/{eid}/*` from storage (currently leaks).
+- **TopCut notifications** — push when trainer ID gets a new bound record / event signup confirmation / etc.
 
-Total ~3 sessions. **Cheaper alternative if only the bug class matters**: wrap every owner handler in a `requireOwner(fn)` helper that checks `viewOnly` once at registration. ~50 LOC change, eliminates missed-guard bugs without the refactor.
+### 🟢 Polish
+- **Bilingual i18n on /host/ /event/** — currently zh-only direct strings (no language toggle).
+- **Excel export** — host editor 「📥 下載活動 + 玩家清單」 button (xlsx.js).
+- **Spam mitigation upgrade** — current trainerId-uniqueness gate is sufficient for low-traffic. If abuse grows, add CF gateway with IP rate-limit.
 
-### Known low-priority
-- PWA `start_url` is hardcoded to `/`. Viewers installing PWA from `/view/?t=ABC` land on owner page when tapping home-screen icon. Acceptable for v1.
-- ~100 EN i18n keys without ZH counterparts (older keys, EN fallback works).
-- Per-Bey win count in trainer card (v1.5 deferred).
-- "Best Bey" aggregate panel after standings (v1.5 deferred).
+## Recent sessions
 
-### v1.5 / future
-- Cross-device admin via transferable key.
-- Premium gating: free = 1 active published tournament, paid = unlimited + history.
-- Code splitting / esbuild build step (when JS exceeds ~10K lines).
-- Player profile page on TopCut HK (`/player/[id]`) — already shipped at `~/SHOWDOWN/`.
+### 2026-05-07 — Phase A polish + admin moderation (current)
+1. Post-event lockdown: rule-level field freeze when phase ≠ signup.
+2. Organizer self-delete event (signup phase only) — cascade clean signups + storage + TopCut post + meta reverse.
+3. Trainer ID uniqueness via doc-id (no duplicate signups per event).
+4. PWA install floating chip on home (Chrome / Edge prompt + iOS instructions).
+5. Admin Posts tab on TopCut: filter / hide / hard-delete with auto meta reverse on gamesetResult removal.
 
-## Known gotchas
+### 2026-05-06 → 2026-05-07 — Host event flow + TopCut sync
+- Hosted event surface (host/ + event/), Pokémon picker port from TopCut, trainer ID chip.
+- TopCut feed cards (event + result), in-place signup modal, /account/events.
+- Cross-project Admin SDK pipeline, meta credit, 5-layer publish guarantee.
+- Standings inline rename + 「📣 確定賽果」 manual + auto trigger on wheel / leave / unload / init-retry.
 
-1. **Firebase API key has HTTP-referrer restrictions** in Google Cloud Console. Adding a new domain → must add `https://newdomain.com/*` to the referrer allowlist or anonymous auth fails with `auth/requests-from-referer-...are-blocked`. (Set to `Browser key (auto created by Firebase)`, ends in `...PSpICCAHk`.)
-2. **Firebase Auth Authorized domains** also has its own allowlist — must include `gameset-hk.com` (already done).
-3. **Cloudflare DNS for redirect domains**: A record must be **DNS only** (gray cloud), not orange-proxied. Firebase manages SSL; Cloudflare's edge SSL conflicts with Firebase's cert provisioning.
-4. **`Cloud sync `cleanState()`** strips per-device fields (`projectorMode`, `compactMode`, `currentView`, `timerMuted`) only. All other state syncs to viewers — be careful adding new fields.
-5. **`view/index.html` uses absolute paths** (`/style.css`, `/app.js`, `/firebase-config.js`) since it lives in a subfolder. Root `index.html` uses relative paths (works because root IS `/`).
-6. **`localStorage` keys still prefixed `ptcg_`** for backward compatibility — don't rename (would lose all existing users' tournaments).
-7. **`onclick="app.foo()"` inline handlers** work because `const app = (() => {...})()` at script-level scope is accessible to inline event handlers in classic (non-module) scripts. Don't move to ES modules without rewiring.
-
-## Memory anchors (auto-memory)
-
-The user's auto-memory at `~/.claude/projects/-Users-wical/memory/` already tracks:
-- TopCut HK platform context (sister project at `~/SHOWDOWN/`)
-- TopCut HK ↔ TCGTM URL-based base64 JSON integration
-
-This session adds:
-- GameSet HK (this project) — should be saved as a separate project memory (see below).
+### 2026-04-25 — Beyblade X v1 + viewer/owner Phase 1
+- Spin Battle Swiss/KO with 3v3 deck registration, finish picker, penalty system.
+- View-only mode hardening (10 mutation handlers gated on viewOnly).
+- Bo3 re-edit, viewer Round/Standings tabs, mobile header fix.
 
 ## Etiquette
-
-- User prefers tight responses; long explanations only when needed.
-- Bilingual EN + 繁體中文 everywhere — add i18n keys when adding UI.
+- User prefers tight, action-oriented responses; long explanations only when asked.
+- Bilingual EN + 繁體中文 everywhere — add i18n keys when adding UI (host/event still pending).
 - Confirm before destructive git ops (push/force/reset).
-- Surgical CSS overlays preferred over full rewrites.
 - Cache-bust JS/CSS on every change so phones reload immediately.
+- Read `SETUP_TOPCUT_SYNC.md` before touching the TopCut sync pipeline.

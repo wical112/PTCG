@@ -6720,3 +6720,43 @@ body.projector-mode .pairing-help-btn { display: none; }
     line-height: 1.35;
 }
 
+
+/* ── PWA install floating chip ────────────────────────────────────────────
+   Shown when the browser exposes `beforeinstallprompt` (Chrome/Edge) or on
+   iOS Safari (instruction modal fallback). User can right-click / long-
+   press to dismiss permanently. */
+.pwa-install-chip:not([hidden]) {
+    position: fixed;
+    right: 0.9rem;
+    bottom: 0.9rem;
+    z-index: 90;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.95rem;
+    background: linear-gradient(135deg,
+        var(--color-primary) 0%,
+        var(--color-primary-hover, #5d2a8d) 100%);
+    color: var(--color-text);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.55);
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.pwa-install-chip:not([hidden]):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.6);
+}
+.pwa-install-chip:not([hidden]):active { transform: translateY(0); }
+@media (max-width: 480px) {
+    .pwa-install-chip:not([hidden]) {
+        right: 0.7rem;
+        bottom: 4.5rem; /* clear iOS Safari bottom toolbar */
+    }
+}
+

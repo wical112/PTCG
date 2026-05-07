@@ -262,6 +262,10 @@ const app = (() => {
             'event.publishing': '📣 Sending result to TopCut HK…',
             'event.published': '✅ Result posted to TopCut HK',
             'event.publishFail': '⚠️ Result not sent — tap "Confirm result" to retry',
+            'pwa.install': 'Install as App',
+            'pwa.iosTitle': 'Install GameSet HK on iPhone',
+            'pwa.iosBody': 'Tap the share icon in Safari, then "Add to Home Screen". The app opens fullscreen with no browser bar.',
+            'pwa.installed': '✅ Installed — find it on your home screen',
             'wheel.confirmReset': 'Clear all winners and reset the wheel?',
             'reset.confirm': 'Are you sure you want to reset everything? This cannot be undone.',
             'adv.title': 'Advanced — Recover Tournament',
@@ -599,6 +603,10 @@ const app = (() => {
             'event.publishing': '📣 將比賽結果發送到 TopCut HK…',
             'event.published': '✅ 結果已 post 上 TopCut HK',
             'event.publishFail': '⚠️ 發送失敗 — 撳一下「確定賽果」再試',
+            'pwa.install': '📱 安裝為 App',
+            'pwa.iosTitle': '安裝 GameSet HK 到 iPhone',
+            'pwa.iosBody': '喺 Safari 撳分享掣（中間方框向上箭咀），再揀「加至主畫面」。打開後全屏顯示，似 native app 一樣。',
+            'pwa.installed': '✅ 已安裝 — 主畫面有個 GameSet HK icon',
             'wheel.confirmReset': '清除所有得獎者並重設轉盤?',
             'reset.confirm': '確定要重設所有資料?此操作無法復原。',
             'adv.title': '進階 — 還原賽事',
@@ -5578,6 +5586,72 @@ const app = (() => {
         applyNoAds();
     }
 
+    /* ── PWA install prompt ──────────────────────────────────────────────────
+       Browsers that support `beforeinstallprompt` (Chrome / Edge / mobile
+       Chrome / Samsung Internet) fire it once on visit if our manifest +
+       icons + service-worker prereqs are met. We stash the event and
+       reveal a small floating chip; clicking it triggers the native dialog.
+
+       iOS Safari has no equivalent event — we detect iOS and surface a
+       short manual instruction toast instead so the chip feels useful.
+       Desktop browsers without support: chip stays hidden. */
+    let deferredInstallPrompt = null;
+    function installPwaInit() {
+        const chip = document.getElementById('pwa-install-chip');
+        if (!chip) return;
+        const isIos = /iP(hone|ad|od)/.test(navigator.platform || '')
+            || (/Mac/.test(navigator.platform || '') && navigator.maxTouchPoints > 1);
+        const isStandalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+            || window.navigator.standalone === true;
+        if (isStandalone) return; // already installed
+        // Only show chip for visitors who haven't dismissed it before.
+        const dismissed = localStorage.getItem('ptcg_pwa_dismissed') === '1';
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            if (!dismissed) chip.hidden = false;
+        });
+        if (isIos && !dismissed) {
+            // iOS has no programmatic install — chip still appears so the
+            // hint modal pops on tap.
+            chip.hidden = false;
+        }
+        chip.addEventListener('click', async () => {
+            if (deferredInstallPrompt) {
+                try {
+                    deferredInstallPrompt.prompt();
+                    const choice = await deferredInstallPrompt.userChoice;
+                    deferredInstallPrompt = null;
+                    chip.hidden = true;
+                    if (choice && choice.outcome === 'accepted') {
+                        showToast(t('pwa.installed'));
+                    }
+                } catch (e) {
+                    console.warn('[pwa] prompt failed', e);
+                }
+                return;
+            }
+            if (isIos) {
+                alert(t('pwa.iosTitle') + '\n\n' + t('pwa.iosBody'));
+                return;
+            }
+            // Fallback — chip clickable but neither browser supports install.
+            chip.hidden = true;
+            localStorage.setItem('ptcg_pwa_dismissed', '1');
+        });
+        // Long-press / right-click → dismiss (keep chip from being annoying).
+        chip.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            chip.hidden = true;
+            localStorage.setItem('ptcg_pwa_dismissed', '1');
+        });
+        // Auto-hide once installed (Chrome fires `appinstalled`).
+        window.addEventListener('appinstalled', () => {
+            chip.hidden = true;
+            showToast(t('pwa.installed'));
+        });
+    }
+
     function init() {
         loadState();
         loadAdvancedStaging();
@@ -5721,6 +5795,8 @@ const app = (() => {
         if (state.projectorMode) {
             document.body.classList.add('projector-mode');
         }
+
+        installPwaInit();
 
         // Final flush on tab hide / close — guards against any in-flight changes
         window.addEventListener('pagehide', () => {

@@ -42,15 +42,55 @@ service cloud.firestore {
                     && request.resource.data.eventId is string
                     && request.resource.data.phase is string;
 
-      // Update: owner only. ownerUid + editKeyHash + eventId immutable.
-      allow update: if request.auth != null
-                    && request.auth.uid == resource.data.ownerUid
-                    && request.resource.data.ownerUid == resource.data.ownerUid
-                    && request.resource.data.editKeyHash == resource.data.editKeyHash
-                    && request.resource.data.eventId == resource.data.eventId;
+      // Update: owner only. Three immutables (ownerUid / editKeyHash / eventId)
+      // and a phase-aware field-freeze:
+      //
+      //   phase=signup   → full edit (current behaviour)
+      //   phase=live     → only result-pipeline + status fields can change.
+      //                    meta / prizes / desc / image / capacity / signupOpen
+      //                    are FROZEN (organizer can't move goalposts mid-bracket).
+      //   phase=ended    → same field set as `live`. Result snapshot + topcut
+      //                    post-id may still update on rename / re-publish.
+      //   phase=cancelled→ basically read-only; only phase can flip back to
+      //                    `signup` (un-cancel).
+      //
+      // The mutable allowlist for non-signup phases:
+      //   phase, tournamentResultSnapshot, tournamentId, topcutPostId,
+      //   topcutResultPostId, published, syncToTopCut, signupCount,
+      //   updatedAt, expiresAt, _resyncNonce
+      function isSelfOwner() {
+        return request.auth != null
+               && request.auth.uid == resource.data.ownerUid;
+      }
+      function immutablesIntact() {
+        return request.resource.data.ownerUid == resource.data.ownerUid
+               && request.resource.data.editKeyHash == resource.data.editKeyHash
+               && request.resource.data.eventId == resource.data.eventId;
+      }
+      function postSignupAllowedKeys() {
+        return ['phase', 'tournamentResultSnapshot', 'tournamentId',
+                'topcutPostId', 'topcutResultPostId', 'published',
+                'syncToTopCut', 'signupCount', 'updatedAt', 'expiresAt',
+                '_resyncNonce'];
+      }
+      function fieldsLockedForPhase() {
+        // Editing during signup is unrestricted; once live/ended/cancelled
+        // the diff has to be a subset of the allowlist above.
+        return resource.data.phase == 'signup'
+               || request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(postSignupAllowedKeys());
+      }
 
-      allow delete: if request.auth != null
-                    && request.auth.uid == resource.data.ownerUid;
+      allow update: if isSelfOwner()
+                    && immutablesIntact()
+                    && fieldsLockedForPhase();
+
+      // Delete: only allowed while still in `signup` phase. Once a tournament
+      // has been started (live), gone to standings (ended), or organisers
+      // pulled the plug (cancelled), the event becomes part of the
+      // historical record — admin tooling on TopCut handles takedowns.
+      allow delete: if isSelfOwner()
+                    && resource.data.phase == 'signup';
 
       // Signup sub-collection — contains player phone / trainer ID / deck.
       // Public can CREATE (anonymous signup) but cannot LIST or READ any

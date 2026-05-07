@@ -420,6 +420,67 @@ export async function creditMetaCountersForEvent(
   return { speciesDelta: speciesDelta.size, deckDelta: deckDelta.size };
 }
 
+/* Reverse the meta-counter contribution for an event. Called when the
+   organizer cancels the event or admin removes the result post — keeps
+   TopCut's Meta page from reporting deck distribution from a tournament
+   that is no longer publicly visible.
+
+   Mirror of TopCut's `reverseMetaContributionsForEvent` (functions/src/posts.ts)
+   but executed cross-project via Admin SDK so GameSet's onEventWritten
+   trigger doesn't need an extra HTTP hop. */
+export async function reverseMetaForEvent(
+  serviceAccountJson: string,
+  eventId: string,
+): Promise<{ speciesReversed: number; decksReversed: number }> {
+  const app = initTopCut(serviceAccountJson);
+  const db = admin.firestore(app);
+  if (!eventId) return { speciesReversed: 0, decksReversed: 0 };
+  const ref = db.doc(`metaContributions/${eventId}`);
+  const snap = await ref.get();
+  if (!snap.exists) return { speciesReversed: 0, decksReversed: 0 };
+  const data = snap.data() as { decks?: Array<{ species1?: string; species2?: string }> } | undefined;
+  const decks = (data?.decks || []).filter(d => d && (d.species1 || d.species2));
+  if (decks.length === 0) {
+    await ref.delete().catch(() => { /* drained */ });
+    return { speciesReversed: 0, decksReversed: 0 };
+  }
+  const speciesCounts = new Map<string, number>();
+  const deckCounts = new Map<string, { species1: string; species2: string; count: number }>();
+  for (const d of decks) {
+    if (d.species1) speciesCounts.set(d.species1, (speciesCounts.get(d.species1) || 0) + 1);
+    if (d.species2) speciesCounts.set(d.species2, (speciesCounts.get(d.species2) || 0) + 1);
+    const arr = [(d.species1 || '').trim(), (d.species2 || '').trim()].filter(Boolean).sort();
+    if (!arr.length) continue;
+    const key = arr.join('__');
+    const e = deckCounts.get(key);
+    if (e) e.count++;
+    else deckCounts.set(key, { species1: arr[0], species2: arr[1] || '', count: 1 });
+  }
+  const ts = admin.firestore.FieldValue.serverTimestamp();
+  const writes: Promise<unknown>[] = [];
+  for (const [s, n] of speciesCounts.entries()) {
+    if (!s || !n) continue;
+    writes.push(db.doc(`pokemonPopularity/${s}`).set({
+      speciesId: s,
+      count: admin.firestore.FieldValue.increment(-n),
+      updatedAt: ts,
+    }, { merge: true }));
+  }
+  for (const [k, m] of deckCounts.entries()) {
+    if (!k || !m.count) continue;
+    writes.push(db.doc(`deckPopularity/${k}`).set({
+      species1: m.species1,
+      species2: m.species2,
+      count: admin.firestore.FieldValue.increment(-m.count),
+      updatedAt: ts,
+    }, { merge: true }));
+  }
+  await Promise.all(writes);
+  await ref.delete().catch(() => { /* may not exist */ });
+  logger.info(`[topcutSync] meta reversed for ${eventId}: speciesΔ=${speciesCounts.size} deckΔ=${deckCounts.size}`);
+  return { speciesReversed: speciesCounts.size, decksReversed: deckCounts.size };
+}
+
 /* Per-player tournament record — written to TopCut so a trainer can later
    claim their historical results when they sign up there. We use a known
    doc id pattern so re-syncs of the same event are idempotent.

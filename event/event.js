@@ -284,7 +284,16 @@ window.eventApp = (() => {
             showState('event-success');
         } catch (err) {
             console.error('[signup] failed', err);
-            showError('提交失敗：' + (err.message || err.code || '未知錯誤'));
+            const code = err?.code || '';
+            let msg;
+            if (code === 'already-exists' || /already_signed_up/i.test(err?.message || '')) {
+                msg = `Trainer ID ${trainerId} 已經報咗呢個活動。如要更改資料，請聯絡舉辦方。`;
+            } else if (code === 'permission-denied') {
+                msg = '無法提交報名 — 活動可能已關閉或者已取消。';
+            } else {
+                msg = '提交失敗：' + (err?.message || code || '未知錯誤');
+            }
+            showError(msg);
             btn.disabled = false;
             btn.textContent = '提交報名';
         }

@@ -5,7 +5,7 @@ import { logger } from 'firebase-functions/v2';
 import * as admin from 'firebase-admin';
 import {
   syncEventPost, syncResultPost, writeTournamentRecords, deleteEventPost,
-  creditMetaCountersForEvent,
+  creditMetaCountersForEvent, reverseMetaForEvent,
   type GamesetEventCardData, type GamesetResultCardData, type PrizeTier,
 } from './topcutSync';
 
@@ -233,6 +233,21 @@ export const onEventWritten = onDocumentWritten(
       return;
     }
 
+    // Cancel edge: phase signup/live → cancelled. Reverse any meta credit
+    // (so the canceled event stops contributing to deck-distribution stats)
+    // + flag the post as cancelled (handled by syncEventPost via card.phase).
+    const wasCancelled = before?.phase === 'cancelled';
+    const isCancelled = after.phase === 'cancelled';
+    if (!wasCancelled && isCancelled) {
+      try {
+        const reversed = await reverseMetaForEvent(serviceAccount, eid);
+        logger.info(`[onEventWritten] ${eid} cancelled — meta reversed`, reversed);
+      } catch (e) {
+        logger.error(`[onEventWritten] ${eid} cancel meta reverse failed`, e);
+      }
+      // fall through so the gamesetEvent post status flips to 'cancelled'
+    }
+
     // Unpublish edge: published true → false. Delete the post on TopCut and
     // clear the post-id back-reference so a future re-publish creates fresh.
     const wasPublished = before?.published === true;
@@ -364,6 +379,95 @@ export const publishEventResult = onCall<PublishResultRequest, Promise<PublishRe
     });
 
     return { ok: true, postId, recordsWritten, metaCredited };
+  }
+);
+
+/* deleteEvent — organizer-only, signup-phase-only cascade cleanup.
+   Wipes signups subcoll, storage promo image, TopCut feed post, and any
+   meta credit, then deletes the event doc. Once a tournament has gone
+   live or ended, the rule blocks delete (admin tooling on TopCut handles
+   takedowns of historical events to keep the audit trail intact). */
+interface DeleteEventRequest { eventId: string }
+interface DeleteEventResponse {
+  ok: boolean;
+  signupsDeleted: number;
+  imagesDeleted: number;
+  topcutPostRemoved: boolean;
+  metaReversed: boolean;
+}
+
+export const deleteEvent = onCall<DeleteEventRequest, Promise<DeleteEventResponse>>(
+  {
+    region: REGION,
+    secrets: [TOPCUT_SERVICE_ACCOUNT, TOPCUT_SYSTEM_UID, TOPCUT_SYSTEM_HANDLE],
+  },
+  async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Must be signed in');
+    const eventId = req.data?.eventId;
+    if (!eventId) throw new HttpsError('invalid-argument', 'eventId required');
+
+    const ref = admin.firestore().doc(`events/${eventId}`);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError('not-found', 'event not found');
+    const data = snap.data() as EventDoc & {
+      ownerUid?: string;
+      topcutPostId?: string | null;
+      imageStoragePath?: string | null;
+    };
+    if (data.ownerUid !== req.auth.uid) {
+      throw new HttpsError('permission-denied', 'Only the event owner can delete');
+    }
+    if (data.phase !== 'signup') {
+      throw new HttpsError('failed-precondition',
+        'Cannot delete an event that has started, ended, or been cancelled. Use admin tools.');
+    }
+
+    // Wipe signups subcoll in pages of 400 (under the 500-batch limit).
+    let signupsDeleted = 0;
+    while (true) {
+      const page = await admin.firestore()
+        .collection(`events/${eventId}/signups`).limit(400).get();
+      if (page.empty) break;
+      const batch = admin.firestore().batch();
+      page.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      signupsDeleted += page.size;
+      if (page.size < 400) break;
+    }
+
+    // Wipe storage promo image(s) under event-images/{eid}/.
+    let imagesDeleted = 0;
+    try {
+      const bucket = admin.storage().bucket();
+      const [files] = await bucket.getFiles({ prefix: `event-images/${eventId}/` });
+      await Promise.all(files.map((f) => f.delete().catch((e) => {
+        logger.warn(`[deleteEvent] failed to delete ${f.name}`, e);
+      })));
+      imagesDeleted = files.length;
+    } catch (e) {
+      logger.error(`[deleteEvent] image cleanup failed for ${eventId}`, e);
+    }
+
+    // Cross-project: remove the TopCut feed post (if syndicated) + reverse
+    // any meta credit. Pre-publish events typically have neither set.
+    let topcutPostRemoved = false;
+    let metaReversed = false;
+    try {
+      const sa = TOPCUT_SERVICE_ACCOUNT.value();
+      if (data.topcutPostId) {
+        await deleteEventPost(sa, data.topcutPostId);
+        topcutPostRemoved = true;
+      }
+      const r = await reverseMetaForEvent(sa, eventId);
+      metaReversed = (r.speciesReversed + r.decksReversed) > 0;
+    } catch (e) {
+      logger.error(`[deleteEvent] cross-project cleanup failed for ${eventId}`, e);
+    }
+
+    await ref.delete();
+    logger.info(`[deleteEvent] ${eventId} deleted by ${req.auth.uid}`,
+      { signupsDeleted, imagesDeleted, topcutPostRemoved, metaReversed });
+    return { ok: true, signupsDeleted, imagesDeleted, topcutPostRemoved, metaReversed };
   }
 );
 
