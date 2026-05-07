@@ -400,19 +400,23 @@ window.cloud = (() => {
         }
 
         const ref = signupsCol.doc(trainerId);
+        // Direct setDoc instead of a runTransaction-with-tx.get duplicate
+        // check: the Firestore read rule on signups is owner-only (PII),
+        // so anonymous tx.get always returns permission-denied. We rely
+        // on Firestore's create-vs-update split for duplicate detection
+        // — a second submission lands on the update rule (owner-only)
+        // and surfaces as permission-denied, which the caller maps to
+        // "already signed up".
         try {
-            await db.runTransaction(async (tx) => {
-                const existing = await tx.get(ref);
-                if (existing.exists) {
-                    const err = new Error('TRAINER_ID_ALREADY_SIGNED_UP');
-                    err.code = 'already-exists';
-                    throw err;
-                }
-                tx.set(ref, data);
-            });
+            await ref.set(data);
             return ref.id;
         } catch (e) {
-            if (e && e.code === 'already-exists') throw e;
+            // permission-denied + new payload shape ≈ doc already exists.
+            if (e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''))) {
+                const err = new Error('TRAINER_ID_ALREADY_SIGNED_UP');
+                err.code = 'already-exists';
+                throw err;
+            }
             throw e;
         }
     }
@@ -519,6 +523,42 @@ window.cloud = (() => {
        network round-trip when already owner). */
     function getCurrentUid() { return currentUid; }
 
+    /* ────────────────────────────────────────────────────────────────────────
+       SELF-REPORT — Phase 1 player score reporting (pass-the-phone confirm).
+       ──────────────────────────────────────────────────────────────────────── */
+
+    /* Submit a self-reported match result via the submitMatchReport callable.
+       Throws on validation / permission / already-exists errors so the caller
+       can show a clear message. Returns the report id + status. */
+    async function submitMatchReport(args) {
+        if (!isReady()) throw new Error('Cloud not ready');
+        if (!firebase.functions) throw new Error('Functions SDK not loaded');
+        const fn = firebase.app().functions('asia-east1').httpsCallable('submitMatchReport');
+        const res = await fn(args);
+        return res.data;
+    }
+
+    /* Subscribe to all matchReports for a tournament (createdAt asc). The
+       owner uses this to auto-apply confirmed reports to local state; the
+       viewer uses it to show pending / confirmed status on its pinned card.
+       Returns the unsubscribe fn. */
+    function subscribeMatchReports(tid, onUpdate, onError) {
+        if (!db) {
+            if (onError) onError(new Error('Cloud not initialized'));
+            return null;
+        }
+        const unsub = db.collection(COLLECTION).doc(tid)
+            .collection('matchReports').orderBy('createdAt', 'asc').onSnapshot(
+                snap => {
+                    const reports = [];
+                    snap.forEach(d => reports.push({ id: d.id, ...d.data() }));
+                    onUpdate(reports);
+                },
+                err => { if (onError) onError(err); }
+            );
+        return unsub;
+    }
+
     return {
         init, isConfigured, isReady,
         publish, attachExisting, getActiveTournamentId,
@@ -533,6 +573,8 @@ window.cloud = (() => {
         submitSignup, listSignups, subscribeSignups, updateSignup, deleteSignup,
         uploadEventImage, deleteEventImage,
         buildEventHostUrl, buildEventPublicUrl, buildEventWalkinUrl,
-        sha256Hex
+        sha256Hex,
+        // Self-report
+        submitMatchReport, subscribeMatchReports
     };
 })();

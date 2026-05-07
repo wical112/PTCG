@@ -67,6 +67,17 @@ window.eventApp = (() => {
         const pmList = (m.paymentMethods || []).map(paymentLabel).filter(Boolean);
         document.getElementById('event-fee').textContent = feeText + (pmList.length ? '（' + pmList.join(' / ') + '）' : '');
 
+        // Capacity display — null/undefined = unlimited.
+        const cap = (typeof eventData.capacity === 'number') ? eventData.capacity : null;
+        const count = (typeof eventData.signupCount === 'number') ? eventData.signupCount : 0;
+        const capEl = document.getElementById('event-capacity');
+        if (cap !== null) {
+            capEl.textContent = count + ' / ' + cap + ' 人';
+            if (count >= cap) capEl.classList.add('event-capacity-full');
+        } else {
+            capEl.textContent = '不限人數';
+        }
+
         if (m.desc) {
             document.getElementById('event-desc').textContent = m.desc;
             document.getElementById('event-desc-block').hidden = false;
@@ -105,7 +116,12 @@ window.eventApp = (() => {
         const signupOpen = eventData.signupOpen !== false;
         const btn = document.getElementById('btn-open-signup');
         const closedMsg = document.getElementById('event-signup-closed');
-        if (!signupOpen && !walkin) {
+        const isFull = cap !== null && count >= cap;
+        if (isFull && !walkin) {
+            btn.hidden = true;
+            closedMsg.hidden = false;
+            closedMsg.textContent = '🔒 已滿額';
+        } else if (!signupOpen && !walkin) {
             btn.hidden = true;
             closedMsg.hidden = false;
         } else if (walkin) {

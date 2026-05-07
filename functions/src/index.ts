@@ -8,6 +8,7 @@ import {
   syncEventPost, syncResultPost, writeTournamentRecords, deleteEventPost,
   creditMetaCountersForEvent, reverseMetaForEvent,
   writeTrainerCardEntries, reverseTrainerCardEntries,
+  deleteTournamentRecordsForEvent, deleteEventRegistrationsForEvent,
   type GamesetEventCardData, type GamesetResultCardData, type PrizeTier,
 } from './topcutSync';
 
@@ -253,6 +254,18 @@ export const onEventWritten = onDocumentWritten(
       } catch (e) {
         logger.error(`[onEventWritten] ${eid} cancel trainerCard revert failed`, e);
       }
+      try {
+        const recsDeleted = await deleteTournamentRecordsForEvent(serviceAccount, eid);
+        logger.info(`[onEventWritten] ${eid} cancelled — ${recsDeleted} tournamentRecords removed`);
+      } catch (e) {
+        logger.error(`[onEventWritten] ${eid} cancel tournamentRecords cleanup failed`, e);
+      }
+      try {
+        const regsDeleted = await deleteEventRegistrationsForEvent(serviceAccount, eid);
+        logger.info(`[onEventWritten] ${eid} cancelled — ${regsDeleted} eventRegistrations removed`);
+      } catch (e) {
+        logger.error(`[onEventWritten] ${eid} cancel eventRegistrations cleanup failed`, e);
+      }
       // fall through so the gamesetEvent post status flips to 'cancelled'
     }
 
@@ -298,6 +311,199 @@ export const onEventWritten = onDocumentWritten(
       logger.error(`[onEventWritten] sync failed for ${eid}`, e);
     }
   }
+);
+
+/* onSignupWritten — keep events/{eid}.signupCount accurate so the capacity
+   gate in firestore.rules + the public /event page count display stay in
+   sync. Fires on create/delete of any signup row; +1 / -1 the parent doc
+   atomically via FieldValue.increment. Updates only — won't recreate the
+   parent if it has been removed. */
+export const onSignupWritten = onDocumentWritten(
+  {
+    document: 'events/{eventId}/signups/{signupId}',
+    region: REGION,
+  },
+  async (event) => {
+    const had = !!event.data?.before?.exists;
+    const has = !!event.data?.after?.exists;
+    if (had === has) return;                      // pure update — no count change
+    const delta = has ? 1 : -1;
+    const eid = event.params.eventId;
+    try {
+      await admin.firestore().doc(`events/${eid}`).update({
+        signupCount: admin.firestore.FieldValue.increment(delta),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      // Parent may have been deleted between trigger fire + this write.
+      logger.warn(`[onSignupWritten] ${eid} count update failed`, e);
+    }
+  },
+);
+
+/* submitMatchReport — Phase 1 self-report flow. Called from the viewer page
+   when a player taps a result on their own pairing AND the opponent has
+   confirmed (pass-the-phone) or disputed. Verifies the reporter is actually
+   one of the two players on the pairing, then appends a matchReports doc.
+   The owner's app subscribes to that subcollection and applies confirmed
+   reports to local state, which then re-syncs to cloud.
+
+   Identity model: reporter is identified by `reporterPlayerId` (the unique
+   in-tournament player.id, always present). Trainer ID is optional bonus
+   metadata — when both are provided they must agree (catches spoofing via
+   ID collisions) but trainer ID is NOT required for self-report to work.
+   This lets non-hosted tournaments use the feature too. The signature on
+   confirm + organizer override remain the real auth boundary. */
+const TRAINER_ID_REGEX_FN = /^hk\d{8}$/;
+const SIG_MAX_BYTES = 64 * 1024;        // ~64KB cap on the signature dataURL
+
+interface SubmitMatchReportRequest {
+  tournamentId: string;
+  roundIndex: number;
+  pairingIndex: number;
+  reporterPlayerId?: string;            // preferred — unique player.id within tournament
+  reporterTrainerId?: string;           // optional bonus / legacy / cross-check
+  result: 'a' | 'b' | 'draw';
+  confirmedByOpponent: boolean;
+  confirmSig?: string;                  // base64 dataURL of opponent's signature
+}
+interface SubmitMatchReportResponse {
+  ok: boolean;
+  reportId?: string;
+  status?: 'confirmed' | 'disputed';
+  reason?: string;
+}
+
+interface PairingShape {
+  playerA?: string;
+  playerB?: string;
+  isBye?: boolean;
+  result?: 'a' | 'b' | 'draw' | null;
+}
+interface PlayerShape {
+  id?: string;
+  name?: string;
+  trainerId?: string;
+}
+
+export const submitMatchReport = onCall<SubmitMatchReportRequest, Promise<SubmitMatchReportResponse>>(
+  { region: REGION },
+  async (req) => {
+    if (!req.auth) throw new HttpsError('unauthenticated', 'Must be signed in');
+    const data = req.data || ({} as SubmitMatchReportRequest);
+    const {
+      tournamentId, roundIndex, pairingIndex,
+      reporterPlayerId, reporterTrainerId,
+      result, confirmedByOpponent, confirmSig,
+    } = data;
+
+    // Shape validation.
+    if (typeof tournamentId !== 'string' || !tournamentId) {
+      throw new HttpsError('invalid-argument', 'tournamentId required');
+    }
+    if (!Number.isInteger(roundIndex) || roundIndex < 0) {
+      throw new HttpsError('invalid-argument', 'roundIndex must be non-negative int');
+    }
+    if (!Number.isInteger(pairingIndex) || pairingIndex < 0) {
+      throw new HttpsError('invalid-argument', 'pairingIndex must be non-negative int');
+    }
+    if (!['a', 'b', 'draw'].includes(result)) {
+      throw new HttpsError('invalid-argument', 'result must be a / b / draw');
+    }
+    // At least one identity required.
+    if ((typeof reporterPlayerId !== 'string' || !reporterPlayerId)
+        && (typeof reporterTrainerId !== 'string' || !reporterTrainerId)) {
+      throw new HttpsError('invalid-argument', 'reporterPlayerId or reporterTrainerId required');
+    }
+    // If trainerId provided, must be in canonical format.
+    if (reporterTrainerId && !TRAINER_ID_REGEX_FN.test(reporterTrainerId)) {
+      throw new HttpsError('invalid-argument', 'reporterTrainerId must match hk\\d{8}');
+    }
+    const sig = typeof confirmSig === 'string' ? confirmSig : '';
+    if (sig.length > SIG_MAX_BYTES) {
+      throw new HttpsError('invalid-argument', 'confirmSig too large');
+    }
+    if (confirmedByOpponent && sig.length < 100) {
+      throw new HttpsError('invalid-argument', 'confirmSig required when confirming');
+    }
+
+    const db = admin.firestore();
+    const tRef = db.collection('tournaments').doc(tournamentId);
+    const tSnap = await tRef.get();
+    if (!tSnap.exists) throw new HttpsError('not-found', 'tournament not found');
+    const tDoc = tSnap.data() as TournamentDoc;
+    const state = tDoc.state || {};
+    const rounds = (state.rounds || []) as Array<{ pairings?: PairingShape[]; resultsSubmitted?: boolean }>;
+    const round = rounds[roundIndex];
+    if (!round) throw new HttpsError('not-found', 'round not found');
+    if (round.resultsSubmitted) {
+      throw new HttpsError('failed-precondition', 'round already finalized — ask organizer');
+    }
+    const pairing = (round.pairings || [])[pairingIndex];
+    if (!pairing) throw new HttpsError('not-found', 'pairing not found');
+    if (pairing.isBye) throw new HttpsError('failed-precondition', 'cannot self-report a bye');
+    if (pairing.result) {
+      throw new HttpsError('failed-precondition', 'pairing already has a result — ask organizer');
+    }
+
+    // Resolve reporter — prefer reporterPlayerId, fall back to trainerId.
+    const players = ((state.players as PlayerShape[]) || []);
+    const findByPid = (pid?: string) => players.find((p) => p && p.id === pid);
+    const pa = findByPid(pairing.playerA);
+    const pb = findByPid(pairing.playerB);
+    const tidLc = (reporterTrainerId || '').toLowerCase();
+    let reporter: PlayerShape | null = null;
+    let reporterSide: 'a' | 'b' | null = null;
+
+    if (reporterPlayerId) {
+      if (pa?.id === reporterPlayerId)      { reporter = pa; reporterSide = 'a'; }
+      else if (pb?.id === reporterPlayerId) { reporter = pb; reporterSide = 'b'; }
+    } else if (tidLc) {
+      if (pa?.trainerId && pa.trainerId.toLowerCase() === tidLc)      { reporter = pa; reporterSide = 'a'; }
+      else if (pb?.trainerId && pb.trainerId.toLowerCase() === tidLc) { reporter = pb; reporterSide = 'b'; }
+    }
+    if (!reporter || !reporterSide) {
+      throw new HttpsError('permission-denied', 'reporter not on this pairing');
+    }
+    // Cross-check: when both ids supplied, the player.trainerId must match.
+    if (reporterPlayerId && tidLc && (reporter.trainerId || '').toLowerCase() !== tidLc) {
+      throw new HttpsError('permission-denied', 'reporter trainerId mismatch');
+    }
+
+    // One report per pairing — block double-submit. Organizer override goes
+    // through the local round view (setResult) instead of this callable.
+    const existing = await tRef
+      .collection('matchReports')
+      .where('roundIndex', '==', roundIndex)
+      .where('pairingIndex', '==', pairingIndex)
+      .limit(1)
+      .get();
+    if (!existing.empty) {
+      throw new HttpsError('already-exists', 'a report already exists for this pairing');
+    }
+
+    const status: 'confirmed' | 'disputed' = confirmedByOpponent ? 'confirmed' : 'disputed';
+    const reportRef = tRef.collection('matchReports').doc();
+    await reportRef.set({
+      reportId: reportRef.id,
+      roundIndex,
+      pairingIndex,
+      reporterPlayerId: reporter.id || '',
+      reporterPlayerName: reporter.name || '',
+      reporterTrainerId: (reporter.trainerId || tidLc || '').toLowerCase(),
+      reporterSide,
+      result,
+      status,
+      confirmSig: confirmedByOpponent ? sig : '',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    logger.info(
+      `[submitMatchReport] ${tournamentId} R${roundIndex}.${pairingIndex} ${status} ` +
+      `by ${reporter.id} (${reporter.name || ''})`,
+    );
+    return { ok: true, reportId: reportRef.id, status };
+  },
 );
 
 /* publishEventResult — called by organizer from the host UI after they preview
@@ -481,6 +687,16 @@ export const deleteEvent = onCall<DeleteEventRequest, Promise<DeleteEventRespons
         await reverseTrainerCardEntries(sa, eventId);
       } catch (e) {
         logger.error(`[deleteEvent] trainerCard revert failed for ${eventId}`, e);
+      }
+      try {
+        await deleteTournamentRecordsForEvent(sa, eventId);
+      } catch (e) {
+        logger.error(`[deleteEvent] tournamentRecords cleanup failed for ${eventId}`, e);
+      }
+      try {
+        await deleteEventRegistrationsForEvent(sa, eventId);
+      } catch (e) {
+        logger.error(`[deleteEvent] eventRegistrations cleanup failed for ${eventId}`, e);
       }
     } catch (e) {
       logger.error(`[deleteEvent] cross-project cleanup failed for ${eventId}`, e);

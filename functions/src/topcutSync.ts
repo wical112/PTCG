@@ -535,9 +535,12 @@ export async function writeTrainerCardEntries(
   const logId = `gameset_${card.eventId}`;
   const ts = admin.firestore.FieldValue.serverTimestamp();
 
+  const touchedTrainerIds: string[] = [];
+
   for (const s of card.standings) {
     const tid = normalizeTrainerId(s.trainerId || '');
     if (!tid) continue;
+    touchedTrainerIds.push(tid);
     const rank = s.rank;
 
     const cardRef = db.collection('trainerCards').doc(tid);
@@ -616,6 +619,27 @@ export async function writeTrainerCardEntries(
     }
   }
 
+  // Sidecar index — records every trainerId touched for this eventId so
+  // reverseTrainerCardEntries can avoid a collectionGroup query (which
+  // would need a per-field exemption index on tournamet-platform). Always
+  // overwrite with the union of prior + current trainerIds so a re-publish
+  // after a player drop still allows their card to be reverted on cancel.
+  const idxRef = db.doc(`gamesetEventIndex/${card.eventId}`);
+  try {
+    const prior = await idxRef.get();
+    const priorIds = prior.exists
+      ? ((prior.data()?.trainerIds || []) as string[])
+      : [];
+    const merged = Array.from(new Set([...priorIds, ...touchedTrainerIds]));
+    await idxRef.set({
+      eventId: card.eventId,
+      trainerIds: merged,
+      lastSyncAt: ts,
+    }, { merge: true });
+  } catch (e) {
+    logger.error(`[topcutSync] gamesetEventIndex write failed for ${card.eventId}`, e);
+  }
+
   logger.info(`[topcutSync] trainer cards updated for ${card.eventId}: stats=${statsApplied} logs=${logsWritten}`);
   return { logsWritten, statsApplied };
 }
@@ -630,43 +654,144 @@ export async function reverseTrainerCardEntries(
 ): Promise<{ logsRemoved: number; statsReverted: number }> {
   const app = initTopCut(serviceAccountJson);
   const db = admin.firestore(app);
-  // Find every trainer card that has a marker for this event.
-  const markersQuery = await db.collectionGroup('events')
-    .where('source', '==', 'gameset')
-    .get();
-  const targets = markersQuery.docs.filter((d) => d.id === eventId);
+  if (!eventId) return { logsRemoved: 0, statsReverted: 0 };
+
+  // Look up which trainer cards we touched on the publish path. Old events
+  // synced before the sidecar shipped won't have an index doc — fall back
+  // to the legacy collectionGroup walk in that case (it still requires the
+  // events-source index on tournamet-platform, but at least new events
+  // reverse cleanly without it).
+  const idxRef = db.doc(`gamesetEventIndex/${eventId}`);
+  const idxSnap = await idxRef.get();
+  let trainerIds: string[] = [];
+  if (idxSnap.exists) {
+    trainerIds = ((idxSnap.data()?.trainerIds || []) as string[])
+      .map((t) => String(t || '').trim())
+      .filter(Boolean);
+  } else {
+    try {
+      const cgSnap = await db.collectionGroup('events')
+        .where('source', '==', 'gameset')
+        .get();
+      trainerIds = cgSnap.docs
+        .filter((d) => d.id === eventId)
+        .map((d) => d.ref.parent.parent?.id || '')
+        .filter(Boolean);
+    } catch (e) {
+      logger.warn(`[topcutSync] reverse fallback collectionGroup failed for ${eventId} — skipping. ${(e as Error).message}`);
+      return { logsRemoved: 0, statsReverted: 0 };
+    }
+  }
+
   let logsRemoved = 0;
   let statsReverted = 0;
   const ts = admin.firestore.FieldValue.serverTimestamp();
-  for (const m of targets) {
-    const cardRef = m.ref.parent.parent;
-    if (!cardRef) continue;
-    const oldRank = Number(m.data()?.rank ?? 0);
-    if (oldRank === 0) continue;
-    const before = bucketize(oldRank);
-    const update: Record<string, unknown> = { updatedAt: ts };
-    update.totalEvents = admin.firestore.FieldValue.increment(-1);
-    if (before.champ) update.championships = admin.firestore.FieldValue.increment(-before.champ);
-    if (before.top4) update.topFour = admin.firestore.FieldValue.increment(-before.top4);
-    if (before.top8) update.topCutFinishes = admin.firestore.FieldValue.increment(-before.top8);
+
+  for (const tid of trainerIds) {
+    const cardRef = db.collection('trainerCards').doc(tid);
+    const markerRef = cardRef.collection('events').doc(eventId);
+    const logRef = cardRef.collection('tournamentLogs').doc(`gameset_${eventId}`);
+
     try {
       await db.runTransaction(async (tx) => {
+        const markerSnap = await tx.get(markerRef);
+        if (!markerSnap.exists) return;
+        const oldRank = Number(markerSnap.data()?.rank ?? 0);
+        if (oldRank === 0) {
+          tx.delete(markerRef);
+          return;
+        }
+        const before = bucketize(oldRank);
+        const update: Record<string, unknown> = { updatedAt: ts };
+        update.totalEvents = admin.firestore.FieldValue.increment(-1);
+        if (before.champ) update.championships = admin.firestore.FieldValue.increment(-before.champ);
+        if (before.top4) update.topFour = admin.firestore.FieldValue.increment(-before.top4);
+        if (before.top8) update.topCutFinishes = admin.firestore.FieldValue.increment(-before.top8);
         tx.set(cardRef, update, { merge: true });
-        tx.delete(m.ref);
+        tx.delete(markerRef);
       });
       statsReverted++;
     } catch (e) {
-      logger.error(`[topcutSync] reverse stats failed for ${cardRef.id} on ${eventId}`, e);
+      logger.error(`[topcutSync] reverse stats failed for ${tid} on ${eventId}`, e);
     }
+
     try {
-      await cardRef.collection('tournamentLogs').doc(`gameset_${eventId}`).delete();
+      await logRef.delete();
       logsRemoved++;
     } catch (e) {
-      logger.warn(`[topcutSync] log delete already missing for ${cardRef.id}`, e);
+      logger.warn(`[topcutSync] log delete already missing for ${tid}`, e);
     }
   }
-  logger.info(`[topcutSync] trainer cards reverted for ${eventId}: stats=${statsReverted} logs=${logsRemoved}`);
+
+  // Drop the sidecar last — only after all per-trainer reverts attempted.
+  // If anything above failed, leaving the index intact lets a retry pick
+  // up the same trainer set.
+  if (idxSnap.exists) {
+    try { await idxRef.delete(); } catch (e) {
+      logger.warn(`[topcutSync] gamesetEventIndex delete failed for ${eventId}`, e);
+    }
+  }
+
+  logger.info(`[topcutSync] trainer cards reverted for ${eventId}: stats=${statsReverted} logs=${logsRemoved} (touched=${trainerIds.length})`);
   return { logsRemoved, statsReverted };
+}
+
+/* Wipe every tournamentRecords doc that came from a given event. Called on
+   cancel / delete so the per-player history surfaces don't keep advertising
+   a result that no longer exists. The doc-id schema is
+   `${eventId}__${trainerId}__${rank}` but we query by the eventId field
+   (more robust against schema drift). */
+export async function deleteTournamentRecordsForEvent(
+  serviceAccountJson: string,
+  eventId: string,
+): Promise<number> {
+  const app = initTopCut(serviceAccountJson);
+  const db = admin.firestore(app);
+  if (!eventId) return 0;
+  let deleted = 0;
+  while (true) {
+    const page = await db.collection('tournamentRecords')
+      .where('eventId', '==', eventId).limit(400).get();
+    if (page.empty) break;
+    const batch = db.batch();
+    page.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    deleted += page.size;
+    if (page.size < 400) break;
+  }
+  if (deleted > 0) {
+    logger.info(`[topcutSync] deleted ${deleted} tournamentRecords for ${eventId}`);
+  }
+  return deleted;
+}
+
+/* Wipe TopCut-side eventRegistrations mirrored from a given GameSet event.
+   These are the rows powering /account/events "我報名嘅活動" — written by
+   GamesetSignupModal when a signed-in TopCut user signs up. On cancel /
+   delete the GameSet event we drop them so the user no longer sees a stale
+   "報名已確認" card. */
+export async function deleteEventRegistrationsForEvent(
+  serviceAccountJson: string,
+  eventId: string,
+): Promise<number> {
+  const app = initTopCut(serviceAccountJson);
+  const db = admin.firestore(app);
+  if (!eventId) return 0;
+  let deleted = 0;
+  while (true) {
+    const page = await db.collection('eventRegistrations')
+      .where('gamesetEventId', '==', eventId).limit(400).get();
+    if (page.empty) break;
+    const batch = db.batch();
+    page.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    deleted += page.size;
+    if (page.size < 400) break;
+  }
+  if (deleted > 0) {
+    logger.info(`[topcutSync] deleted ${deleted} eventRegistrations for ${eventId}`);
+  }
+  return deleted;
 }
 
 /* Per-player tournament record — written to TopCut so a trainer can later

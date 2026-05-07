@@ -92,6 +92,15 @@ window.hostApp = (() => {
         renderEditor();
         subscribeToEvent();
         subscribeToSignups();
+
+        // Default-tab heuristic: if the organiser has already pressed
+        // "Copy promo text" for this event in a previous session (signal
+        // that promotion is done), land them straight on the signups
+        // tab so they go straight to managing registrations.
+        try {
+            const promoCopied = localStorage.getItem(`ptcg_event_promo_copied_${eventId}`) === '1';
+            if (promoCopied) switchTab('signups');
+        } catch (_) { /* private mode: no-op */ }
     }
 
     /* ── View switching ────────────────────────────────────────────────────── */
@@ -180,6 +189,26 @@ window.hostApp = (() => {
         // Status toggles
         document.getElementById('signup-open-toggle').addEventListener('change', () => scheduleSave());
         document.getElementById('sync-topcut-toggle').addEventListener('change', () => scheduleSave());
+
+        // Capacity — number input + 「不設上限」 checkbox. Toggling the
+        // checkbox disables the input and clears its value (collectFromUI
+        // emits `capacity: null` when checkbox is checked).
+        const capInput = document.getElementById('meta-capacity');
+        const capUnlim = document.getElementById('meta-capacity-unlimited');
+        if (capInput && capUnlim) {
+            capInput.addEventListener('input', () => scheduleSave());
+            capInput.addEventListener('change', () => scheduleSave());
+            capUnlim.addEventListener('change', () => {
+                if (capUnlim.checked) {
+                    capInput.value = '';
+                    capInput.disabled = true;
+                } else {
+                    capInput.disabled = false;
+                    capInput.focus();
+                }
+                scheduleSave();
+            });
+        }
         document.getElementById('btn-cancel-event').addEventListener('click', toggleCancel);
         document.getElementById('btn-delete-event').addEventListener('click', deleteEventNow);
         document.getElementById('btn-publish-event').addEventListener('click', publishEvent);
@@ -200,6 +229,9 @@ window.hostApp = (() => {
         document.getElementById('btn-copy-promo').addEventListener('click', () => {
             const text = document.getElementById('host-promo-text').value;
             copyToClipboard(text, '推廣文本已複製');
+            // Mark promo-copied so subsequent visits default to the signups tab.
+            try { localStorage.setItem(`ptcg_event_promo_copied_${eventId}`, '1'); }
+            catch (_) { /* private mode */ }
         });
         document.getElementById('btn-share-promo').addEventListener('click', async () => {
             const text = document.getElementById('host-promo-text').value;
@@ -234,6 +266,32 @@ window.hostApp = (() => {
             copyToClipboard(text, 'Walk-in 連結已複製');
         });
 
+        // Walk-in QR is hidden by default (it's visually loud and only needed
+        // when an organizer is actively running an on-site signup table).
+        // Toggle button reveals it lazily; render is deferred to renderEditor's
+        // walkinUrl branch so the <img> only loads when the QR is requested.
+        const qrToggleBtn = document.getElementById('btn-show-walkin-qr');
+        if (qrToggleBtn) {
+            qrToggleBtn.addEventListener('click', () => {
+                const qrWrap = document.getElementById('host-walkin-qr');
+                if (!qrWrap) return;
+                const willShow = qrWrap.hidden;
+                qrWrap.hidden = !willShow;
+                qrToggleBtn.setAttribute('aria-expanded', String(willShow));
+                qrToggleBtn.classList.toggle('is-active', willShow);
+                // Lazy-render the QR <img> on first reveal so we don't hit the
+                // qrserver API for organizers who never open the panel.
+                if (willShow && !qrWrap.dataset.rendered) {
+                    const url = document.getElementById('host-walkin-url').value;
+                    if (url) {
+                        const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+                        qrWrap.innerHTML = '<img src="' + qrSrc + '" alt="Walk-in QR" width="200" height="200">';
+                        qrWrap.dataset.rendered = '1';
+                    }
+                }
+            });
+        }
+
         document.getElementById('btn-walkin-pick-1').addEventListener('click', () => {
             window.pokemonPicker.open({
                 title: '揀 Deck 主角',
@@ -265,7 +323,9 @@ window.hostApp = (() => {
         document.getElementById('btn-bulk-paid-cash').addEventListener('click', bulkMarkPaidCash);
         document.getElementById('btn-export-csv').addEventListener('click', exportSignupsCsv);
         document.getElementById('btn-start-tournament').addEventListener('click', startTournament);
-        document.getElementById('btn-publish-result').addEventListener('click', openResultPreview);
+        // btn-publish-result removed — result publishing is now fully automatic
+        // (wheel-start trigger + page-exit trigger fire `publishEventResult`
+        // without organizer interaction).
         document.getElementById('btn-confirm-publish').addEventListener('click', confirmPublishResult);
         document.getElementById('host-result-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'host-result-overlay') closeResultPreview();
@@ -301,6 +361,22 @@ window.hostApp = (() => {
             if (el) el.value = meta[k] !== undefined && meta[k] !== null ? meta[k] : '';
         });
 
+        // Capacity — top-level (not under meta). null = unlimited.
+        const capInput = document.getElementById('meta-capacity');
+        const capUnlim = document.getElementById('meta-capacity-unlimited');
+        if (capInput && capUnlim) {
+            const cap = eventData.capacity;
+            if (cap === null || cap === undefined) {
+                capInput.value = '';
+                capUnlim.checked = true;
+                capInput.disabled = true;
+            } else {
+                capInput.value = cap;
+                capUnlim.checked = false;
+                capInput.disabled = false;
+            }
+        }
+
         // Payment chips
         const pm = new Set(meta.paymentMethods || ['cash']);
         document.querySelectorAll('[data-payment]').forEach(cb => {
@@ -325,7 +401,10 @@ window.hostApp = (() => {
         document.getElementById('signup-open-toggle').checked = !!eventData.signupOpen;
         document.getElementById('sync-topcut-toggle').checked = eventData.syncToTopCut !== false;
         const cancelBtn = document.getElementById('btn-cancel-event');
-        cancelBtn.textContent = eventData.phase === 'cancelled' ? '還原活動' : '取消活動';
+        cancelBtn.textContent = (window.t || ((k, f) => f))(
+            eventData.phase === 'cancelled' ? 'info.uncancel' : 'info.cancel',
+            eventData.phase === 'cancelled' ? '還原活動' : '暫停活動',
+        );
 
         // Delete-event danger row — only visible while still in signup phase.
         // After 「開始比賽」(live) or 「比賽完結」(ended) the rule blocks delete
@@ -337,21 +416,24 @@ window.hostApp = (() => {
         const publishBtn = document.getElementById('btn-publish-event');
         const unpublishBtn = document.getElementById('btn-unpublish-event');
         const stateBadge = document.getElementById('host-publish-state');
+        const tt = window.t || ((k, f) => f);
         if (eventData.published === true) {
-            publishBtn.textContent = '✅ 已發佈 — 更新';
+            publishBtn.textContent = tt('publish.updateBtn', '✅ 已發佈 — 更新');
             publishBtn.classList.remove('btn-primary');
             publishBtn.classList.add('btn-secondary');
             unpublishBtn.hidden = false;
             stateBadge.hidden = false;
-            stateBadge.textContent = eventData.syncToTopCut === false ? '🔇 同步已停用' : '🟢 已發佈到 TopCut HK';
+            stateBadge.textContent = eventData.syncToTopCut === false
+                ? tt('publish.mutedBadge', '🔇 同步已停用')
+                : tt('publish.liveBadge', '🟢 已發佈到 TopCut HK');
             stateBadge.className = 'host-publish-state ' + (eventData.syncToTopCut === false ? 'is-muted' : 'is-live');
         } else {
-            publishBtn.textContent = '📣 發佈活動';
+            publishBtn.textContent = tt('publish.publishBtn', '📣 發佈活動');
             publishBtn.classList.add('btn-primary');
             publishBtn.classList.remove('btn-secondary');
             unpublishBtn.hidden = true;
             stateBadge.hidden = false;
-            stateBadge.textContent = '⚪ 未發佈（草稿）';
+            stateBadge.textContent = tt('publish.draftBadge', '⚪ 未發佈（草稿）');
             stateBadge.className = 'host-publish-state is-draft';
         }
 
@@ -374,21 +456,26 @@ window.hostApp = (() => {
         const walkinUrl = window.cloud.buildEventWalkinUrl(eventData.eventId);
         const walkinUrlEl = document.getElementById('host-walkin-url');
         if (walkinUrlEl) walkinUrlEl.value = walkinUrl;
+        // QR <img> is rendered lazily on first toggle-open click — see the
+        // btn-show-walkin-qr handler in wireEditor(). Reset the rendered
+        // flag if the URL changed so the next reveal regenerates the image.
         const walkinQrWrap = document.getElementById('host-walkin-qr');
-        if (walkinQrWrap) {
-            const qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(walkinUrl);
-            walkinQrWrap.innerHTML = '<img src="' + qrSrc + '" alt="Walk-in QR" width="200" height="200">';
+        if (walkinQrWrap && walkinQrWrap.dataset.url !== walkinUrl) {
+            walkinQrWrap.innerHTML = '';
+            delete walkinQrWrap.dataset.rendered;
+            walkinQrWrap.dataset.url = walkinUrl;
         }
 
         renderPublicQR();
     }
 
     function phaseLabel(phase) {
+        const tt = window.t || ((k, f) => f);
         switch (phase) {
-            case 'signup': return '報名中';
-            case 'live': return '比賽進行';
-            case 'ended': return '已完結';
-            case 'cancelled': return '⛔ 已取消';
+            case 'signup': return tt('phase.signup', '報名中');
+            case 'live': return tt('phase.live', '比賽進行');
+            case 'ended': return tt('phase.ended', '已完結');
+            case 'cancelled': return tt('phase.cancelled', '⛔ 已取消');
             default: return phase || '—';
         }
     }
@@ -471,16 +558,27 @@ window.hostApp = (() => {
         const signupOpen = document.getElementById('signup-open-toggle').checked;
         const syncToTopCut = document.getElementById('sync-topcut-toggle').checked;
 
+        // Capacity: null when "不設上限" is checked or input is blank.
+        const capUnlim = document.getElementById('meta-capacity-unlimited');
+        const capInput = document.getElementById('meta-capacity');
+        let capacity = null;
+        if (capInput && capUnlim && !capUnlim.checked) {
+            const v = parseInt(capInput.value, 10);
+            if (Number.isFinite(v) && v >= 2) capacity = v;
+        }
+
         return {
             meta,
             prizes: { tiers, lucky },
+            capacity,
             signupOpen,
             syncToTopCut
         };
     }
 
     function scheduleSave() {
-        markSaving('草稿中...');
+        const tt = window.t || ((k, f) => f);
+        markSaving(tt('common.savingDraft', '草稿中...'));
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(saveNow, SAVE_DEBOUNCE_MS);
     }
@@ -492,16 +590,18 @@ window.hostApp = (() => {
         // Merge into local cache for promo render
         eventData.meta = patch.meta;
         eventData.prizes = patch.prizes;
+        eventData.capacity = patch.capacity;
         eventData.signupOpen = patch.signupOpen;
         eventData.syncToTopCut = patch.syncToTopCut;
-        markSaving('儲存中...');
+        const tt = window.t || ((k, f) => f);
+        markSaving(tt('common.saving', '儲存中...'));
         try {
             await window.cloud.updateEvent(eventId, patch);
-            markSaving('✅ 已儲存');
+            markSaving(tt('common.savedNow', '✅ 已儲存'));
             renderPromo();
         } catch (e) {
             console.error(e);
-            markSaving('❌ 儲存失敗：' + (e.message || ''), true);
+            markSaving('❌ ' + tt('common.saving', '儲存') + ' — ' + (e.message || ''), true);
         }
     }
 
@@ -543,6 +643,18 @@ window.hostApp = (() => {
             showToast(eventData.syncToTopCut === false
                 ? '已標記為已發佈（同步停用中）'
                 : '✅ 已發佈 — TopCut 會幾秒內更新');
+            // Auto-jump to the promo tab so the host can copy / share the
+            // promotional copy right away. The next-visit heuristic in
+            // init() will then send them to the signups tab once they've
+            // pressed copy at least once.
+            //
+            // Scroll back to the top: the publish button lives in the
+            // sticky save row at the bottom of the info tab. Without an
+            // explicit scroll, switching tabs would leave the viewer
+            // staring at the (now-empty) bottom of the promo panel.
+            switchTab('promo');
+            const editorTop = document.querySelector('.host-tabs') || document.querySelector('.host-editor-banner');
+            if (editorTop) editorTop.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (e) {
             alert('發佈失敗：' + (e.message || e));
         }
@@ -607,7 +719,7 @@ window.hostApp = (() => {
             eventData.phase = 'signup';
             await window.cloud.updateEvent(eventId, { phase: 'signup' });
         } else {
-            if (!confirm('確定取消活動？玩家公開頁將顯示「⛔ 活動已取消」橫幅。可隨時還原。')) return;
+            if (!confirm('確定暫停活動？玩家公開頁將顯示「⛔ 活動已暫停」橫幅。可隨時還原。')) return;
             eventData.phase = 'cancelled';
             await window.cloud.updateEvent(eventId, { phase: 'cancelled' });
         }
@@ -819,8 +931,17 @@ window.hostApp = (() => {
         const empty = document.getElementById('host-signups-empty');
         const countBadge = document.getElementById('host-signup-count-badge');
         const countTop = document.getElementById('host-signup-count');
-        countBadge.textContent = signupsList.length;
-        countTop.textContent = signupsList.length + ' 人';
+        const cap = (typeof eventData.capacity === 'number') ? eventData.capacity : null;
+        const n = signupsList.length;
+        if (cap !== null) {
+            countBadge.textContent = n + ' / ' + cap;
+            countTop.textContent = n + ' / ' + cap + ' 人';
+            countBadge.classList.toggle('is-full', n >= cap);
+        } else {
+            countBadge.textContent = n;
+            countTop.textContent = n + ' 人';
+            countBadge.classList.remove('is-full');
+        }
 
         // Update filter chip counts
         const counts = {
@@ -1410,9 +1531,22 @@ window.hostApp = (() => {
         return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
-    return { init, copyText, closeUrlModal, closeResultPreview };
+    function rerenderForLang() {
+        if (!eventData) return;
+        try { renderEditor(); } catch (e) { /* noop */ }
+        try { renderPromo(); } catch (e) { /* noop */ }
+    }
+
+    return { init, copyText, closeUrlModal, closeResultPreview, rerenderForLang };
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
     if (window.hostApp) window.hostApp.init();
+});
+
+// Re-render editor when language toggles so phase / publish labels update.
+document.addEventListener('i18n:changed', () => {
+    if (window.hostApp && typeof window.hostApp.rerenderForLang === 'function') {
+        window.hostApp.rerenderForLang();
+    }
 });

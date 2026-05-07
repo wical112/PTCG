@@ -60,26 +60,42 @@ body {
     background: rgba(0, 180, 216, 0.2);
 }
 
+/* GameSet HK wordmark — TopCut-style two-tone: brand name in primary text,
+   regional qualifier in accent. No gradient, no italic, no uppercase —
+   the colour split carries the identity. Drops the old .logo-full /
+   .logo-short variants since the two-tone wordmark stays compact at
+   small viewports without truncation. */
 .logo {
-    font-size: clamp(1rem, 4.5vw, 1.5rem);
-    background: linear-gradient(90deg, var(--yellow), var(--red));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: 1px;
+    margin: 0;
+    font-family: var(--font, 'Inter', system-ui, sans-serif);
+    font-size: clamp(1rem, 4.5vw, 1.4rem);
+    font-weight: 800;
+    font-style: normal;
+    text-transform: none;
+    letter-spacing: -0.02em;
+    line-height: 1;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: calc(100vw - 13rem);
-    margin-left: auto;
-    margin-right: auto;
+    color: var(--text, #fff);
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    background-clip: border-box;
+    -webkit-background-clip: border-box;
+    filter: none;
 }
+.logo .logo-name {
+    color: var(--text, #fff);
+}
+.logo .logo-region {
+    color: var(--orange, #FF7324);
+    margin-left: 0.32em;
+    letter-spacing: -0.01em;
+}
+/* Legacy variants — keep selectors so older surfaces still render, but
+   the two-tone wordmark is the canonical mark. */
 .logo-short { display: none; }
+.logo-tiny { font-size: clamp(0.95rem, 4vw, 1.1rem); }
 @media (max-width: 480px) {
-    .logo-full { display: none; }
-    .logo-short { display: inline; letter-spacing: 1px; font-weight: 800; }
-    /* Reserve only ~7rem for the compact controls instead of 11rem so the title gets room */
-    .logo { max-width: calc(100vw - 7rem); font-size: clamp(0.9rem, 4vw, 1.2rem); }
+    .logo { font-size: clamp(0.95rem, 4.2vw, 1.2rem); }
 }
 
 .breadcrumb {
@@ -967,6 +983,17 @@ body.projector-mode .timer-controls {
     #app-header {
         padding-top: calc(0.8rem + env(safe-area-inset-top));
     }
+    /* Header controls (theme + lang) sit absolute inside the header — they
+       need their own offset so the EN button doesn't tuck under the iOS
+       battery indicator on standalone PWAs. */
+    .header-controls {
+        top: calc(0.8rem + env(safe-area-inset-top));
+    }
+    @media (max-width: 480px) {
+        .header-controls {
+            top: calc(0.6rem + env(safe-area-inset-top));
+        }
+    }
     .view {
         padding-left: calc(1rem + env(safe-area-inset-left));
         padding-right: calc(1rem + env(safe-area-inset-right));
@@ -979,6 +1006,68 @@ body.projector-mode .timer-controls {
     .wheel-footer,
     .reg-footer {
         padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* --- Compact home on phone: shrink updates panel + headline so the first
+   action tile (Host PTCG Event) sits above the fold on a typical 6.1"
+   phone. The full updates list is still reachable via the `…` button. --- */
+@media (max-width: 600px) {
+    /* Updates panel: keep only the 1 most-recent item visible; pad less. */
+    .updates-panel {
+        padding: 0.55rem 0.75rem 0.85rem;
+        margin-bottom: 0.9rem;
+        border-left-width: 2px;
+    }
+    .updates-panel-header {
+        margin-bottom: 0.35rem;
+    }
+    .updates-panel-header h3 {
+        font-size: 0.78rem;
+        letter-spacing: 0.6px;
+    }
+    .updates-list .updates-item:nth-child(n+2) {
+        display: none;
+    }
+    .updates-list .updates-item {
+        padding: 0.3rem 0.1rem;
+    }
+    .updates-more {
+        right: 0.4rem;
+        bottom: 0.25rem;
+        padding: 0.05rem 0.55rem;
+        font-size: 0.85rem;
+    }
+    /* Headline: ditch italic + uppercase on phone — easier to read tight. */
+    .home-container h2.home-headline {
+        font-size: clamp(1.25rem, 5vw, 1.6rem);
+        margin-bottom: 0.4rem;
+        line-height: 1.25;
+        font-style: normal;
+        text-transform: none;
+    }
+    .subtitle.home-tagline {
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+        opacity: 0.78;
+    }
+    /* Action tiles: tighter so 2 fit per screen. */
+    .home-buttons {
+        gap: 0.7rem !important;
+    }
+    .home-buttons .home-tile {
+        min-height: 110px !important;
+        padding: 1rem 0.9rem !important;
+        gap: 0.45rem !important;
+    }
+    .home-buttons .home-tile .btn-icon svg {
+        width: 28px !important;
+        height: 28px !important;
+    }
+    /* Top container padding — current 4rem is huge on phone. */
+    .home-container {
+        padding-top: 1.4rem !important;
+        padding-bottom: 1.5rem !important;
     }
 }
 
@@ -1978,20 +2067,20 @@ body {
     border-bottom: 1px solid var(--color-border);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    padding: 0.9rem 1rem;
+    /* padding-top includes safe-area so the masthead clears the iOS Dynamic
+       Island / notch in standalone PWA (env() falls back to 0 in browsers
+       without notch, so this is a no-op there). */
+    padding: calc(0.9rem + env(safe-area-inset-top, 0px)) 1rem 0.9rem;
 }
 
+/* Override block kept lean: wordmark canonical styling lives at top of
+   this file (.logo / .logo-name / .logo-region). */
 .logo {
-    font-family: var(--font);
-    font-size: 1.4rem;
-    font-weight: 800;
-    font-style: italic;
-    letter-spacing: 0.5px;
+    font-family: var(--font, 'Inter', system-ui, sans-serif);
+    font-style: normal;
+    text-transform: none;
     background: none;
-    -webkit-text-fill-color: var(--color-text);
-    color: var(--color-text);
     filter: none;
-    text-transform: uppercase;
 }
 
 .breadcrumb {
@@ -2021,7 +2110,9 @@ body {
 
 .header-controls {
     position: absolute;
-    top: 0.8rem;
+    /* Push controls below iOS notch / Dynamic Island in standalone mode.
+       env() resolves to 0 in regular browser tabs, so no visual change there. */
+    top: calc(0.8rem + env(safe-area-inset-top, 0px));
     right: 0.8rem;
     display: flex;
     gap: 0.4rem;
@@ -2054,7 +2145,13 @@ body {
 }
 /* Phone — compact header controls so the GAMESET HK title isn't clipped */
 @media (max-width: 480px) {
-    .header-controls { gap: 0.3rem; top: 0.6rem; right: 0.6rem; }
+    .header-controls {
+        gap: 0.3rem;
+        /* Add safe-area-inset-top so the EN / theme buttons clear the iOS
+           Dynamic Island / notch in standalone PWA. */
+        top: calc(0.6rem + env(safe-area-inset-top, 0px));
+        right: 0.6rem;
+    }
     .header-controls .lang-toggle { padding: 0.3rem 0.5rem; font-size: 0.78rem; }
     .theme-toggle { padding: 0.3rem 0.5rem; }
     /* Hide the long theme name on phone (e.g. "Original" / "Deep Purple"); keep just the chevron */
@@ -2112,6 +2209,13 @@ body {
     backdrop-filter: none;
 }
 .panel::before { content: none; }
+/* Vertical breathing room between adjacent panels inside an editor tab —
+   without this, the walk-in tools card and the signups list card collide
+   visually with no separator. */
+.host-tab-panel > .panel + .panel,
+.host-view > .panel + .panel {
+    margin-top: 1rem;
+}
 
 .panel-header h2,
 .panel h2,
@@ -2379,19 +2483,58 @@ body {
     .home-buttons .home-tile .btn-icon svg { width: 28px; height: 28px; }
 }
 
+/* Resume banner — sits ABOVE the home action tiles when a tournament is in
+   progress, so the organiser doesn't have to hunt through tiles to get
+   back to it. Visually flagged with a primary-tinted left border so it
+   reads as "pick this up" rather than just another card. */
 .resume-section {
-    margin-top: 2rem;
-    background: var(--color-bg-surface);
-    border: 1px solid var(--color-border);
+    margin: 0 auto 1.2rem;
+    max-width: 720px;
+    background: linear-gradient(135deg, rgba(255, 115, 36, 0.10) 0%, rgba(255, 115, 36, 0.04) 100%);
+    border: 1px solid rgba(255, 115, 36, 0.35);
+    border-left: 3px solid var(--color-primary, #FF7324);
     border-radius: 12px;
-    padding: 1.2rem 1.5rem;
-    display: inline-flex;
-    flex-direction: column;
-    gap: 0.8rem;
+    padding: 0.95rem 1.1rem;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    text-align: left;
+    box-shadow: 0 8px 22px -14px rgba(255, 115, 36, 0.4);
 }
 .resume-section .divider { display: none; }
-.resume-section p { color: var(--color-text-secondary); margin: 0; }
+.resume-section p {
+    color: var(--color-text);
+    margin: 0;
+    font-weight: 600;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.resume-section p::before {
+    content: '⏱ ';
+    margin-right: 0.2rem;
+}
+.resume-actions {
+    display: inline-flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+@media (max-width: 480px) {
+    .resume-section {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+        padding: 0.95rem 1rem 1rem;
+    }
+    .resume-section p {
+        margin-bottom: 0.25rem;
+    }
+    .resume-actions {
+        justify-content: flex-end;
+    }
+}
 
 /* ----- Badges ----- */
 .badge {
@@ -3077,6 +3220,41 @@ body.view-only .spin-hint,
 body.view-only .deck-btn {
     pointer-events: none;
     opacity: 0.45;
+}
+/* Hide owner-only wheel setup controls in viewer mode — viewers only see
+   the spinning canvas + history list. The actual SPIN trigger comes from
+   the synced wheelSpin envelope, not a local button click. */
+body.view-only .wheel-input-area,
+body.view-only #btn-spin,
+body.view-only #wheel-remove-winner,
+body.view-only label[for="wheel-remove-winner"] {
+    display: none !important;
+}
+body.view-only .wheel-layout {
+    grid-template-columns: 1fr !important;
+}
+/* Pulsing red dot on the viewer wheel tab while a spin is mid-flight. */
+.viewer-tab-pulse {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: #ef4444;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+    animation: viewer-tab-pulse-anim 1s ease-in-out infinite;
+}
+@keyframes viewer-tab-pulse-anim {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.7); }
+}
+/* Self-report exception — when the viewer is the player on the pinned
+   pairing AND has trainer ID (URL ?me= or matched via pin search), the
+   pinned card's result buttons are interactive again so they can submit
+   the pass-the-phone confirmation flow. */
+body.view-only .result-buttons.self-report-on {
+    pointer-events: auto;
+    opacity: 1;
 }
 /* In view mode, the spin-side cards still exist (so viewers see the score) but can't open the cross popup */
 body.view-only .spin-side {
@@ -5297,30 +5475,53 @@ body.projector-mode .pairing-help-btn { display: none; }
 /* ── Host page layout ─────────────────────────────────────────────────────── */
 .host-body { background: var(--color-bg-base); min-height: 100vh; }
 
-.host-header {
-    display: flex !important;
+/* Unified host / event header layout — matches the index sticky header
+   shape. 3-column grid pins the wordmark in the centre regardless of
+   whether the back arrow / lang toggle / page tag are present, so the
+   masthead reads consistently across surfaces. padding-top includes
+   safe-area-inset-top so the row clears the iOS notch / Dynamic Island
+   in standalone PWA. */
+.host-header,
+.event-header {
+    display: grid !important;
+    grid-template-columns: 2.6rem 1fr 2.6rem;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.7rem 1rem !important;
+    gap: 0.6rem;
+    padding: calc(0.7rem + env(safe-area-inset-top, 0px)) 1rem 0.7rem !important;
+    text-align: left !important;
 }
-.host-back {
+.host-header > .logo,
+.event-header > .logo {
+    margin: 0;
+    text-align: center;
+    justify-self: center;
+}
+.host-back,
+.event-back {
     color: var(--color-text);
     text-decoration: none;
     font-size: 1.2rem;
     line-height: 1;
     padding: 0.3rem 0.5rem;
     border-radius: 6px;
+    justify-self: start;
 }
-.host-back:hover { background: var(--color-bg-surface); }
-.logo-tiny { font-size: 1.1rem !important; margin: 0 !important; }
+.host-back:hover,
+.event-back:hover { background: var(--color-bg-surface); }
+/* Pull the lang-toggle out of its `.lang-toggle { position: absolute }`
+   default so the grid lays it out as the right column. */
+.host-header > .lang-toggle,
+.event-header > .lang-toggle {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    justify-self: end;
+}
+/* Optional pill (e.g. event walk-in indicator) — render below the header
+   if used, not inside the masthead row, to keep the centre-pinned logo
+   stable. */
 .host-header-tag, .event-header-tag {
-    margin-left: auto;
-    padding: 0.25rem 0.6rem;
-    background: var(--color-primary-soft);
-    border: 1px solid var(--color-primary);
-    border-radius: 999px;
-    font-size: 0.75rem;
-    color: var(--color-accent-subtle);
+    display: none;
 }
 
 .host-main {
@@ -5456,6 +5657,34 @@ body.projector-mode .pairing-help-btn { display: none; }
     font-weight: 700;
 }
 .host-tab.active .host-tab-badge { background: var(--color-primary); color: #fff; }
+.host-tab-badge.is-full {
+    background: var(--color-loss, #d04545);
+    color: #fff;
+}
+
+/* Capacity input row — number input + 「不設上限」 chip side-by-side. */
+.capacity-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.capacity-input-row input[type="number"] {
+    flex: 0 0 7rem;
+}
+.capacity-unlimited-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+.capacity-unlimited-chip input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
 
 /* Editor grids */
 .host-grid-2 {
@@ -5567,20 +5796,58 @@ body.projector-mode .pairing-help-btn { display: none; }
     user-select: none;
 }
 
-/* Save row */
+/* Save row — sticky footer-style strip:
+     [draft / live pill]  [auto-save status]      [publish primary CTA]
+                                                  [↩ unpublish ghost link]
+   On phone the two columns stack but stay tightly padded so the strip
+   doesn't dominate the editor. */
 .host-save-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.8rem;
     margin: 1rem 0 0;
     padding: 0.7rem 1rem;
     background: var(--color-bg-surface);
     border: 1px solid var(--color-border-soft);
-    border-radius: 8px;
+    border-radius: 10px;
     position: sticky;
     bottom: 0.5rem;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 8px 24px -16px rgba(0, 0, 0, 0.7);
+}
+.host-save-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+.host-save-status {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+@media (max-width: 520px) {
+    .host-save-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+        padding: 0.65rem 0.85rem;
+    }
+    .host-save-meta {
+        justify-content: flex-start;
+    }
+    .host-publish-cluster {
+        justify-content: flex-end;
+    }
+    .host-save-status {
+        flex: 1 1 auto;
+    }
 }
 
 /* Promo tab */
@@ -6079,11 +6346,27 @@ body.projector-mode .pairing-help-btn { display: none; }
     text-align: center;
 }
 .host-walkin-qr {
-    margin: 0.6rem auto;
+    margin: 0.6rem auto 0;
     background: #fff;
     padding: 0.4rem;
     border-radius: 6px;
     display: inline-block;
+}
+.host-walkin-qr[hidden] { display: none; }
+/* QR toggle — sits next to the copy button on the walk-in URL row. Compact
+   icon-only by default, lights up when the QR is expanded so the organizer
+   knows whether the panel below is open or hidden. */
+.host-walkin-qr-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.55rem !important;
+    flex: 0 0 auto;
+}
+.host-walkin-qr-toggle.is-active {
+    background: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: #fff !important;
 }
 .host-walkin-manual {
     padding: 0.9rem;
@@ -6488,25 +6771,46 @@ body.projector-mode .pairing-help-btn { display: none; }
 }
 
 
-/* ── Publish cluster (replaces the old "立即儲存" button) ──────────────────── */
+/* ── Publish cluster — primary CTA + ghost unpublish link, packs neatly. ─── */
 .host-publish-cluster {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
+    display: inline-flex;
     align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.host-publish-cluster .btn-ghost {
+    background: transparent;
+    border: none;
+    padding: 0.35rem 0.4rem;
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    border-radius: 6px;
+}
+.host-publish-cluster .btn-ghost:hover {
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.04);
 }
 .host-publish-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     padding: 0.18rem 0.55rem;
     border-radius: 999px;
     font-size: 0.72rem;
-    font-weight: 600;
+    font-weight: 700;
     background: var(--color-bg-surface-2);
     border: 1px solid var(--color-border);
     color: var(--color-text-secondary);
+    line-height: 1;
+    white-space: nowrap;
 }
 .host-publish-state.is-live {
-    background: rgba(46, 196, 182, 0.12);
-    border-color: var(--color-win);
+    background: rgba(46, 196, 182, 0.14);
+    border-color: rgba(46, 196, 182, 0.6);
     color: #9ee8df;
 }
 .host-publish-state.is-draft {
@@ -6758,5 +7062,184 @@ body.projector-mode .pairing-help-btn { display: none; }
         right: 0.7rem;
         bottom: 4.5rem; /* clear iOS Safari bottom toolbar */
     }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Phase 1: Self-report — pass-the-phone confirmation sheet + status
+   badges on owner round view + viewer pinned card.
+   ───────────────────────────────────────────────────────────────── */
+.self-report-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    animation: self-report-fade 0.18s ease-out;
+}
+.self-report-sheet {
+    width: 100%;
+    max-width: 30rem;
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    border-top-left-radius: 1.1rem;
+    border-top-right-radius: 1.1rem;
+    box-shadow: 0 -8px 28px -8px rgba(0, 0, 0, 0.6);
+    max-height: 92dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: self-report-up 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes self-report-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes self-report-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.self-report-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--color-border-soft, rgba(255,255,255,0.1));
+    font-size: 0.95rem;
+}
+.self-report-close {
+    background: none;
+    border: 0;
+    color: var(--color-text-secondary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+}
+.self-report-body {
+    padding: 0.95rem 1rem 0.5rem;
+    overflow-y: auto;
+}
+.self-report-summary {
+    font-size: 1rem;
+    margin: 0 0 0.5rem;
+    line-height: 1.5;
+}
+.self-report-instruction {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin: 0 0 0.85rem;
+    line-height: 1.45;
+}
+.self-report-sig-wrap {
+    position: relative;
+    border: 2px dashed var(--color-border, rgba(255,255,255,0.2));
+    border-radius: 0.7rem;
+    background: var(--color-bg-base);
+    aspect-ratio: 10 / 3;
+    overflow: hidden;
+    touch-action: none;
+}
+.self-report-sig {
+    width: 100%;
+    height: 100%;
+    display: block;
+    color: var(--color-text-primary);
+    cursor: crosshair;
+}
+.self-report-sig-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    pointer-events: none;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+.self-report-sig-clear {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border: 0;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+.self-report-hint {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    margin: 0.55rem 0 0.2rem;
+}
+.self-report-error {
+    background: rgba(208, 69, 69, 0.12);
+    border: 1px solid rgba(208, 69, 69, 0.4);
+    color: var(--color-loss, #d04545);
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+.self-report-actions {
+    display: flex;
+    gap: 0.55rem;
+    padding: 0.7rem 1rem 1rem;
+    border-top: 1px solid var(--color-border-soft, rgba(255,255,255,0.08));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.self-report-actions .btn {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    font-size: 0.92rem;
+    border-radius: 0.65rem;
+}
+
+/* Pinned-card status note shown after submission lands. */
+.self-report-status {
+    margin-top: 0.45rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    text-align: center;
+}
+.self-report-status-disputed {
+    background: rgba(208, 69, 69, 0.12);
+    color: var(--color-loss, #d04545);
+    border: 1px solid rgba(208, 69, 69, 0.4);
+}
+.self-report-status-confirmed {
+    background: rgba(64, 156, 96, 0.12);
+    color: var(--color-win, #4caf6f);
+    border: 1px solid rgba(64, 156, 96, 0.4);
+}
+
+/* Owner round view — small chips on rows that came in via self-report. */
+.pairing-self-report-flag {
+    grid-column: 1 / -1;
+    font-size: 0.7rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 999px;
+    text-align: center;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.02em;
+    align-self: start;
+    justify-self: start;
+}
+.pairing-self-report-confirmed {
+    background: rgba(64, 156, 96, 0.14);
+    color: var(--color-win, #4caf6f);
+    border: 1px solid rgba(64, 156, 96, 0.35);
+}
+.pairing-self-report-disputed {
+    background: rgba(208, 69, 69, 0.14);
+    color: var(--color-loss, #d04545);
+    border: 1px solid rgba(208, 69, 69, 0.45);
+    font-weight: 700;
+}
+.pairing-row-disputed {
+    box-shadow: 0 0 0 1.5px rgba(208, 69, 69, 0.5) inset;
+}
+.pairing-row-selfreported .pairing-player-name::before {
+    content: '';
 }
 

@@ -6,12 +6,14 @@
     <meta name="theme-color" content="#0a0e27">
     <meta name="description" content="GameSet HK — 舉辦 PTCG 活動，免登入、即時生成報名連結。">
     <title>舉辦活動 — GameSet HK</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230a0e27'/%3E%3Cpath%20d='M20%2014h24v10a12%2012%200%200%201-24%200V14z'%20fill='%23FF7324'/%3E%3Crect%20x='26'%20y='36'%20width='12'%20height='8'%20fill='%23FF7324'/%3E%3Crect%20x='20'%20y='44'%20width='24'%20height='6'%20rx='2'%20fill='%23FFC107'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=20260507z">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png?v=20260507z">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png?v=20260507z">
     <script>(function(){try{var t=localStorage.getItem('ptcg_theme')||'original';if(t==='original')document.documentElement.classList.add('theme-original');else document.documentElement.classList.add('theme-'+t);}catch(e){}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="/style.css?v=20260507x">
+    <link rel="stylesheet" href="/style.css?v=20260508l">
 
     <!-- Firebase SDK + cloud module -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" defer></script>
@@ -20,35 +22,38 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js" defer></script>
     <script src="/firebase-config.js" defer></script>
-    <script src="/cloud.js?v=20260507x" defer></script>
-    <script src="/pokemon-picker.js?v=20260507x" defer></script>
+    <script src="/cloud.js?v=20260508d" defer></script>
+    <script src="/pokemon-picker.js?v=20260507z" defer></script>
+    <script src="/i18n-host.js?v=20260508i" defer></script>
 </head>
 <body class="host-body">
     <header id="app-header" class="host-header">
-        <a href="/" class="host-back" aria-label="Home">&larr;</a>
-        <h1 class="logo logo-tiny"><span>GameSet HK</span></h1>
-        <span class="host-header-tag">舉辦活動</span>
+        <a href="/" class="host-back" aria-label="Home" data-i18n-aria="common.home">&larr;</a>
+        <h1 class="logo">
+            <span class="logo-name">GameSet</span><span class="logo-region">HK</span>
+        </h1>
+        <button class="lang-toggle" type="button" data-i18n-toggle onclick="window.gameSetI18n && window.gameSetI18n.toggleLang()">EN</button>
     </header>
 
     <main class="host-main">
         <!-- VIEW A: CREATE-NEW SPLASH (no event yet) -->
         <section id="host-create" class="host-view" hidden>
             <div class="panel host-create-panel">
-                <h2>舉辦 PTCG 活動</h2>
-                <p class="info-text">
+                <h2 data-i18n="hostCreate.title">舉辦 PTCG 活動</h2>
+                <p class="info-text" data-i18n-html="hostCreate.lead">
                     一按即生成獨立 event ID，玩家用報名連結即時填表，免登入。<br>
                     創建後請即刻儲存「主辦人專用連結」—— 失去就要重新建立活動。
                 </p>
                 <div class="host-create-actions">
-                    <button id="btn-create-event" class="btn btn-primary btn-large" type="button">
+                    <button id="btn-create-event" class="btn btn-primary btn-large" type="button" data-i18n="hostCreate.btn">
                         + 立即創建活動
                     </button>
                 </div>
                 <div id="host-create-error" class="host-error" hidden></div>
                 <div class="host-create-faq">
                     <details>
-                        <summary>已有 event ID？</summary>
-                        <p class="info-text">用返創建活動時拎到嘅「主辦人專用連結」直接打開就可以繼續編輯。如果你只記得 event ID，請打開 <code>https://gameset-hk.com/host/?e=YOUR_ID&amp;k=YOUR_KEY</code>。</p>
+                        <summary data-i18n="hostCreate.haveId">已有 event ID？</summary>
+                        <p class="info-text" data-i18n-html="hostCreate.haveIdBody">用返創建活動時拎到嘅「主辦人專用連結」直接打開就可以繼續編輯。如果你只記得 event ID，請打開 <code>https://gameset-hk.com/host/?e=YOUR_ID&amp;k=YOUR_KEY</code>。</p>
                     </details>
                 </div>
             </div>
@@ -57,27 +62,27 @@
         <!-- VIEW B: JUST-CREATED — show edit URL prominently and force user to acknowledge -->
         <section id="host-just-created" class="host-view" hidden>
             <div class="panel host-just-created-panel">
-                <h2>✅ 活動已創建</h2>
+                <h2 data-i18n="justCreated.title">✅ 活動已創建</h2>
                 <div class="host-id-badge">
                     <span class="host-id-label">Event ID</span>
                     <strong id="host-just-created-eid"></strong>
                 </div>
-                <p class="host-warning">
+                <p class="host-warning" data-i18n-html="justCreated.warn">
                     ⚠️ <strong>下面係主辦人專用連結（包含你嘅 edit key）</strong>—— 請即刻儲存／截圖／傳俾自己。
                     呢條 link 等於本活動嘅後台鎖匙，唔好公開分享，遺失將無法繼續編輯。
                 </p>
                 <div class="host-edit-url-row">
                     <input id="host-just-created-url" type="text" readonly>
-                    <button id="btn-copy-edit-url" class="btn btn-small btn-primary" type="button">複製</button>
+                    <button id="btn-copy-edit-url" class="btn btn-small btn-primary" type="button" data-i18n="justCreated.copyEdit">複製</button>
                 </div>
                 <div class="host-edit-url-actions">
-                    <button id="btn-share-edit-url" class="btn btn-secondary btn-small" type="button">📤 分享俾自己</button>
+                    <button id="btn-share-edit-url" class="btn btn-secondary btn-small" type="button" data-i18n="justCreated.shareEdit">📤 分享俾自己</button>
                 </div>
                 <label class="host-ack">
                     <input type="checkbox" id="chk-edit-url-saved">
-                    <span>我已經儲存咗呢條主辦人連結</span>
+                    <span data-i18n="justCreated.ack">我已經儲存咗呢條主辦人連結</span>
                 </label>
-                <button id="btn-enter-editor" class="btn btn-primary" type="button" disabled>進入編輯</button>
+                <button id="btn-enter-editor" class="btn btn-primary" type="button" disabled data-i18n="justCreated.enter">進入編輯</button>
             </div>
         </section>
 
@@ -85,60 +90,71 @@
         <section id="host-editor" class="host-view" hidden>
             <div class="host-editor-banner">
                 <div class="host-editor-id">
-                    <span class="host-id-label">Event ID</span>
+                    <span class="host-id-label" data-i18n="editor.eventId">Event ID</span>
                     <strong id="host-editor-eid"></strong>
                 </div>
-                <span class="host-editor-phase" id="host-editor-phase">報名中</span>
-                <button id="btn-show-edit-url" class="btn btn-small btn-secondary" type="button">活動連結</button>
+                <span class="host-editor-phase" id="host-editor-phase" data-i18n="phase.signup">報名中</span>
+                <button id="btn-show-edit-url" class="btn btn-small btn-secondary" type="button" data-i18n="editor.linksBtn">活動連結</button>
             </div>
 
             <nav class="host-tabs" role="tablist">
-                <button class="host-tab active" data-tab="info" type="button">活動資料</button>
-                <button class="host-tab" data-tab="promo" type="button">推廣文本</button>
-                <button class="host-tab" data-tab="signups" type="button">報名清單 <span id="host-signup-count-badge" class="host-tab-badge">0</span></button>
+                <button class="host-tab active" data-tab="info" type="button" data-i18n="tab.info">活動資料</button>
+                <button class="host-tab" data-tab="promo" type="button" data-i18n="tab.promo">推廣文本</button>
+                <button class="host-tab" data-tab="signups" type="button"><span data-i18n="tab.signups">報名清單</span> <span id="host-signup-count-badge" class="host-tab-badge">0</span></button>
             </nav>
 
             <!-- TAB: INFO -->
             <div class="host-tab-panel" data-tab-panel="info">
                 <div class="panel">
-                    <h3>活動資料</h3>
+                    <h3 data-i18n="info.title">活動資料</h3>
                     <div class="host-grid-2">
                         <div class="reg-meta-field">
-                            <label>主辦機構</label>
-                            <input id="meta-org" type="text" placeholder="e.g. AAB Card Shop" data-meta="org">
+                            <label data-i18n="info.org">主辦機構</label>
+                            <input id="meta-org" type="text" placeholder="e.g. AAB Card Shop" data-i18n-placeholder="info.orgPh" data-meta="org">
                         </div>
                         <div class="reg-meta-field">
-                            <label>活動名稱</label>
-                            <input id="meta-name" type="text" placeholder="e.g. 5 月 Gym Battle" data-meta="name">
+                            <label data-i18n="info.name">活動名稱</label>
+                            <input id="meta-name" type="text" placeholder="e.g. 5 月 Gym Battle" data-i18n-placeholder="info.namePh" data-meta="name">
                         </div>
                         <div class="reg-meta-field">
-                            <label>日期</label>
+                            <label data-i18n="info.date">日期</label>
                             <input id="meta-date" type="date" data-meta="date">
                         </div>
                         <div class="reg-meta-field">
-                            <label>時間</label>
+                            <label data-i18n="info.time">時間</label>
                             <input id="meta-time" type="time" data-meta="time">
                         </div>
                         <div class="reg-meta-field reg-meta-field-wide">
-                            <label>地址</label>
-                            <input id="meta-address" type="text" placeholder="e.g. 旺角中心 5/F 503 室" data-meta="address">
+                            <label data-i18n="info.address">地址</label>
+                            <input id="meta-address" type="text" placeholder="e.g. 旺角中心 5/F 503 室" data-i18n-placeholder="info.addressPh" data-meta="address">
                         </div>
                         <div class="reg-meta-field reg-meta-field-wide">
-                            <label>活動描述</label>
-                            <textarea id="meta-desc" rows="4" placeholder="格式 / 規則 / 注意事項…" data-meta="desc"></textarea>
+                            <label data-i18n="info.desc">活動描述</label>
+                            <textarea id="meta-desc" rows="4" placeholder="格式 / 規則 / 注意事項…" data-i18n-placeholder="info.descPh" data-meta="desc"></textarea>
                         </div>
                         <div class="reg-meta-field">
-                            <label>聯絡資料</label>
-                            <input id="meta-contact" type="text" placeholder="e.g. WhatsApp 9123 4567" data-meta="contact">
+                            <label data-i18n="info.contact">聯絡資料</label>
+                            <input id="meta-contact" type="text" placeholder="e.g. WhatsApp 9123 4567" data-i18n-placeholder="info.contactPh" data-meta="contact">
                         </div>
                         <div class="reg-meta-field">
-                            <label>入場費 (HKD)</label>
+                            <label data-i18n="info.fee">入場費 (HKD)</label>
                             <input id="meta-fee" type="number" min="0" step="10" placeholder="0" data-meta="fee">
+                        </div>
+                        <div class="reg-meta-field">
+                            <label data-i18n="info.capacity">報名上限</label>
+                            <div class="capacity-input-row">
+                                <input id="meta-capacity" type="number" min="2" step="1" placeholder="—">
+                                <label class="capacity-unlimited-chip">
+                                    <input id="meta-capacity-unlimited" type="checkbox">
+                                    <span data-i18n="info.capacityUnlimited">不設上限</span>
+                                </label>
+                            </div>
+                            <span class="info-text input-hint" data-i18n="info.capacityHint">滿額後玩家無法網上報名（主辦仍可手動加 walk-in）。</span>
                         </div>
                     </div>
 
                     <div class="reg-meta-field reg-meta-field-wide host-payment-block">
-                        <label>接受嘅付款方式</label>
+                        <label data-i18n="info.payments">接受嘅付款方式</label>
                         <div class="host-payment-grid">
                             <label class="host-payment-chip"><input type="checkbox" data-payment="cash" checked> 現金</label>
                             <label class="host-payment-chip"><input type="checkbox" data-payment="payme"> PayMe</label>
@@ -153,15 +169,15 @@
                 </div>
 
                 <div class="panel">
-                    <h3>宣傳圖片</h3>
-                    <p class="info-text">建議 Instagram 直度比例（4:5）或 1:1，最大 2 MB。活動到期後自動刪除。</p>
+                    <h3 data-i18n="info.image">宣傳圖片</h3>
+                    <p class="info-text" data-i18n="info.imageHint">建議 Instagram 直度比例（4:5）或 1:1，最大 2 MB。活動到期後自動刪除。</p>
                     <div class="host-image-row">
                         <div id="host-image-preview" class="host-image-preview" hidden>
                             <img id="host-image-img" src="" alt="活動宣傳圖片">
-                            <button id="btn-remove-image" type="button" class="btn btn-small btn-danger">移除圖片</button>
+                            <button id="btn-remove-image" type="button" class="btn btn-small btn-danger" data-i18n="info.imageRemove">移除圖片</button>
                         </div>
                         <label id="host-image-drop" class="host-image-drop" for="host-image-input">
-                            <span>📷 按此上傳 / 拖入圖片</span>
+                            <span data-i18n="info.imageDrop">📷 按此上傳 / 拖入圖片</span>
                             <input id="host-image-input" type="file" accept="image/*" hidden>
                         </label>
                     </div>
@@ -169,48 +185,43 @@
                 </div>
 
                 <div class="panel">
-                    <h3>獎品 Tier</h3>
-                    <p class="info-text">設定每個人數門檻嘅獎品。例如：4 人開賽 → 有開賽；8 人 → 頭獎一盒卡；16 人 → 一張稀有卡⋯</p>
+                    <h3 data-i18n="info.prizes">獎品 Tier</h3>
+                    <p class="info-text" data-i18n="info.prizesHint">設定每個人數門檻嘅獎品。例如：4 人開賽 → 有開賽；8 人 → 頭獎一盒卡；16 人 → 一張稀有卡⋯</p>
                     <div id="host-prize-tiers"></div>
-                    <button id="btn-add-tier" type="button" class="btn btn-secondary btn-small">+ 新增 Tier</button>
+                    <button id="btn-add-tier" type="button" class="btn btn-secondary btn-small" data-i18n="info.tierAdd">+ 新增 Tier</button>
                     <div class="reg-meta-field reg-meta-field-wide" style="margin-top:1.2rem">
-                        <label>抽獎獎品 / 全員獎</label>
-                        <textarea id="prize-lucky" rows="2" placeholder="e.g. 全員抽獎：精美卡套 ×3"></textarea>
+                        <label data-i18n="info.lucky">抽獎獎品 / 全員獎</label>
+                        <textarea id="prize-lucky" rows="2" placeholder="e.g. 全員抽獎：精美卡套 ×3" data-i18n-placeholder="info.luckyPh"></textarea>
                     </div>
                 </div>
 
                 <div class="panel">
-                    <h3>活動狀態 / 同步</h3>
+                    <h3 data-i18n="info.statusTitle">活動狀態</h3>
+                    <!-- Hidden controls: signup is always open + TopCut sync is always on
+                         (the whole point of GameSet HK + the free promo we offer to hosts).
+                         Inputs preserved + checked so collectFromUI() still produces the
+                         right `signupOpen` / `syncToTopCut: true` payload until the data
+                         model drops them. -->
+                    <input type="checkbox" id="signup-open-toggle" hidden checked>
+                    <input type="checkbox" id="sync-topcut-toggle" hidden checked>
                     <div class="host-status-row">
-                        <label class="host-toggle">
-                            <input type="checkbox" id="signup-open-toggle">
-                            <span>開放網上報名</span>
-                        </label>
-                        <span class="info-text">關閉後玩家無法再透過公開連結報名（場內 walk-in QR 仍然可用）。</span>
-                    </div>
-                    <div class="host-status-row">
-                        <label class="host-toggle">
-                            <input type="checkbox" id="sync-topcut-toggle" checked>
-                            <span>📣 同步去 TopCut HK 社群</span>
-                        </label>
-                        <span class="info-text">活動會以 GameSet HK 帳號喺 <a href="https://topcut-hk.com" target="_blank" rel="noopener">TopCut HK</a> feed 出 post，玩家可以撳「報名」直接彈到呢個 GameSet 報名頁。改設定會即時同步。</span>
-                    </div>
-                    <div class="host-status-row">
-                        <button id="btn-cancel-event" class="btn btn-danger btn-small" type="button">取消活動</button>
-                        <span class="info-text">公開頁將顯示「⛔ 活動已取消」橫幅。可以還原。</span>
+                        <button id="btn-cancel-event" class="btn btn-danger btn-small" type="button" data-i18n="info.cancel">暫停活動</button>
+                        <span class="info-text" data-i18n="info.cancelHint">公開頁將顯示「⛔ 活動已暫停」橫幅。可以隨時還原。</span>
                     </div>
                     <div id="host-delete-event-row" class="host-status-row host-danger-zone" hidden>
-                        <button id="btn-delete-event" class="btn btn-danger btn-small" type="button">🗑 永久刪除呢個活動</button>
-                        <span class="info-text">會移除全部報名、宣傳圖、TopCut post — 完全不可復原。<strong>只可以喺比賽未開始（phase=signup）時刪除。</strong></span>
+                        <button id="btn-delete-event" class="btn btn-danger btn-small" type="button" data-i18n="info.delete">🗑 刪除</button>
+                        <span class="info-text" data-i18n-html="info.deleteHint">會移除全部報名、宣傳圖、TopCut post — 完全不可復原。<strong>只可以喺比賽未開始時刪除。</strong></span>
                     </div>
                 </div>
 
                 <div class="host-save-row">
-                    <span id="host-save-status" class="info-text">所有改動會自動儲存</span>
-                    <div class="host-publish-cluster">
+                    <div class="host-save-meta">
                         <span id="host-publish-state" class="host-publish-state" hidden></span>
-                        <button id="btn-publish-event" class="btn btn-primary" type="button">📣 發佈活動</button>
-                        <button id="btn-unpublish-event" class="btn btn-secondary btn-small" type="button" hidden>↩ 取消發佈</button>
+                        <span id="host-save-status" class="host-save-status" data-i18n="save.autoNote">所有改動會自動儲存</span>
+                    </div>
+                    <div class="host-publish-cluster">
+                        <button id="btn-unpublish-event" class="btn btn-ghost btn-small" type="button" hidden data-i18n="publish.unpublishBtn">↩ 取消發佈</button>
+                        <button id="btn-publish-event" class="btn btn-primary" type="button" data-i18n="publish.publishBtn">📣 發佈活動</button>
                     </div>
                 </div>
             </div>
@@ -218,34 +229,34 @@
             <!-- TAB: PROMO TEXT -->
             <div class="host-tab-panel" data-tab-panel="promo" hidden>
                 <div class="panel">
-                    <h3>推廣文本</h3>
-                    <p class="info-text">根據活動資料即時生成。可直接複製貼到 WhatsApp / IG / Telegram。</p>
+                    <h3 data-i18n="promo.title">推廣文本</h3>
+                    <p class="info-text" data-i18n="promo.intro">根據活動資料即時生成。可直接複製貼到 WhatsApp / IG / Telegram。</p>
                     <div class="host-promo-tools">
                         <label class="host-toggle">
                             <input type="radio" name="promo-lang" value="zh" checked>
-                            <span>繁中</span>
+                            <span data-i18n="promo.langZh">繁中</span>
                         </label>
                         <label class="host-toggle">
                             <input type="radio" name="promo-lang" value="en">
-                            <span>English</span>
+                            <span data-i18n="promo.langEn">English</span>
                         </label>
                         <label class="host-toggle">
                             <input type="radio" name="promo-lang" value="both">
-                            <span>雙語</span>
+                            <span data-i18n="promo.langBoth">雙語</span>
                         </label>
                     </div>
                     <textarea id="host-promo-text" rows="20" readonly></textarea>
                     <div class="host-promo-actions">
-                        <button id="btn-copy-promo" class="btn btn-primary" type="button">📋 複製</button>
-                        <button id="btn-share-promo" class="btn btn-secondary" type="button">📤 分享</button>
+                        <button id="btn-copy-promo" class="btn btn-primary" type="button" data-i18n="promo.copy">📋 複製</button>
+                        <button id="btn-share-promo" class="btn btn-secondary" type="button" data-i18n="promo.share">📤 分享</button>
                     </div>
                 </div>
 
                 <div class="panel">
-                    <h3>玩家報名連結</h3>
+                    <h3 data-i18n="promo.publicTitle">玩家報名連結</h3>
                     <div class="host-link-row">
                         <input id="host-public-url" type="text" readonly>
-                        <button id="btn-copy-public-url" class="btn btn-small btn-primary" type="button">複製</button>
+                        <button id="btn-copy-public-url" class="btn btn-small btn-primary" type="button" data-i18n="common.copy">複製</button>
                     </div>
                     <div id="host-public-qr" class="host-public-qr"></div>
                 </div>
@@ -257,46 +268,54 @@
                 <div class="panel">
                     <details id="host-walkin-panel">
                         <summary class="host-walkin-summary">
-                            <span>🎟 場內 Walk-in 工具</span>
-                            <span class="info-text">QR · 手動加入</span>
+                            <span data-i18n="signups.walkinPanel">🎟 場內 Walk-in 工具</span>
+                            <span class="info-text" data-i18n="signups.walkinTagline">QR · 手動加入</span>
                         </summary>
                         <div class="host-walkin-body">
                             <div class="host-walkin-grid">
                                 <div class="host-walkin-qr-box">
-                                    <p class="info-text"><strong>場內掃碼自助報名</strong></p>
-                                    <p class="info-text">玩家用手機掃描即場填表，即時加入清單（自動 mark walk-in）。</p>
-                                    <div id="host-walkin-qr" class="host-walkin-qr"></div>
+                                    <p class="info-text"><strong data-i18n="signups.walkinQrTitle">場內掃碼自助報名</strong></p>
+                                    <p class="info-text" data-i18n="signups.walkinQrHint">玩家用手機掃描即場填表，即時加入清單（自動 mark walk-in）。</p>
                                     <div class="host-link-row">
                                         <input id="host-walkin-url" type="text" readonly>
-                                        <button class="btn btn-small btn-primary" type="button" id="btn-copy-walkin-url">複製</button>
+                                        <button class="btn btn-small btn-primary" type="button" id="btn-copy-walkin-url" data-i18n="common.copy">複製</button>
+                                        <button class="btn btn-small btn-secondary host-walkin-qr-toggle" type="button" id="btn-show-walkin-qr" aria-expanded="false" aria-controls="host-walkin-qr" title="顯示 QR Code" aria-label="顯示 QR Code">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                                <path d="M14 14h3v3M21 14v3M14 17v4M17 21h4M21 17v4"/>
+                                            </svg>
+                                        </button>
                                     </div>
+                                    <div id="host-walkin-qr" class="host-walkin-qr" hidden></div>
                                 </div>
                                 <div class="host-walkin-manual">
-                                    <p class="info-text"><strong>由你代填（玩家口頭報資料）</strong></p>
+                                    <p class="info-text"><strong data-i18n="signups.walkinManualTitle">由你代填（玩家口頭報資料）</strong></p>
                                     <div class="reg-meta-field">
-                                        <label>姓名</label>
-                                        <input id="walkin-name" type="text" maxlength="60" placeholder="玩家名">
+                                        <label data-i18n="walkin.name">姓名</label>
+                                        <input id="walkin-name" type="text" maxlength="60" placeholder="玩家名" data-i18n-placeholder="walkin.nameOptional">
                                     </div>
                                     <div class="reg-meta-field">
-                                        <label>Trainer ID</label>
+                                        <label data-i18n="walkin.trainerId">Trainer ID</label>
                                         <div class="trainer-id-input">
                                             <span class="trainer-id-prefix">hk</span>
                                             <input id="walkin-trainer-id" type="text" inputmode="numeric" maxlength="8" placeholder="12345678">
                                         </div>
                                     </div>
                                     <div class="reg-meta-field">
-                                        <label>聯絡電話 (可空)</label>
+                                        <label data-i18n="walkin.phoneOptional">聯絡電話 (可空)</label>
                                         <input id="walkin-phone" type="tel" inputmode="numeric" maxlength="20" placeholder="9123 4567">
                                     </div>
                                     <div class="reg-meta-field">
-                                        <label>Deck 主角</label>
+                                        <label data-i18n="walkin.deck">Deck 主角</label>
                                         <div class="deck-picker-row">
-                                            <button type="button" id="btn-walkin-pick-1" class="deck-picker-slot"><span class="deck-picker-empty">＋ 主角</span></button>
-                                            <button type="button" id="btn-walkin-pick-2" class="deck-picker-slot"><span class="deck-picker-empty">＋ 副 (可選)</span></button>
+                                            <button type="button" id="btn-walkin-pick-1" class="deck-picker-slot"><span class="deck-picker-empty" data-i18n="signup.deckMain">＋ 主角</span></button>
+                                            <button type="button" id="btn-walkin-pick-2" class="deck-picker-slot"><span class="deck-picker-empty" data-i18n="signup.deckSub">＋ 副 (可選)</span></button>
                                         </div>
                                     </div>
                                     <div id="walkin-error" class="host-error" hidden></div>
-                                    <button id="btn-add-walkin" type="button" class="btn btn-primary btn-small">+ 加入清單</button>
+                                    <button id="btn-add-walkin" type="button" class="btn btn-primary btn-small" data-i18n="walkin.add">+ 加入清單</button>
                                 </div>
                             </div>
                         </div>
@@ -305,42 +324,43 @@
 
                 <div class="panel">
                     <div class="panel-header">
-                        <h3>報名清單</h3>
+                        <h3 data-i18n="signups.list">報名清單</h3>
                         <span id="host-signup-count" class="badge">0 人</span>
                     </div>
 
                     <!-- Filter chips -->
                     <div class="host-signup-filter" role="tablist">
-                        <button class="host-filter-chip active" data-filter="all" type="button">全部 <span class="host-filter-num" data-filter-num="all">0</span></button>
-                        <button class="host-filter-chip" data-filter="checked" type="button">已簽到 <span class="host-filter-num" data-filter-num="checked">0</span></button>
-                        <button class="host-filter-chip" data-filter="paid" type="button">已付款 <span class="host-filter-num" data-filter-num="paid">0</span></button>
-                        <button class="host-filter-chip" data-filter="walkin" type="button">Walk-in <span class="host-filter-num" data-filter-num="walkin">0</span></button>
-                        <button class="host-filter-chip" data-filter="unpaid" type="button">未付款 <span class="host-filter-num" data-filter-num="unpaid">0</span></button>
+                        <button class="host-filter-chip active" data-filter="all" type="button"><span data-i18n="signups.filterAll">全部</span> <span class="host-filter-num" data-filter-num="all">0</span></button>
+                        <button class="host-filter-chip" data-filter="checked" type="button"><span data-i18n="signups.filterChecked">已簽到</span> <span class="host-filter-num" data-filter-num="checked">0</span></button>
+                        <button class="host-filter-chip" data-filter="paid" type="button"><span data-i18n="signups.filterPaid">已付款</span> <span class="host-filter-num" data-filter-num="paid">0</span></button>
+                        <button class="host-filter-chip" data-filter="walkin" type="button"><span data-i18n="signups.filterWalkin">Walk-in</span> <span class="host-filter-num" data-filter-num="walkin">0</span></button>
+                        <button class="host-filter-chip" data-filter="unpaid" type="button"><span data-i18n="signups.filterUnpaid">未付款</span> <span class="host-filter-num" data-filter-num="unpaid">0</span></button>
                     </div>
 
                     <!-- Bulk actions -->
                     <div class="host-bulk-row">
-                        <button id="btn-bulk-check" class="btn btn-secondary btn-small" type="button">✓ 全部簽到</button>
-                        <button id="btn-bulk-paid-cash" class="btn btn-secondary btn-small" type="button">💵 未付款全部標為現金已付</button>
-                        <button id="btn-export-csv" class="btn btn-secondary btn-small" type="button">📥 下載 CSV</button>
+                        <button id="btn-bulk-check" class="btn btn-secondary btn-small" type="button" data-i18n="signups.bulkCheck">✓ 全部簽到</button>
+                        <button id="btn-bulk-paid-cash" class="btn btn-secondary btn-small" type="button" data-i18n="signups.bulkPaidCash">💵 未付款全部標為現金已付</button>
+                        <button id="btn-export-csv" class="btn btn-secondary btn-small" type="button" data-i18n="signups.exportCsv">📥 下載 CSV</button>
                     </div>
 
                     <div id="host-signups-list" class="host-signups-list"></div>
                     <div id="host-signups-empty" class="host-signups-empty" hidden>
-                        <p>仲未有人報名。<br>到「推廣文本」tab 複製連結出去廣傳吧 🎴</p>
+                        <p><span data-i18n="signups.empty">仲未有人報名。</span><br><span data-i18n="signups.emptyHint">到「推廣文本」tab 複製連結出去廣傳吧 🎴</span></p>
                     </div>
 
                     <!-- Start tournament action -->
                     <div class="host-start-tournament-row">
-                        <button id="btn-start-tournament" class="btn btn-primary" type="button">▶ 開始比賽（已簽到玩家）</button>
-                        <span class="info-text">只有已簽到嘅玩家會載入到比賽頁。仲可以喺登記頁加額外玩家或刪走。</span>
+                        <button id="btn-start-tournament" class="btn btn-primary" type="button" data-i18n="signups.startTournament">▶ 開始比賽（已簽到玩家）</button>
+                        <span class="info-text" data-i18n="signups.startHint">只有已簽到嘅玩家會載入到比賽頁。仲可以喺登記頁加額外玩家或刪走。</span>
                     </div>
 
-                    <!-- Result preview / publish (visible only when phase=ended) -->
-                    <div id="host-publish-result-row" class="host-start-tournament-row" hidden>
-                        <button id="btn-publish-result" class="btn btn-primary" type="button">📣 預覽 + 發送結果到 TopCut HK</button>
-                        <span class="info-text">展示比賽完結後嘅排名 / Deck 餅圖，組織者可以改名再發送。發送後 trainer ID 戰績會綁定到 TopCut。</span>
-                    </div>
+                    <!-- Result publish row removed: results are auto-published to
+                         TopCut HK at multiple checkpoints (wheel-start, page exit,
+                         tournament end). No organizer prompt needed. The preview
+                         modal markup still lives below, but is no longer reachable
+                         via UI; kept in case auto-publish ever needs a fallback. -->
+                    <div id="host-publish-result-row" hidden></div>
                 </div>
             </div>
 
@@ -348,13 +368,13 @@
             <div id="host-result-overlay" class="modal-overlay">
                 <div class="modal-content host-result-modal" onclick="event.stopPropagation()">
                     <button class="modal-close" type="button" onclick="hostApp.closeResultPreview()">&times;</button>
-                    <h3>結果預覽 — TopCut HK 帖文</h3>
-                    <p class="info-text">下面係將會以 <strong>@gameset_hk</strong> 身份出 post 嘅內容。可以改玩家顯示名（不影響 trainer ID 綁定）。</p>
+                    <h3 data-i18n="resultModal.title">結果預覽 — TopCut HK 帖文</h3>
+                    <p class="info-text" data-i18n-html="resultModal.lead">下面係將會以 <strong>@gameset_hk</strong> 身份出 post 嘅內容。可以改玩家顯示名（不影響 trainer ID 綁定）。</p>
                     <div id="host-result-preview" class="host-result-preview"></div>
                     <div id="host-result-status" class="host-error" hidden></div>
                     <div class="event-signup-footer">
-                        <button class="btn btn-secondary" type="button" onclick="hostApp.closeResultPreview()">取消</button>
-                        <button id="btn-confirm-publish" class="btn btn-primary" type="button">📣 確定發送到 TopCut</button>
+                        <button class="btn btn-secondary" type="button" onclick="hostApp.closeResultPreview()" data-i18n="common.cancel">取消</button>
+                        <button id="btn-confirm-publish" class="btn btn-primary" type="button" data-i18n="resultModal.confirm">📣 確定發送到 TopCut</button>
                     </div>
                 </div>
             </div>
@@ -365,25 +385,25 @@
     <div id="host-url-overlay" class="modal-overlay">
         <div class="modal-content host-url-modal" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="hostApp.closeUrlModal()">&times;</button>
-            <h3>活動連結</h3>
+            <h3 data-i18n="modal.linksTitle">活動連結</h3>
             <div class="host-url-block">
-                <span class="info-text"><strong>📤 玩家報名連結（公開分享）</strong></span>
+                <span class="info-text"><strong data-i18n="modal.publicLabel">📤 玩家報名連結（公開分享）</strong></span>
                 <div class="host-link-row">
                     <input id="modal-public-url" type="text" readonly>
-                    <button class="btn btn-small btn-primary" onclick="hostApp.copyText('modal-public-url')" type="button">複製</button>
+                    <button class="btn btn-small btn-primary" onclick="hostApp.copyText('modal-public-url')" type="button" data-i18n="common.copy">複製</button>
                 </div>
             </div>
             <div class="host-url-block">
-                <span class="info-text"><strong>🔒 主辦人專用連結（請保管，不要公開）</strong></span>
+                <span class="info-text"><strong data-i18n="modal.editLabel">🔒 主辦人專用連結（請保管，不要公開）</strong></span>
                 <div class="host-link-row">
                     <input id="modal-edit-url" type="text" readonly>
-                    <button class="btn btn-small btn-secondary" onclick="hostApp.copyText('modal-edit-url')" type="button">複製</button>
+                    <button class="btn btn-small btn-secondary" onclick="hostApp.copyText('modal-edit-url')" type="button" data-i18n="common.copy">複製</button>
                 </div>
-                <p class="host-warning host-warning-inline">遺失 = 失去本活動編輯權。</p>
+                <p class="host-warning host-warning-inline" data-i18n="modal.editWarn">遺失 = 失去本活動編輯權。</p>
             </div>
         </div>
     </div>
 
-    <script src="host.js?v=20260507x" defer></script>
+    <script src="host.js?v=20260508i" defer></script>
 </body>
 </html>

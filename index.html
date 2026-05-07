@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0a0e27">
     <meta name="author" content="GameSet HK">
     <meta name="copyright" content="© 2026 GameSet HK. All rights reserved.">
-    <meta name="description" content="GameSet HK — run Swiss or knockout TCG tournaments in-browser. Automatic pairings, live standings with full tiebreakers (OWP, OOMW, WOScore), shareable spectator links, works offline, free.">
+    <meta name="description" content="GameSet HK — run Swiss or knockout TCG / Beyblade X tournaments in-browser. Live spectator broadcasts (round view, standings, lucky-draw wheel animation), players self-report match results with pass-the-phone confirmation, hosted events with registration caps, full tiebreakers (OWP, OOMW, WOScore), shareable spectator links, free, no signup.">
     <meta name="keywords" content="GameSet HK, Pokémon TCG, Swiss pairing, tournament manager, knockout bracket, OMW, tiebreaker, trainer, TCG event">
     <title>GameSet HK — TCG Tournament Manager (Swiss & Knockout)</title>
     <!-- Owner entry. If a tournament ID is in the URL (?t=...), bounce to the dedicated viewer page. -->
@@ -18,26 +18,29 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="GameSet HK">
     <meta property="og:title" content="GameSet HK — run Pokémon TCG events in your browser">
-    <meta property="og:description" content="Automatic Swiss pairings, live standings with official-style tiebreakers, shareable spectator links. Free, no signup.">
+    <meta property="og:description" content="Run TCG / Beyblade X tournaments fast. Live spectator broadcasts (round, standings, lucky-wheel animation), player self-report scoring, hosted-event signups with registration caps. Free, browser-based.">
     <meta property="og:url" content="https://gameset-hk.com/">
-    <meta property="og:image" content="https://gameset-hk.com/og-image.svg">
+    <meta property="og:image" content="https://gameset-hk.com/icons/og-1200x630.png">
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="GameSet HK — TCG Tournament Manager">
-    <meta name="twitter:description" content="Swiss & knockout pairings, full tiebreaker ladder, live spectator view.">
-    <meta name="twitter:image" content="https://gameset-hk.com/og-image.svg">
+    <meta name="twitter:description" content="Tournaments + lucky wheel + hosted events, all live to spectators. Players self-report; organizer barely lifts a finger. Free.">
+    <meta name="twitter:image" content="https://gameset-hk.com/icons/og-1200x630.png">
 
-    <!-- Favicon (inline SVG — trophy) -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230a0e27'/%3E%3Cpath%20d='M20%2014h24v10a12%2012%200%200%201-24%200V14z'%20fill='%23FF7324'/%3E%3Cpath%20d='M14%2018h6v6a6%206%200%200%201-6-6zm30%200h6a6%206%200%200%201-6%206v-6z'%20fill='%23FF7324'/%3E%3Crect%20x='26'%20y='36'%20width='12'%20height='8'%20fill='%23FF7324'/%3E%3Crect%20x='20'%20y='44'%20width='24'%20height='6'%20rx='2'%20fill='%23FFC107'/%3E%3C/svg%3E">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='12'%20fill='%230a0e27'/%3E%3Cpath%20d='M20%2014h24v10a12%2012%200%200%201-24%200V14z'%20fill='%23FF7324'/%3E%3Cpath%20d='M14%2018h6v6a6%206%200%200%201-6-6zm30%200h6a6%206%200%200%201-6%206v-6z'%20fill='%23FF7324'/%3E%3Crect%20x='26'%20y='36'%20width='12'%20height='8'%20fill='%23FF7324'/%3E%3Crect%20x='20'%20y='44'%20width='24'%20height='6'%20rx='2'%20fill='%23FFC107'/%3E%3C/svg%3E">
+    <!-- Favicon — referee mascot (TCG Tournament Manager). Multi-size PNG
+         set lives in /icons/ — see manifest.webmanifest for PWA install. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=20260507z">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png?v=20260507z">
+    <link rel="shortcut icon" href="/icons/favicon.ico?v=20260507z">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png?v=20260507z">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="canonical" href="https://gameset-hk.com/">
     <script>(function(){try{var m={crobat:'deeppurple',gardevoir:'magenta',gengar:'cyan',pikachu:'yellow',greninja:'coral'};var t=localStorage.getItem('ptcg_theme');if(t&&m[t]){t=m[t];localStorage.setItem('ptcg_theme',t);}if(!t)t='original';if(t==='original')document.documentElement.classList.add('theme-original');else if(t==='magenta')document.documentElement.classList.add('theme-magenta');else if(t==='cyan')document.documentElement.classList.add('theme-cyan');else if(t==='yellow')document.documentElement.classList.add('theme-yellow');else if(t==='coral')document.documentElement.classList.add('theme-coral');}catch(e){}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20260507v">
+    <link rel="stylesheet" href="style.css?v=20260508o">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
@@ -46,7 +49,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js" defer></script>
     <script src="firebase-config.js" defer></script>
-    <script src="cloud.js?v=20260507v" defer></script>
+    <script src="cloud.js?v=20260508o" defer></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-44W3GZTCS4"></script>
     <script>
@@ -94,8 +97,7 @@
             <button id="lang-toggle" class="lang-toggle" onclick="app.toggleLang()" title="Language">中文</button>
         </div>
         <h1 class="logo">
-            <span class="logo-full" data-i18n="header.title">GameSet HK</span>
-            <span class="logo-short" aria-hidden="true">GameSet HK</span>
+            <span class="logo-name">GameSet</span><span class="logo-region">HK</span>
         </h1>
         <div id="breadcrumb" class="breadcrumb"></div>
     </header>
@@ -130,7 +132,33 @@
                 </section>
                 <h2 class="home-headline" data-i18n="home.welcome">Maybe the best GameSet in Hong Kong.</h2>
                 <p class="subtitle home-tagline" data-i18n="home.subtitle">Run tournaments. Spin battles. Pull a winner. Pick your battlefield below.</p>
+                <!-- Resume banner — surfaced ABOVE the main tile grid so an
+                     in-progress tournament is the first thing the organiser
+                     sees on returning. Hidden by default; app.js flips
+                     `display` when localStorage state has a live bracket. -->
+                <div id="resume-section" class="resume-section" style="display:none;">
+                    <p data-i18n="home.inProgress">You have a tournament in progress.</p>
+                    <div class="resume-actions">
+                        <button class="btn btn-primary" onclick="app.resumeTournament()" data-i18n="home.resume">Resume Tournament</button>
+                        <button class="btn btn-danger btn-small" onclick="app.resetTournament()" data-i18n="common.reset">Reset</button>
+                    </div>
+                </div>
                 <div class="home-buttons">
+                    <button class="btn btn-primary btn-large home-tile home-tile-primary home-tile-host" onclick="window.location.href='/host/'">
+                        <span class="home-tile-glow" aria-hidden="true"></span>
+                        <span class="home-tile-new" aria-hidden="true">NEW</span>
+                        <span class="btn-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M3 9h18"/>
+                                <path d="M8 3v4M16 3v4"/>
+                                <circle cx="12" cy="14" r="2"/>
+                                <path d="M9 18h6"/>
+                            </svg>
+                        </span>
+                        <span class="home-tile-label" data-i18n="home.hostEvent">Host PTCG Event</span>
+                        <span class="home-tile-sub" data-i18n="home.hostEventHint">Open registration · Promo · Sign-ups</span>
+                    </button>
                     <button class="btn btn-primary btn-large home-tile home-tile-primary" onclick="app.startNewTournament('swiss')">
                         <span class="home-tile-glow" aria-hidden="true"></span>
                         <span class="pairing-help-btn home-tile-help" role="button" tabindex="0"
@@ -204,21 +232,6 @@
                         </span>
                         <span class="home-tile-label" data-i18n="home.spinKO">Spin Battle Knockout</span>
                     </button>
-                    <button class="btn btn-primary btn-large home-tile home-tile-primary home-tile-host" onclick="window.location.href='/host/'">
-                        <span class="home-tile-glow" aria-hidden="true"></span>
-                        <span class="home-tile-new" aria-hidden="true">NEW</span>
-                        <span class="btn-icon">
-                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <rect x="3" y="5" width="18" height="16" rx="2"/>
-                                <path d="M3 9h18"/>
-                                <path d="M8 3v4M16 3v4"/>
-                                <circle cx="12" cy="14" r="2"/>
-                                <path d="M9 18h6"/>
-                            </svg>
-                        </span>
-                        <span class="home-tile-label" data-i18n="home.hostEvent">Host PTCG Event</span>
-                        <span class="home-tile-sub" data-i18n="home.hostEventHint">Open registration · Promo · Sign-ups</span>
-                    </button>
                     <button class="btn btn-secondary btn-large home-tile home-tile-secondary" onclick="app.navigateTo('wheel')">
                         <span class="home-tile-glow" aria-hidden="true"></span>
                         <span class="btn-icon">
@@ -240,12 +253,6 @@
                         </span>
                         <span class="home-tile-label" data-i18n="home.advanced">Advanced</span>
                     </button>
-                </div>
-                <div id="resume-section" class="resume-section" style="display:none;">
-                    <hr class="divider">
-                    <p data-i18n="home.inProgress">You have a tournament in progress.</p>
-                    <button class="btn btn-secondary" onclick="app.resumeTournament()" data-i18n="home.resume">Resume Tournament</button>
-                    <button class="btn btn-danger btn-small" onclick="app.resetTournament()" data-i18n="common.reset">Reset</button>
                 </div>
             </div>
         </section>
@@ -748,6 +755,6 @@
         <p class="footer-note">&copy; 2026 GameSet HK &mdash; All rights reserved.</p>
     </footer>
 
-    <script src="app.js?v=20260507v"></script>
+    <script src="app.js?v=20260508p"></script>
 </body>
 </html>

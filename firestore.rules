@@ -21,6 +21,18 @@ service cloud.firestore {
 
       allow delete: if request.auth != null
                     && request.auth.uid == resource.data.ownerUid;
+
+      // Self-report match reports — append-only audit log written by the
+      // submitMatchReport callable (Admin SDK; rules bypassed). Public read
+      // so viewers + owner both see pending / confirmed / disputed reports.
+      // Direct client create is locked off — callable is the only path so
+      // shape + reporter trainerId are validated server-side.
+      match /matchReports/{rid} {
+        allow read: if true;
+        allow create: if false;
+        allow update, delete: if request.auth != null
+                              && request.auth.uid == get(/databases/$(database)/documents/tournaments/$(tid)).data.ownerUid;
+      }
     }
 
     // ── NEW: hosted PTCG events (registration before tournament start) ──────
@@ -103,6 +115,21 @@ service cloud.firestore {
         allow read: if request.auth != null
                     && request.auth.uid == get(/databases/$(database)/documents/events/$(eid)).data.ownerUid;
 
+        // Capacity gate — best-effort. Reads parent event's signupCount
+        // (maintained by onSignupWritten trigger). A small race window
+        // exists between the trigger firing and the next signup; for tight
+        // caps the organizer should monitor the host page in real time.
+        // capacity == null means unlimited. Organizer bypasses the cap so
+        // they can still walk-in on-site players past the online limit.
+        function withinCapacity() {
+          let parent = get(/databases/$(database)/documents/events/$(eid)).data;
+          let isOwner = request.auth != null && request.auth.uid == parent.ownerUid;
+          return isOwner
+                 || !('capacity' in parent)
+                 || parent.capacity == null
+                 || parent.signupCount < parent.capacity;
+        }
+
         // Public create — anonymous participant fills out the signup form.
         // Required field shape enforced; size capped to prevent abuse.
         allow create: if request.auth != null
@@ -114,7 +141,8 @@ service cloud.firestore {
                       && request.resource.data.species1 is string
                       && request.resource.data.source in ['online', 'walkin']
                       && request.resource.data.checkedIn == false
-                      && request.resource.data.paid == false;
+                      && request.resource.data.paid == false
+                      && withinCapacity();
 
         // Owner-only update (check-in, payment, edit) and delete.
         allow update, delete: if request.auth != null

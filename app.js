@@ -371,7 +371,8 @@ const app = (() => {
             'viewer.shareHint': 'Scan the QR code or copy the link to share with other players.',
             'viewer.linkCopied': 'Link copied!',
             'viewer.tabRound': 'Live Round',
-            'viewer.tabStandings': 'Standings'
+            'viewer.tabStandings': 'Standings',
+            'viewer.tabWheel': 'Wheel'
         },
         zh: {
             'header.title': 'GameSet HK',
@@ -712,7 +713,8 @@ const app = (() => {
             'viewer.shareHint': '掃描 QR Code 或複製連結與其他玩家分享。',
             'viewer.linkCopied': '已複製連結!',
             'viewer.tabRound': '即時對戰',
-            'viewer.tabStandings': '排名榜'
+            'viewer.tabStandings': '排名榜',
+            'viewer.tabWheel': '抽獎'
         }
     };
 
@@ -853,6 +855,14 @@ const app = (() => {
         timerMuted: false,
         wheelNames: [],
         wheelHistory: [],
+        // Synced spin parameters — when non-null, the wheel is mid-spin.
+        // Both owner and viewer animate locally from these params so the
+        // network only carries 1 write per spin start + 1 write at end.
+        // Schema: { startAngle, totalRotation, durationMs, startedAt }
+        wheelSpin: null,
+        // Final wheel angle after the most recent spin — drives the static
+        // render on viewers who land on the wheel tab between spins.
+        wheelAngle: 0,
         currentView: 'home',
         tournamentType: 'swiss',
         gameType: 'tcg',                  // 'tcg' | 'spin-battle' — spin-battle is Beyblade-X-style scoring
@@ -1219,6 +1229,39 @@ const app = (() => {
     // ---- UPDATES / ANNOUNCEMENTS ----
     // Newest first. Title and body are bilingual; date is YYYY-MM-DD.
     const UPDATES = [
+        {
+            date: '2026-05-08',
+            title: {
+                en: 'Lucky Wheel goes live — spin animation broadcasts to every viewer',
+                zh: '幸運轉盤直播 — 抽獎旋轉動畫實時同步到每位觀戰玩家',
+            },
+            body: {
+                en: 'When you spin the lucky wheel on the owner device, every connected viewer on the spectator link sees the same wheel turning in real time on their phone. The viewer page gains a new 「Wheel」 tab (auto-shows once you set up names) with a pulsing red dot while a spin is in flight. The animation is broadcast as a single ~1KB cloud write per spin envelope (start angle + total rotation + duration + start time) — bandwidth-efficient, network-latency tolerant. Both ends ease to the same final angle and the same winner; confetti fires on everyone\'s screen. A viewer who joins mid-spin lands on the correct in-progress angle instead of restarting from zero. As a side benefit, viewers who tap into the standings or wheel tab no longer get yanked back to the live round view on every state update — the spectator page now respects whichever tab you chose.',
+                zh: '主辦端按「開始抽」嗰一刻，所有連住觀戰連結嘅玩家部機，會同時見到同一個轉盤實時旋轉。觀戰頁面新增「抽獎」分頁（owner 設咗名單之後自動出現），spin 進行中嗰個 tab 會閃紅 dot 提示。每次 spin 只係一次 ~1KB cloud 寫入（廣播動畫嘅 envelope：起始角度／總旋轉／時長／起始時間），唔會 spam Firestore，亦容忍網絡延遲 — 兩端最終旋到同一個角度、同一個贏家，confetti 全場都會放。中途加入觀戰嘅玩家會從當前進度切入動畫，唔會由零重新轉。順手解決一個舊問題：觀眾喺「排名榜」或「抽獎」tab 不會再因為每次 state update 被自動切返「即時對戰」 — 觀戰頁面而家會記住你揀緊嘅 tab。',
+            },
+        },
+        {
+            date: '2026-05-08',
+            title: {
+                en: 'Players can self-report match results — pass-the-phone confirmation flow',
+                zh: '玩家可自行報賽果 — 對家簽名確認流程',
+            },
+            body: {
+                en: 'Players who pin themselves on the spectator page (by name, trainer ID, or with `?me=hk12345678` in the URL) get interactive Win / Draw / Loss buttons on their own pinned match. Tapping a result opens a pass-the-phone confirmation sheet: the reporter hands the device to their opponent, who reviews the outcome, signs on the canvas, and taps 「Agree」 to commit. The result lands on the organizer\'s round view within a second or two, marked with a green ✓「Self-reported」 chip. If the opponent picks 「Disagree」, the match flags red and the organizer can override with a single tap. The opponent\'s signature is stored as audit evidence. Hosted-event tournaments enable this automatically (every signup carries a trainer ID); non-hosted tournaments work too — just pin your name and the next player you hand the phone to becomes the witness. Cuts ~95% of organizer score-entry workload when adoption is high; the existing manual entry remains a complete fallback when adoption is low.',
+                zh: '玩家喺觀戰頁面 pin 自己之後（用名、trainer ID，或者連結加 `?me=hk12345678`），自己嗰場對戰嘅勝／和／負三個按鈕會由唯讀變成可互動。Tap 結果即彈出「對家確認」頁面：玩家將部機交俾對家，由對家睇清楚結果、喺手寫板簽名、按「同意並確定」確認，結果一兩秒內出現喺主辦個 round view 並打上綠色 ✓「玩家自報」 chip。對家揀「唔同意」嘅話會打紅旗，主辦再用一個 tap override 即可。對家簽名會留底作為事後核對證據。Hosted event 開出嚟嘅賽事自動啟用（每位 signup 已經有 trainer ID）；非 hosted 賽事亦支援 — pin 名再交部機俾對家簽就成。當普及率高，可以慳近 95% 主辦記分工夫；普及率低時，原本嘅手動入分流程完全唔受影響。',
+            },
+        },
+        {
+            date: '2026-05-07',
+            title: {
+                en: 'Hosted events: registration cap with «no cap» option',
+                zh: 'Hosted 活動：可設報名上限，亦可剔「不設上限」',
+            },
+            body: {
+                en: 'Creating or editing a hosted PTCG event now offers a 「Registration cap」 number field plus a 「No cap」 checkbox for unlimited events. Public signup pages and TopCut feed cards both display 「23 / 40」 progress; once the count hits the cap the signup button switches to 「🔒 Event full」 and an «Almost full» banner appears at 80%. Enforcement is server-side — the Firestore rule rejects any signup that would push the count past the cap. Organizers always bypass this gate, so 「Event full」 online doesn\'t stop you from manually adding walk-ins on the host page. A new `onSignupWritten` Cloud Function keeps the signup counter accurate atomically (the field was previously stuck at 0). Tight caps still leave a 1–2 person race window during simultaneous signups; for community events this is acceptable, and the organizer can monitor the live count from the host editor.',
+                zh: '建立或編輯 hosted PTCG 活動時，編輯器新增「報名上限」數字欄位，並可剔「不設上限」做開放報名。公開報名頁同 TopCut feed card 都會顯示「23 / 40」即時進度；達到上限後報名按鈕變「🔒 已滿額」，到 80% 仲會出現「快滿」橙色提示。執行端在 server side — Firestore rule 直接拒絕超出上限嘅報名。主辦永遠 bypass 呢條 rule，所以網上「已滿額」並唔會阻你喺 host page 手動加 walk-in。新增嘅 `onSignupWritten` Cloud Function 確保人數 counter 原子性同步（之前根本冇 trigger 維護，counter 永遠係 0）。極緊嘅上限同並發報名仍可能 race 1–2 個位；對 community 活動係可接受，主辦可以喺編輯器度即時監察人數。',
+            },
+        },
         {
             date: '2026-04-25',
             title: {
@@ -1903,6 +1946,11 @@ const app = (() => {
 
             const row = document.createElement('div');
             row.className = 'pairing-row';
+            // Self-report markers — flag rows that came in from a player
+            // self-report so the organizer can see at a glance which results
+            // they didn't manually enter, and red-flag any disputed ones.
+            if (pairing.disputed) row.classList.add('pairing-row-disputed');
+            else if (pairing.selfReportedAt) row.classList.add('pairing-row-selfreported');
 
             let playerAClass = '';
             let playerBClass = '';
@@ -1911,6 +1959,15 @@ const app = (() => {
             else if (pairing.result === 'draw') { playerAClass = 'draw'; playerBClass = 'draw'; }
 
             const disabled = round.resultsSubmitted ? 'style="pointer-events:none;opacity:0.6"' : '';
+
+            // Inline status badge HTML — appended above the result buttons.
+            // Owner can override either state via the existing setResult call
+            // (bo3 / spin paths handle their own override entry points).
+            const selfReportBadge = !viewOnly && (pairing.disputed || pairing.selfReportedAt)
+                ? (pairing.disputed
+                    ? `<div class="pairing-self-report-flag pairing-self-report-disputed" title="玩家自報但對家不同意 — 點擊任何結果鍵覆寫">⚠ 玩家自報分歧</div>`
+                    : `<div class="pairing-self-report-flag pairing-self-report-confirmed" title="玩家自報並雙方確認">✓ 玩家自報</div>`)
+                : '';
 
             if (state.gameType === 'spin-battle') {
                 row.classList.add('pairing-row-spin');
@@ -2047,6 +2104,7 @@ const app = (() => {
             }
 
             row.innerHTML = `
+                ${selfReportBadge}
                 <div class="table-number">T${pairing.table}</div>
                 <div class="pairing-player side-a ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')"><span class="pairing-player-name">${escapeHtml(playerA.name)}</span></div>
                 <div class="result-buttons" ${disabled}>
@@ -2072,6 +2130,305 @@ const app = (() => {
         updateSubmitButton();
         if (viewOnly) renderViewerPin();
         applyNoAds();
+    }
+
+    // ---- SELF-REPORT — Phase 1 (pass-the-phone) ----
+    // Enabled when the viewer landed with &me=hk12345678 in the URL OR when
+    // viewerPinName matches a trainer ID. Either gates the interactive
+    // result buttons on the viewer's own pinned pairing. Final write goes
+    // through the submitMatchReport callable so the reporter's identity can
+    // be verified server-side. The owner subscribes to the matchReports
+    // subcollection and auto-applies confirmed entries to local state.
+    let selfReportTrainerId = '';        // 'hk12345678' lowercased; '' if not active
+    let matchReports = [];               // latest matchReports snapshot
+    let matchReportsUnsub = null;        // subscription unsubscribe fn
+    const _appliedReportIds = new Set(); // session-local idempotency for owner auto-apply
+    let _selfReportSheet = null;         // active modal element (if any)
+
+    /* Attach the matchReports listener for `tid`. Idempotent — replaces any
+       prior listener. Owner mode auto-applies confirmed reports to local
+       state; viewer mode only re-renders to surface dispute / confirmed
+       badges on the pinned card. */
+    function attachMatchReportsListener(tid) {
+        if (matchReportsUnsub) { try { matchReportsUnsub(); } catch (_) {} matchReportsUnsub = null; }
+        if (!window.cloud || typeof window.cloud.subscribeMatchReports !== 'function') return;
+        if (!tid) return;
+        matchReportsUnsub = window.cloud.subscribeMatchReports(
+            tid,
+            (reports) => {
+                matchReports = reports || [];
+                if (!viewOnly) applyOwnerMatchReports(matchReports);
+                try { renderRound(); } catch (_) {}
+                try { renderViewerPin(); } catch (_) {}
+            },
+            (err) => { console.warn('[matchReports] listener error', err); }
+        );
+    }
+
+    /* Owner auto-apply — for each confirmed report, set pairing.result if
+       not already set; for each disputed report, flag pairing.disputed.
+       Idempotent via _appliedReportIds set. Saves + syncs once at end. */
+    function applyOwnerMatchReports(reports) {
+        if (viewOnly || !state || !state.rounds) return;
+        let mutated = false;
+        for (const r of reports) {
+            if (!r || !r.id) continue;
+            if (_appliedReportIds.has(r.id)) continue;
+            const round = state.rounds[r.roundIndex];
+            if (!round) continue;
+            const pairing = round.pairings && round.pairings[r.pairingIndex];
+            if (!pairing || pairing.isBye) continue;
+            if (round.resultsSubmitted) {
+                // Round already locked — record id seen so we don't keep
+                // looping; organizer can review the report doc separately.
+                _appliedReportIds.add(r.id);
+                continue;
+            }
+            if (r.status === 'confirmed') {
+                if (pairing.result !== r.result) {
+                    pairing.result = r.result;
+                    pairing.selfReportedAt = (r.createdAt && r.createdAt.seconds)
+                        ? r.createdAt.seconds * 1000
+                        : Date.now();
+                    pairing.selfReportedBy = r.reporterTrainerId || '';
+                    pairing.disputed = false;
+                    pairing.disputeReportId = null;
+                    mutated = true;
+                }
+            } else if (r.status === 'disputed') {
+                if (!pairing.disputed) {
+                    pairing.disputed = true;
+                    pairing.disputeReportId = r.id;
+                    pairing.disputeResult = r.result;
+                    mutated = true;
+                }
+            }
+            _appliedReportIds.add(r.id);
+        }
+        if (mutated) {
+            saveState();
+            if (window.cloud && window.cloud.isReady && window.cloud.isReady()) {
+                window.cloud.syncState(state);
+            }
+            try { updateSubmitButton && updateSubmitButton(); } catch (_) {}
+        }
+    }
+
+    /* Resolve the viewer's identity → which player they are + side on the
+       current round's pairing. Tries trainerId first (URL ?me= or pin
+       search hit), then falls back to viewerPinName matching a player
+       name. Returns null when no pinned player or no live pairing. */
+    function resolveSelfReportContext() {
+        if (!state || !state.players || !state.rounds) return null;
+        const round = state.rounds[state.currentRound];
+        if (!round) return null;
+        let me = null;
+        if (selfReportTrainerId) {
+            me = state.players.find(p => p && (p.trainerId || '').toLowerCase() === selfReportTrainerId);
+        }
+        if (!me && viewerPinName) {
+            const lc = viewerPinName.toLowerCase();
+            me = state.players.find(p => {
+                const pname = (p.name || '').toLowerCase();
+                const ptid = (p.trainerId || '').toLowerCase();
+                return pname === lc || ptid === lc;
+            });
+        }
+        if (!me) return null;
+        const pIdx = round.pairings.findIndex(p => !p.isBye && (p.playerA === me.id || p.playerB === me.id));
+        if (pIdx < 0) return null;
+        const pairing = round.pairings[pIdx];
+        const side = pairing.playerA === me.id ? 'a' : 'b';
+        const oppId = side === 'a' ? pairing.playerB : pairing.playerA;
+        const opp = state.players.find(p => p && p.id === oppId);
+        return { me, pairing, pairingIndex: pIdx, side, opp, round };
+    }
+
+    /* Open the pass-the-phone confirmation sheet. Reporter has just tapped
+       a result on the viewer pin's interactive buttons. The opponent will
+       sign here on the same device. */
+    function openSelfReport(pairingIndex, result) {
+        const ctx = resolveSelfReportContext();
+        if (!ctx || ctx.pairingIndex !== pairingIndex) return;
+        if (ctx.pairing.result) return;        // already resolved
+        if (ctx.round.resultsSubmitted) return; // round locked
+        if (state.gameType === 'spin-battle') return;  // not supported in MVP
+        if (!ctx.opp) return;
+
+        // Decide who won (by player name) so the opponent sees an unambiguous summary.
+        let outcomeLabel;
+        const meName = escapeHtml(ctx.me.name);
+        const oppName = escapeHtml(ctx.opp.name);
+        if (result === 'draw') {
+            outcomeLabel = `<strong>${meName}</strong> 同 <strong>${oppName}</strong> 平手`;
+        } else if ((result === 'a' && ctx.side === 'a') || (result === 'b' && ctx.side === 'b')) {
+            outcomeLabel = `<strong>${meName}</strong> 勝（即 <strong>${oppName}</strong> 輸）`;
+        } else {
+            outcomeLabel = `<strong>${oppName}</strong> 勝（即 <strong>${meName}</strong> 輸）`;
+        }
+
+        // Mount sheet
+        if (_selfReportSheet) closeSelfReport();
+        const sheet = document.createElement('div');
+        sheet.className = 'self-report-overlay';
+        sheet.innerHTML = `
+          <div class="self-report-sheet" role="dialog" aria-modal="true">
+            <div class="self-report-head">
+              <strong>📨 對家確認</strong>
+              <button type="button" class="self-report-close" aria-label="Close">✕</button>
+            </div>
+            <div class="self-report-body">
+              <p class="self-report-summary">${meName} 報咗：${outcomeLabel}</p>
+              <p class="self-report-instruction">請將部機交俾 <strong>${oppName}</strong>，由佢 sign 確認。</p>
+              <div class="self-report-sig-wrap">
+                <canvas class="self-report-sig" width="600" height="180"></canvas>
+                <div class="self-report-sig-overlay">${oppName} 喺呢度簽名</div>
+                <button type="button" class="self-report-sig-clear">清除</button>
+              </div>
+              <p class="self-report-hint">呢個簽名留底，事後爭議主辦可以查證。</p>
+              <div class="self-report-error" hidden></div>
+            </div>
+            <div class="self-report-actions">
+              <button type="button" class="btn btn-danger self-report-dispute">❌ 唔同意（標紅旗）</button>
+              <button type="button" class="btn btn-primary self-report-confirm" disabled>✓ 同意並確定</button>
+            </div>
+          </div>`;
+        document.body.appendChild(sheet);
+        _selfReportSheet = sheet;
+
+        const canvas = sheet.querySelector('.self-report-sig');
+        const overlay = sheet.querySelector('.self-report-sig-overlay');
+        const confirmBtn = sheet.querySelector('.self-report-confirm');
+        const errEl = sheet.querySelector('.self-report-error');
+        const sig = setupSignatureCanvas(canvas, () => {
+            overlay.style.display = 'none';
+            confirmBtn.disabled = false;
+        });
+
+        sheet.querySelector('.self-report-close').addEventListener('click', closeSelfReport);
+        sheet.querySelector('.self-report-sig-clear').addEventListener('click', () => {
+            sig.clear();
+            overlay.style.display = '';
+            confirmBtn.disabled = true;
+        });
+
+        async function send(confirmed) {
+            const dataURL = confirmed ? sig.toDataURL() : '';
+            errEl.hidden = true;
+            confirmBtn.disabled = true;
+            sheet.querySelector('.self-report-dispute').disabled = true;
+            try {
+                const tid = state.publishedTournamentId || (window.cloud.getActiveTournamentId && window.cloud.getActiveTournamentId());
+                if (!tid) throw new Error('呢場比賽未發佈到雲端，無法自報');
+                if (!window.cloud || !window.cloud.isReady()) {
+                    if (window.cloud && window.cloud.init) await window.cloud.init();
+                }
+                if (!window.cloud.isReady()) throw new Error('連線未就緒，請刷新再試');
+                await window.cloud.submitMatchReport({
+                    tournamentId: tid,
+                    roundIndex: state.currentRound,
+                    pairingIndex,
+                    reporterPlayerId: ctx.me.id,
+                    // Trainer ID bonus when player has one — server cross-checks.
+                    reporterTrainerId: (ctx.me.trainerId || '').toLowerCase() || undefined,
+                    result,
+                    confirmedByOpponent: !!confirmed,
+                    confirmSig: dataURL
+                });
+                closeSelfReport();
+                // Surface a toast — the listener will update the pinned card on its own.
+                showToast(confirmed ? '✅ 賽果已確認' : '⚠ 已標記分歧，主辦會處理');
+            } catch (e) {
+                console.error('[self-report] submit failed', e);
+                let msg = '提交失敗';
+                if (e && e.code === 'failed-precondition') msg = '呢場已經有結果或者 round 已關，請聯絡主辦';
+                else if (e && e.code === 'permission-denied') msg = '只有對局兩位玩家可以報賽果';
+                else if (e && e.code === 'already-exists') msg = '呢場已經報咗，主辦審核緊';
+                else if (e && e.message) msg = e.message;
+                errEl.textContent = msg;
+                errEl.hidden = false;
+                confirmBtn.disabled = sig.isEmpty();
+                sheet.querySelector('.self-report-dispute').disabled = false;
+            }
+        }
+
+        confirmBtn.addEventListener('click', () => send(true));
+        sheet.querySelector('.self-report-dispute').addEventListener('click', () => {
+            if (!confirm('標記為「對家不同意」之後，主辦會手動仲裁。要繼續嗎？')) return;
+            send(false);
+        });
+    }
+
+    function closeSelfReport() {
+        if (_selfReportSheet && _selfReportSheet.parentNode) {
+            _selfReportSheet.parentNode.removeChild(_selfReportSheet);
+        }
+        _selfReportSheet = null;
+    }
+
+    /* Vanilla-JS signature canvas. Returns { isEmpty, clear, toDataURL }.
+       Uses devicePixelRatio for crisp output, supports mouse + touch. */
+    function setupSignatureCanvas(canvas, onFirstStroke) {
+        const ctx = canvas.getContext('2d');
+        function fitDPR() {
+            const ratio = window.devicePixelRatio || 1;
+            const w = canvas.clientWidth || canvas.width;
+            const h = canvas.clientHeight || canvas.height;
+            canvas.width = Math.round(w * ratio);
+            canvas.height = Math.round(h * ratio);
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.lineWidth = 2.4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = getComputedStyle(canvas).color || '#fff';
+        }
+        // Wait for layout so clientWidth is non-zero.
+        requestAnimationFrame(fitDPR);
+
+        let drawing = false, lastX = 0, lastY = 0, hasDrawn = false;
+        function pos(e) {
+            const r = canvas.getBoundingClientRect();
+            const t = e.touches && e.touches[0];
+            const x = (t ? t.clientX : e.clientX) - r.left;
+            const y = (t ? t.clientY : e.clientY) - r.top;
+            return { x, y };
+        }
+        function start(e) {
+            drawing = true;
+            const p = pos(e);
+            lastX = p.x; lastY = p.y;
+        }
+        function move(e) {
+            if (!drawing) return;
+            if (e.cancelable) e.preventDefault();
+            const p = pos(e);
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            lastX = p.x; lastY = p.y;
+            if (!hasDrawn) {
+                hasDrawn = true;
+                if (typeof onFirstStroke === 'function') onFirstStroke();
+            }
+        }
+        function stop() { drawing = false; }
+        canvas.addEventListener('mousedown', start);
+        canvas.addEventListener('mousemove', move);
+        canvas.addEventListener('mouseup', stop);
+        canvas.addEventListener('mouseleave', stop);
+        canvas.addEventListener('touchstart', start, { passive: true });
+        canvas.addEventListener('touchmove', move, { passive: false });
+        canvas.addEventListener('touchend', stop);
+
+        return {
+            isEmpty: () => !hasDrawn,
+            clear: () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                hasDrawn = false;
+            },
+            toDataURL: () => canvas.toDataURL('image/png')
+        };
     }
 
     // ---- VIEWER PIN (player searches their own pairing in view-only mode) ----
@@ -2114,10 +2471,22 @@ const app = (() => {
 
         const round = state.rounds[state.currentRound];
         const lc = viewerPinName.toLowerCase();
-        const me = (state.players || []).find(p => p.name.toLowerCase() === lc);
+        // Match by name OR by trainer id (lets the player paste hk12345678
+        // directly; needed to pin themselves for self-report mode).
+        const tidLc = lc.replace(/^hk/, '').match(/^\d{8}$/) ? ('hk' + lc.replace(/^hk/, '')) : null;
+        const me = (state.players || []).find(p => {
+            const pname = (p.name || '').toLowerCase();
+            const ptid = (p.trainerId || '').toLowerCase();
+            return pname === lc || (tidLc && ptid === tidLc) || ptid === lc;
+        });
         if (!me || !round) {
             result.innerHTML = `<div class="viewer-pin-empty">${escapeHtml(t('viewer.notFound'))}</div>`;
             return;
+        }
+        // If we matched via trainerId, auto-enable self-report mode for this player.
+        // (URL ?me= takes priority but this catches manual paste cases too.)
+        if (me.trainerId && !selfReportTrainerId) {
+            selfReportTrainerId = (me.trainerId || '').toLowerCase();
         }
         const pairing = round.pairings.find(p => p.playerA === me.id || p.playerB === me.id);
         if (!pairing) {
@@ -2165,16 +2534,47 @@ const app = (() => {
             if (pairing.result === 'a') { aClass = 'winner'; bClass = 'loser'; }
             else if (pairing.result === 'b') { aClass = 'loser'; bClass = 'winner'; }
             else if (pairing.result === 'draw') { aClass = 'draw'; bClass = 'draw'; }
+
+            // Self-report eligibility — any pinned player whose pairing is
+            // still open. Identity uses player.id (always unique within a
+            // tournament). Trainer ID is bonus metadata when present. The
+            // signature on the opponent's pass-the-phone confirmation is
+            // the real auth boundary, not the URL gate.
+            const canSelfReport = !!me.id
+                && !pairing.result
+                && !pairing.disputed
+                && !round.resultsSubmitted;
+            // Find the pairing index for the modal — the pairing variable
+            // above is the object reference; we need its position.
+            const pIdxForReport = round.pairings.indexOf(pairing);
+            const pinIdx = pIdxForReport >= 0 ? pIdxForReport : -1;
+
+            // Status note — disputed reports surface here for the player
+            // (so they know the organizer is reviewing).
+            let statusNote = '';
+            if (pairing.disputed) {
+                statusNote = `<div class="self-report-status self-report-status-disputed">⚠ 對家不同意，主辦審核中</div>`;
+            } else if (pairing.selfReportedAt) {
+                statusNote = `<div class="self-report-status self-report-status-confirmed">✓ 賽果已自報並確認</div>`;
+            }
+
+            const btnAttr = (canSelfReport && pinIdx >= 0)
+                ? (r) => `onclick="app.openSelfReport(${pinIdx}, '${r}')"`
+                : () => '';
+            const btnsStyle = canSelfReport
+                ? 'class="result-buttons self-report-on"'
+                : 'class="result-buttons" style="pointer-events:none;opacity:0.85"';
+
             html += `<div class="pairing-row pinned">
                 <div class="table-number">T${pairing.table}</div>
                 <div class="pairing-player side-a ${aClass}" data-player-id="${escapeHtml(pairing.playerA)}">${escapeHtml(pa.name)}</div>
-                <div class="result-buttons" style="pointer-events:none;opacity:0.85">
-                    <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}">${t('round.aWins')}</button>
-                    <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}">${t('round.draw')}</button>
-                    <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}">${t('round.bWins')}</button>
+                <div ${btnsStyle}>
+                    <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}" ${btnAttr('a')}>${t('round.aWins')}</button>
+                    <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}" ${btnAttr('draw')}>${t('round.draw')}</button>
+                    <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}" ${btnAttr('b')}>${t('round.bWins')}</button>
                 </div>
                 <div class="pairing-player side-b ${bClass}" data-player-id="${escapeHtml(pairing.playerB)}" style="text-align:right">${escapeHtml(pb.name)}</div>
-            </div>`;
+            </div>${statusNote}`;
         }
         result.innerHTML = html;
 
@@ -2204,6 +2604,15 @@ const app = (() => {
             pairing.result = null;
         } else {
             pairing.result = result;
+        }
+        // Organizer override always clears any self-report dispute flag.
+        // Their tap is the final word — keep the audit trail in matchReports
+        // subcollection so we can still see what the players reported.
+        if (pairing.disputed) {
+            pairing.disputed = false;
+            pairing.disputeReportId = null;
+            pairing.disputeResult = null;
+            pairing.organizerOverrode = true;
         }
         saveState();
         renderRound();
@@ -4397,6 +4806,9 @@ const app = (() => {
             shareExpanded = true;
             renderSharePanel();
             showToast(t('cloud.published'));
+            // Owner: subscribe to the matchReports subcollection so any
+            // self-reports from players auto-apply to local state.
+            attachMatchReportsListener(tid);
             track('tournament_published', {
                 format: state.tournamentType || 'swiss',
                 player_count: state.players.length
@@ -4476,11 +4888,22 @@ const app = (() => {
             const target = btn.getAttribute('data-target');
             btn.classList.toggle('viewer-tab-active', target === state.currentView);
         });
+        // Wheel tab — surface only when the owner has primed the wheel
+        // (names set up OR a spin has run). Pulse dot shows mid-spin.
+        const wheelTab = document.getElementById('viewer-tab-wheel');
+        if (wheelTab) {
+            const wheelHasContent = (state.wheelNames && state.wheelNames.length > 0)
+                || (state.wheelHistory && state.wheelHistory.length > 0)
+                || !!state.wheelSpin;
+            wheelTab.hidden = !wheelHasContent;
+            const pulse = document.getElementById('viewer-wheel-pulse');
+            if (pulse) pulse.hidden = !state.wheelSpin;
+        }
     }
 
     function viewerSwitchTab(target) {
         if (!viewOnly) return;
-        if (target !== 'round' && target !== 'standings') return;
+        if (target !== 'round' && target !== 'standings' && target !== 'wheel') return;
         navigateTo(target);
     }
 
@@ -4572,6 +4995,23 @@ const app = (() => {
         viewOnly = true;
         viewTournamentId = tid;
         try { viewerPinName = localStorage.getItem('ptcg_viewer_pin') || ''; } catch (e) {}
+        // Parse self-report identity from URL — &me= can be a trainer ID
+        // (hk + 8 digits) or a player name. Both auto-pin the matching
+        // player and unlock the pass-the-phone confirmation flow on their
+        // pairing. Trainer ID is preferred when present (cross-event auth);
+        // names work for tournaments not started from a hosted event.
+        try {
+            const meRaw = (new URLSearchParams(window.location.search).get('me') || '').trim();
+            if (meRaw) {
+                const meLc = meRaw.toLowerCase();
+                if (/^hk\d{8}$/.test(meLc)) {
+                    selfReportTrainerId = meLc;
+                    if (!viewerPinName) viewerPinName = meLc;
+                } else if (!viewerPinName) {
+                    viewerPinName = meRaw;
+                }
+            }
+        } catch (e) {}
         document.body.classList.add('view-only');
         const banner = document.getElementById('view-mode-banner');
         if (banner) banner.style.display = '';
@@ -4601,11 +5041,19 @@ const app = (() => {
                 timerMuted: true,
                 currentView: state.currentView
             };
+            const wasInitial = !state.publishedTournamentId;
             state = { ...DEFAULT_STATE, ...remoteState, ...viewerLock, publishedTournamentId: tid };
             hideViewerStatus();
-            const view = state.tournamentEnded ? 'standings'
-                       : state.tournamentStarted ? 'round'
-                       : 'registration';
+            // Canonical view from tournament state. Used on initial load OR
+            // when the viewer somehow lands on a view that doesn't have a
+            // tab (e.g. registration after a fresh session reset).
+            const canonical = state.tournamentEnded ? 'standings'
+                            : state.tournamentStarted ? 'round'
+                            : 'registration';
+            const tabbedViews = ['round', 'standings', 'wheel'];
+            const view = (wasInitial || !tabbedViews.includes(state.currentView))
+                ? canonical
+                : state.currentView;
             navigateTo(view);
             renderTimer();
             applyNoAds();
@@ -4632,6 +5080,7 @@ const app = (() => {
                 return;
             }
             window.cloud.subscribeView(tid, apply, onErr);
+            attachMatchReportsListener(tid);
         };
         start();
     }
@@ -4677,21 +5126,106 @@ const app = (() => {
         const spinBtn = document.getElementById('btn-spin');
 
         const textarea = document.getElementById('wheel-names');
-        if (textarea.value.trim() === '' && names.length > 0) {
+        if (textarea && textarea.value.trim() === '' && names.length > 0) {
             textarea.value = names.join('\n');
         }
 
         const historyList = document.getElementById('wheel-history');
-        historyList.innerHTML = '';
-        state.wheelHistory.forEach(name => {
-            const li = document.createElement('li');
-            li.textContent = name;
-            historyList.appendChild(li);
-        });
+        if (historyList) {
+            historyList.innerHTML = '';
+            state.wheelHistory.forEach(name => {
+                const li = document.createElement('li');
+                li.textContent = name;
+                historyList.appendChild(li);
+            });
+        }
 
-        spinBtn.disabled = names.length < 2 || wheelSpinning;
+        if (spinBtn) spinBtn.disabled = names.length < 2 || wheelSpinning;
 
+        // Use synced wheelAngle as baseline when no spin is active locally
+        // (viewers who land here mid-tournament get the correct snapshot).
+        if (!wheelSpinning && typeof state.wheelAngle === 'number') {
+            wheelAngle = state.wheelAngle;
+        }
         drawWheel(ctx, canvas.width, canvas.height, names, wheelAngle);
+
+        // Viewer-side: kick off the synced animation if owner has just
+        // emitted a wheelSpin envelope and we're not already running one.
+        if (viewOnly && state.wheelSpin && !wheelSpinning) {
+            startSyncedSpinAnimation(state.wheelSpin);
+        }
+    }
+
+    /* Replay the spin envelope on the viewer side. Computes elapsed time
+       from `startedAt` (wall clock) so a viewer who joins mid-spin still
+       lands on the correct angle, just with a shortened tail animation.
+       After the local animation completes, derives the winner the same
+       way the owner does (pointer at -PI/2) and shows the winner banner. */
+    function startSyncedSpinAnimation(envelope) {
+        if (wheelSpinning) return;
+        if (!envelope || typeof envelope.startedAt !== 'number') return;
+        const canvas = document.getElementById('wheel-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const names = state.wheelNames || [];
+        if (names.length < 2) return;
+
+        wheelSpinning = true;
+        const sliceAngle = (Math.PI * 2) / names.length;
+        const { startAngle, totalRotation, durationMs, startedAt } = envelope;
+
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+        function tick() {
+            // Re-fetch envelope each frame — owner may have ended the spin
+            // (state.wheelSpin → null) and we should snap to final angle.
+            const env = state.wheelSpin;
+            if (!env || env.startedAt !== startedAt) {
+                wheelSpinning = false;
+                if (typeof state.wheelAngle === 'number') wheelAngle = state.wheelAngle;
+                drawWheel(ctx, canvas.width, canvas.height, names, wheelAngle);
+                return;
+            }
+            const elapsed = Date.now() - startedAt;
+            const progress = Math.max(0, Math.min(elapsed / durationMs, 1));
+            const eased = easeOutCubic(progress);
+            wheelAngle = startAngle + totalRotation * eased;
+            drawWheel(ctx, canvas.width, canvas.height, names, wheelAngle);
+
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                wheelSpinning = false;
+                // Best-effort viewer winner banner — owner will sync the
+                // canonical winner via state.wheelHistory anyway, but a
+                // local computation here makes the banner appear in the
+                // same frame the wheel stops (no extra round-trip wait).
+                const pointerAngle = -Math.PI / 2;
+                let offset = ((pointerAngle - wheelAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+                const winnerIndex = Math.floor(offset / sliceAngle) % names.length;
+                const winner = names[winnerIndex];
+                if (winner) showViewerWinner(winner);
+            }
+        }
+        requestAnimationFrame(tick);
+    }
+
+    /* Lightweight winner banner for viewers — re-uses the existing winner
+       modal flow when present, falls back to a toast otherwise. */
+    function showViewerWinner(name) {
+        if (typeof confetti === 'function') {
+            try {
+                confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+            } catch (_) {}
+        }
+        const modal = document.getElementById('winner-modal');
+        const nameEl = document.getElementById('winner-name');
+        if (modal && nameEl) {
+            nameEl.textContent = name;
+            modal.classList.add('active');
+        } else {
+            try { showToast('🎉 ' + name); } catch (_) {}
+        }
     }
 
     function drawWheel(ctx, w, h, names, rotation) {
@@ -4767,6 +5301,7 @@ const app = (() => {
 
     // FIX #5: Corrected wheel winner detection
     function spinWheel() {
+        if (viewOnly) return;        // viewers spin only via synced wheelSpin
         if (state.wheelNames.length < 2 || wheelSpinning) return;
 
         wheelSpinning = true;
@@ -4782,6 +5317,20 @@ const app = (() => {
         const endAngle = startAngle + totalRotation;
         const duration = 4000 + Math.random() * 2000;
         const startTime = performance.now();
+        // Synced spin envelope — viewers start their own RAF loop with these
+        // params and land on the same final angle. Date.now() (wall clock)
+        // is used for `startedAt` so viewers can compute elapsed time off
+        // the same anchor; minor clock-skew is harmless because the viewer
+        // tweens to catch up when they receive the update.
+        state.wheelSpin = { startAngle, totalRotation, durationMs: duration, startedAt: Date.now() };
+        saveState();
+        // Force-flush so the spin envelope hits the cloud immediately
+        // instead of waiting for the 800ms debounce — players who tabbed
+        // over from the round view see the spin without lag.
+        if (window.cloud && window.cloud.isReady && window.cloud.isReady()) {
+            window.cloud.syncState(state);
+            if (window.cloud.flush) window.cloud.flush();
+        }
 
         function easeOutCubic(t) {
             return 1 - Math.pow(1 - t, 3);
@@ -4800,6 +5349,15 @@ const app = (() => {
             } else {
                 wheelSpinning = false;
                 document.getElementById('btn-spin').disabled = false;
+                // Spin done — clear envelope, persist final angle so viewers
+                // who join between spins still render the correct snapshot.
+                state.wheelSpin = null;
+                state.wheelAngle = wheelAngle;
+                if (window.cloud && window.cloud.isReady && window.cloud.isReady()) {
+                    saveState();
+                    window.cloud.syncState(state);
+                    if (window.cloud.flush) window.cloud.flush();
+                }
 
                 // The pointer is at the top of the canvas (12 o'clock = -PI/2).
                 // Each slice i starts at: wheelAngle + i * sliceAngle
@@ -5757,6 +6315,7 @@ const app = (() => {
                 if (window.cloud.isReady()) {
                     window.cloud.attachExisting(state.publishedTournamentId);
                     window.cloud.syncState(state);
+                    attachMatchReportsListener(state.publishedTournamentId);
                 }
             })();
         }
@@ -5892,6 +6451,8 @@ const app = (() => {
         viewerShareOpen,
         viewerShareClose,
         viewerShareCopy,
+        openSelfReport,
+        closeSelfReport,
         updateTournamentMeta,
         toggleScoringDrawBonus,
         toggleBestOfThree,
