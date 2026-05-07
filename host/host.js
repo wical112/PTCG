@@ -22,6 +22,45 @@ window.hostApp = (() => {
         wechat: 'WeChat', visa: 'Visa', master: 'Master', octopus: '八達通'
     };
 
+    // ── Autocomplete data ───────────────────────────────────────────────────
+    // HK + Macau shop directory copied from TopCut HK (single source of truth
+    // is HK_SHOPS_OUTREACH.md → conquestTargets.ts). Lazy-loaded once when the
+    // editor opens so an organiser starting to type «card…» immediately sees
+    // every CardPro / Card Lab / Card Knight in the dropdown.
+    let _hkShops = [];
+    let _hkShopsLoaded = false;
+    // Bump on every data/hk-shops.json edit so phones don't keep serving
+    // a stale cached copy. (force-cache without a version query was the
+    // bug that let returning users see the pre-merge area-only dataset.)
+    const HK_SHOPS_VERSION = '20260508r';
+    async function loadHkShops() {
+        if (_hkShopsLoaded) return _hkShops;
+        try {
+            const r = await fetch('/data/hk-shops.json?v=' + HK_SHOPS_VERSION);
+            if (r.ok) _hkShops = await r.json();
+        } catch (e) { /* offline / 404 — fall through to empty list, free input still works */ }
+        _hkShopsLoaded = true;
+        return _hkShops;
+    }
+    // Common GameSet HK event-name patterns. Not exhaustive — autocomplete
+    // is only a hint; organiser can still type anything they like.
+    const COMMON_EVENT_NAMES = [
+        'Gym Battle', 'Gym Challenge',
+        'League Cup', 'League Challenge',
+        '月例賽', '公開賽', '限定賽',
+        '新手友誼賽', '社區聯誼賽',
+        'FNM', 'Pre-release',
+        'Special Event',
+        'Beyblade X 爭霸戰', 'Beyblade X 月會',
+    ];
+    // Friendly district labels shown as the secondary line in dropdowns.
+    const DISTRICT_LABELS = {
+        southern: '南區', central_western: '中西區', wan_chai: '灣仔', eastern: '東區',
+        sham_shui_po: '深水埗', wong_tai_sin: '黃大仙', kwun_tong: '觀塘', kowloon_city: '九龍城', yau_tsim_mong: '油尖旺',
+        sha_tin: '沙田', tai_po: '大埔', yuen_long: '元朗', tuen_mun: '屯門', tsuen_wan: '荃灣', kwai_tsing: '葵青',
+        mo_macau: '澳門半島', mo_taipa: '氹仔', mo_coloane: '路環',
+    };
+
     /* ── Init ─────────────────────────────────────────────────────────────── */
     async function init() {
         const params = new URLSearchParams(window.location.search);
@@ -41,6 +80,10 @@ window.hostApp = (() => {
             showView('host-create');
             return;
         }
+
+        // Kick off the autocomplete dataset load early — fire-and-forget,
+        // matchers fall back gracefully to an empty list while it's loading.
+        loadHkShops();
 
         if (!eventId) {
             showView('host-create');
@@ -189,6 +232,9 @@ window.hostApp = (() => {
         // Status toggles
         document.getElementById('signup-open-toggle').addEventListener('change', () => scheduleSave());
         document.getElementById('sync-topcut-toggle').addEventListener('change', () => scheduleSave());
+
+        // Autocomplete on org / event-name / address (HK shop directory).
+        wireAutocomplete();
 
         // Capacity — number input + 「不設上限」 checkbox. Toggling the
         // checkbox disables the input and clears its value (collectFromUI
@@ -1529,6 +1575,188 @@ window.hostApp = (() => {
     }
     function escapeHtml(s) {
         return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    /* ── Autocomplete ──────────────────────────────────────────────────────
+       Generic dropdown wired beneath an existing <input>. `getMatches(q)` is
+       called on focus / input and must return up to N { label, sub?, value,
+       data? } entries. `onPick(match)` fires AFTER the input value is set
+       so callers can chain (e.g. autofill the address based on shop area).
+       Free-form input is preserved — picking is optional, blur or Esc just
+       closes the dropdown. */
+    function setupAutocomplete(input, getMatches, onPick) {
+        if (!input || input.dataset.autocompleteWired) return;
+        input.dataset.autocompleteWired = '1';
+
+        const wrap = input.parentElement;
+        if (wrap) wrap.classList.add('autocomplete-anchor');
+
+        const list = document.createElement('ul');
+        list.className = 'autocomplete-list';
+        list.hidden = true;
+        (wrap || input.parentNode).appendChild(list);
+
+        let activeIndex = -1;
+        let cached = [];
+
+        function render() {
+            if (!cached.length) { list.hidden = true; return; }
+            list.innerHTML = cached.map((m, i) => `
+                <li class="autocomplete-row ${i === activeIndex ? 'is-active' : ''}" data-idx="${i}" role="option" aria-selected="${i === activeIndex}">
+                    <span class="autocomplete-row-label">${escapeHtml(m.label)}</span>
+                    ${m.sub ? `<span class="autocomplete-row-sub">${escapeHtml(m.sub)}</span>` : ''}
+                </li>
+            `).join('');
+            list.hidden = false;
+        }
+
+        function update() {
+            cached = (getMatches(input.value || '') || []).slice(0, 8);
+            activeIndex = -1;
+            render();
+        }
+
+        function pick(match) {
+            if (!match) return;
+            input.value = match.value;
+            list.hidden = true;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof onPick === 'function') onPick(match);
+        }
+
+        input.addEventListener('focus', update);
+        input.addEventListener('input', update);
+        input.addEventListener('blur', () => {
+            // Defer hiding so click-on-row registers first.
+            setTimeout(() => { list.hidden = true; }, 150);
+        });
+        input.addEventListener('keydown', (e) => {
+            if (list.hidden || !cached.length) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = Math.min(activeIndex + 1, cached.length - 1);
+                render();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = Math.max(activeIndex - 1, 0);
+                render();
+            } else if (e.key === 'Enter' && activeIndex >= 0) {
+                e.preventDefault();
+                pick(cached[activeIndex]);
+            } else if (e.key === 'Escape') {
+                list.hidden = true;
+            }
+        });
+        list.addEventListener('mousedown', (e) => {
+            const row = e.target.closest('[data-idx]');
+            if (!row) return;
+            e.preventDefault();             // don't blur input
+            pick(cached[+row.dataset.idx]);
+        });
+    }
+
+    /* Match shop directory by name or any alias (case-insensitive substring).
+       When the query is empty the dropdown is suppressed — opening the
+       full 67-shop list on focus would feel spammy. */
+    function matchHkShops(query) {
+        const q = (query || '').trim().toLowerCase();
+        if (!q || !_hkShops.length) return [];
+        const out = [];
+        for (const s of _hkShops) {
+            const candidates = [s.name, ...(s.aliases || [])];
+            if (candidates.some(c => (c || '').toLowerCase().includes(q))) {
+                out.push({
+                    label: s.name,
+                    sub: [s.area, DISTRICT_LABELS[s.district]].filter(Boolean).join(' · '),
+                    value: s.name,
+                    data: s,
+                });
+            }
+        }
+        return out;
+    }
+
+    /* Common event-name suggestions. Showed unfiltered on focus for
+       inspiration; filtered by substring once the user starts typing. */
+    function matchEventNames(query) {
+        const q = (query || '').trim().toLowerCase();
+        if (!q) return COMMON_EVENT_NAMES.map(n => ({ label: n, value: n }));
+        return COMMON_EVENT_NAMES
+            .filter(n => n.toLowerCase().includes(q))
+            .map(n => ({ label: n, value: n }));
+    }
+
+    /* Address suggestions: when an organiser has been picked, surface the
+       matched shop's full registered address (PTCG HK directory) as the
+       top hint. Falls back to substring matches across every shop's
+       address / area / name when typing freely. */
+    function matchAddress(query) {
+        const q = (query || '').trim().toLowerCase();
+        if (!_hkShops.length) return [];
+        const orgEl = document.querySelector('[data-meta="org"]');
+        const orgVal = (orgEl ? orgEl.value : '').trim().toLowerCase();
+        const out = [];
+        const seen = new Set();
+        const push = (item) => {
+            if (!item.value || seen.has(item.value)) return;
+            seen.add(item.value);
+            out.push(item);
+        };
+        // Top hint: registered address for the currently-typed organiser.
+        if (orgVal) {
+            for (const s of _hkShops) {
+                const candidates = [s.name, ...(s.aliases || [])];
+                if (candidates.some(c => (c || '').toLowerCase() === orgVal)) {
+                    const v = s.address || s.area;
+                    if (v) push({
+                        label: v,
+                        sub: '主辦登記地址 · ' + (DISTRICT_LABELS[s.district] || ''),
+                        value: v,
+                    });
+                    break;
+                }
+            }
+        }
+        // Substring match against address / area / name as the user types.
+        for (const s of _hkShops) {
+            const v = s.address || s.area;
+            if (!v) continue;
+            const a = v.toLowerCase();
+            const ar = (s.area || '').toLowerCase();
+            const n = (s.name || '').toLowerCase();
+            if (q && (a.includes(q) || ar.includes(q) || n.includes(q))) {
+                push({
+                    label: v,
+                    sub: s.name + ' · ' + (DISTRICT_LABELS[s.district] || ''),
+                    value: v,
+                });
+            }
+        }
+        return out;
+    }
+
+    /* Wire all three editor inputs once. Idempotent via the dataset flag
+       inside setupAutocomplete. Picking a shop name auto-fills the address
+       with the shop's area as a starting point, ONLY if address is empty
+       (don't blow away an organiser's manual entry). */
+    function wireAutocomplete() {
+        const orgInput = document.querySelector('[data-meta="org"]');
+        const nameInput = document.querySelector('[data-meta="name"]');
+        const addrInput = document.querySelector('[data-meta="address"]');
+
+        if (orgInput) setupAutocomplete(orgInput, matchHkShops, (match) => {
+            // Auto-fill the address with the full registered address when
+            // we have one (newly merged from PTCG HK official directory),
+            // else fall back to the short area label as a starter hint.
+            const fillVal = match.data && (match.data.address || match.data.area);
+            if (addrInput && !addrInput.value && fillVal) {
+                addrInput.value = fillVal;
+                addrInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+        if (nameInput) setupAutocomplete(nameInput, matchEventNames);
+        if (addrInput) setupAutocomplete(addrInput, matchAddress);
     }
 
     function rerenderForLang() {

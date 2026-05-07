@@ -7065,6 +7065,64 @@ body.projector-mode .pairing-help-btn { display: none; }
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   Autocomplete dropdown — surfaces below host editor inputs that
+   wire up via setupAutocomplete (org / event-name / address).
+   Anchored to the .reg-meta-field wrapper, which gets `position:
+   relative` via .autocomplete-anchor when wired.
+   ───────────────────────────────────────────────────────────────── */
+.autocomplete-anchor {
+    position: relative;
+}
+.autocomplete-list {
+    list-style: none;
+    margin: 0.25rem 0 0;
+    padding: 0.25rem 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: var(--color-bg-surface, #1a1f4e);
+    border: 1px solid var(--color-border, rgba(255,255,255,0.18));
+    border-radius: 0.55rem;
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55);
+    max-height: 16rem;
+    overflow-y: auto;
+}
+.autocomplete-row {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    line-height: 1.25;
+    border-radius: 0.35rem;
+    margin: 0 0.25rem;
+}
+.autocomplete-row:hover,
+.autocomplete-row.is-active {
+    background: var(--color-primary, #FF7324);
+    color: #fff;
+}
+.autocomplete-row-label {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--color-text-primary, #fff);
+}
+.autocomplete-row:hover .autocomplete-row-label,
+.autocomplete-row.is-active .autocomplete-row-label {
+    color: #fff;
+}
+.autocomplete-row-sub {
+    font-size: 0.72rem;
+    color: var(--color-text-muted, rgba(255,255,255,0.55));
+}
+.autocomplete-row:hover .autocomplete-row-sub,
+.autocomplete-row.is-active .autocomplete-row-sub {
+    color: rgba(255,255,255,0.9);
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Phase 1: Self-report — pass-the-phone confirmation sheet + status
    badges on owner round view + viewer pinned card.
    ───────────────────────────────────────────────────────────────── */

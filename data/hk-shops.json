@@ -1,0 +1,720 @@
+[
+  {
+    "name": "Battlefield 卡牌遊戲及玩具專門店",
+    "district": "southern",
+    "region": "hk_island",
+    "aliases": [
+      "Battlefield"
+    ],
+    "area": "香港仔",
+    "address": "香港仔富嘉工業大廈6樓607室",
+    "officialKey": "GYM56"
+  },
+  {
+    "name": "TurboTCG",
+    "district": "central_western",
+    "region": "hk_island",
+    "address": "觀塘開聯工業中心A 座 6樓611A室",
+    "area": "觀塘開聯",
+    "officialKey": "GYM44"
+  },
+  {
+    "name": "Pikapika",
+    "district": "wan_chai",
+    "region": "hk_island",
+    "area": "銅鑼灣",
+    "address": "新界荃灣大涌道8號TCL工業中心1樓04A室",
+    "officialKey": "GYM107"
+  },
+  {
+    "name": "異次元桌遊社",
+    "district": "eastern",
+    "region": "hk_island",
+    "area": "天后",
+    "address": "天后清風街6-8號凱豐商業大廈2樓B",
+    "officialKey": "GYM40"
+  },
+  {
+    "name": "Card Knight",
+    "district": "eastern",
+    "region": "hk_island",
+    "area": "西灣河",
+    "address": "西灣河聖十字徑2號協青社大樓地舖4號",
+    "officialKey": "GYM55"
+  },
+  {
+    "name": "Card buddies",
+    "district": "eastern",
+    "region": "hk_island",
+    "area": "北角",
+    "address": "渣華道108號商業中心6樓全層",
+    "officialKey": "GYM29"
+  },
+  {
+    "name": "CardPro 卡鋪",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "aliases": [
+      "CardPro"
+    ],
+    "area": "荔枝角",
+    "address": "荔枝角青山道485號九龍廣場10樓1007室",
+    "officialKey": "GYM106"
+  },
+  {
+    "name": "Battleground",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣",
+    "address": "荔枝角長順街11號長城工廠大廈5樓A09室",
+    "officialKey": "GYM24"
+  },
+  {
+    "name": "Oztet",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "荔枝角",
+    "address": "香港北角北角道10號NPAC 12樓03-04室",
+    "officialKey": "GYM47"
+  },
+  {
+    "name": "Card Cave",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣天悅廣場",
+    "address": "長沙灣天悅廣場1樓159B",
+    "officialKey": "GYM30"
+  },
+  {
+    "name": "9號研究所",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣天悅廣場",
+    "address": "青山道155-169號天悅廣場1樓126a號",
+    "officialKey": "GYM008"
+  },
+  {
+    "name": "見卡打牌",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣天悅廣場",
+    "address": "天悅廣埸1樓165店",
+    "officialKey": "GYM081"
+  },
+  {
+    "name": "OutPlay TCG",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣天悅廣場",
+    "address": "長沙灣天悅廣場131號店",
+    "officialKey": "GYM34"
+  },
+  {
+    "name": "Aurora TCG",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣天悅廣場",
+    "address": "長沙灣元州街162-188號天悅廣場112號鋪",
+    "officialKey": "GYM011"
+  },
+  {
+    "name": "0H FANTASTIC SHOP",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣",
+    "address": "長沙灣青山道500號百美工廠大廈6樓C3室",
+    "officialKey": "GYM67"
+  },
+  {
+    "name": "Arena",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "荔枝角",
+    "address": "長沙灣元州街162-188號天悅廣場2樓213號舖",
+    "officialKey": "GYM009"
+  },
+  {
+    "name": "Card Game Station",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "荔枝角",
+    "address": "荔枝角青山道658號福至工業大廈2樓212室",
+    "officialKey": "GYM41"
+  },
+  {
+    "name": "日出之國",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣",
+    "address": "長沙灣東京街31號恆邦商業大廈1206室",
+    "officialKey": "GYM36"
+  },
+  {
+    "name": "ACardTCG",
+    "district": "wong_tai_sin",
+    "region": "kowloon",
+    "area": "新蒲崗",
+    "address": "香港新蒲崗五芳街10號新寶中心19樓06室",
+    "officialKey": "GYM39"
+  },
+  {
+    "name": "卡羽",
+    "district": "wong_tai_sin",
+    "region": "kowloon",
+    "area": "新蒲崗",
+    "address": "新蒲崗大有街14號萬星工業大廈6樓606室",
+    "officialKey": "GYM26"
+  },
+  {
+    "name": "Brave Soul 闘卡魂",
+    "district": "wong_tai_sin",
+    "region": "kowloon",
+    "aliases": [
+      "Brave Soul",
+      "闘卡魂"
+    ],
+    "area": "新蒲崗",
+    "address": "新蒲崗勤達中心12樓1室",
+    "officialKey": "GYM11"
+  },
+  {
+    "name": "酋長部落",
+    "district": "wong_tai_sin",
+    "region": "kowloon",
+    "area": "新蒲崗",
+    "address": "新蒲崗七寶街3號振發工廠大廈3樓D-1室",
+    "officialKey": "GYM42"
+  },
+  {
+    "name": "Carder",
+    "district": "wong_tai_sin",
+    "region": "kowloon",
+    "area": "新蒲崗",
+    "address": "九龍新蒲崗大有街32號泰力工業中心6樓7室",
+    "officialKey": "GYM54"
+  },
+  {
+    "name": "MOON ROAD",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "aliases": [
+      "Moon Road"
+    ],
+    "area": "觀塘",
+    "address": "觀塘成業街19-21號成業工業大廈7樓17室",
+    "officialKey": "Gym60"
+  },
+  {
+    "name": "卡之島 Cardland",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "aliases": [
+      "卡之島",
+      "Cardland"
+    ],
+    "area": "觀塘",
+    "address": "九龍觀塘開源道55號開聯工業中心A座5樓512室",
+    "officialKey": "GYM53"
+  },
+  {
+    "name": "Card Legacy",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "area": "觀塘",
+    "address": "九龍觀塘開源道47號凱源工業大廈1/f C室",
+    "officialKey": "GYM15"
+  },
+  {
+    "name": "Card Slash",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "area": "觀塘",
+    "address": "觀塘偉業街181號盈達商業大廈9樓A2室",
+    "officialKey": "GYM71"
+  },
+  {
+    "name": "Beehive TCG",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "area": "觀塘",
+    "address": "觀塘時運工業大廈1樓A室觀塘時運工業大廈1樓A室",
+    "officialKey": "GYM002"
+  },
+  {
+    "name": "Top Draw",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "area": "觀塘",
+    "address": "觀塘開源道72號溢財中心地下A2舖",
+    "officialKey": "GYM35"
+  },
+  {
+    "name": "KaBoom TCG Store",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "aliases": [
+      "KaBoom TCG",
+      "KaBoom"
+    ],
+    "area": "觀塘",
+    "address": "觀塘 巧明街105號 好運工業大廈 3樓D室",
+    "officialKey": "GYM092"
+  },
+  {
+    "name": "CardKoi 卡酷愛",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "aliases": [
+      "CardKoi",
+      "卡酷愛"
+    ],
+    "area": "觀塘",
+    "address": "觀塘偉業街179號德隆工業大廈A座6樓",
+    "officialKey": "GYM071"
+  },
+  {
+    "name": "半日閒",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "area": "觀塘",
+    "address": "觀塘觀塘道368號波頓科創中心1樓B店鋪",
+    "officialKey": "GYM51"
+  },
+  {
+    "name": "許願星",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "area": "官塘",
+    "address": "官塘鴻圖道25號瑞泰偉基商業廣場1樓118及120室",
+    "officialKey": "GYM005"
+  },
+  {
+    "name": "KEZ TCG SHOP",
+    "district": "kowloon_city",
+    "region": "kowloon",
+    "aliases": [
+      "KEZ TCG",
+      "KEZ"
+    ],
+    "area": "紅磡",
+    "address": "紅磡鶴園街2G號恆豐工業大廈1期6樓F1-08室",
+    "officialKey": "GYM63"
+  },
+  {
+    "name": "Card Lab 卡研社",
+    "district": "kowloon_city",
+    "region": "kowloon",
+    "aliases": [
+      "Card Lab",
+      "卡研社"
+    ],
+    "area": "紅磡",
+    "address": "紅磡民裕街30號興業工商大廈4樓B1室",
+    "officialKey": "GYM50"
+  },
+  {
+    "name": "HobbyX",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "area": "旺角",
+    "address": "旺角彌敦道608號總統商業大廈20樓02室",
+    "officialKey": "GYM58"
+  },
+  {
+    "name": "Basicland",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "area": "旺角",
+    "address": "旺角彌敦道608號總統商業中心15樓1506室",
+    "officialKey": "GYM27"
+  },
+  {
+    "name": "樓上咭店 Have Card",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "aliases": [
+      "樓上咭店",
+      "Have Card"
+    ],
+    "area": "弼街",
+    "address": "九龍弼街49號唐二樓",
+    "officialKey": "GYM091"
+  },
+  {
+    "name": "玩卡地",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣道",
+    "address": "香港深水埗長沙灣道21～25號長豐商業大廈12樓1204室",
+    "officialName": "(user-provided)"
+  },
+  {
+    "name": "Players'Club 太子",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "aliases": [
+      "Players'Club",
+      "Players Club"
+    ],
+    "area": "太子",
+    "address": "太子彌敦道749A愛都婚紗中心 8樓",
+    "officialKey": "GYM23"
+  },
+  {
+    "name": "Mox Saga",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "area": "佐敦",
+    "address": "佐敦偉晴街44～52街聯美中心13樓A室",
+    "officialKey": "GYM28"
+  },
+  {
+    "name": "Light TCG",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "area": "尖沙咀",
+    "address": "香港尖沙咀加連威老道嘉威大廈41C-D",
+    "officialName": "(user-provided)"
+  },
+  {
+    "name": "Cypher Port HK",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "aliases": [
+      "Cypher Port"
+    ],
+    "address": "葵芳葵豐街福業大廈1706室",
+    "area": "葵芳葵豐",
+    "officialKey": "GYM70"
+  },
+  {
+    "name": "Cardtheland",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "address": "黃埔凱旋工商中心2期3樓G1B室",
+    "area": "黃埔凱旋",
+    "officialKey": "GYM69"
+  },
+  {
+    "name": "正氣卡店",
+    "district": "sha_tin",
+    "region": "new_territories",
+    "area": "大圍",
+    "address": "大圍成運路25-27號成全工業大廈7樓6室",
+    "officialKey": "Gym75"
+  },
+  {
+    "name": "純白鎮",
+    "district": "sha_tin",
+    "region": "new_territories",
+    "area": "石門",
+    "address": "沙田石門安平街新貿中心B座2212室",
+    "officialKey": "GYM32"
+  },
+  {
+    "name": "Card Charge 寶卡站",
+    "district": "sha_tin",
+    "region": "new_territories",
+    "aliases": [
+      "Card Charge",
+      "寶卡站"
+    ],
+    "area": "火炭",
+    "address": "新界火炭豐利工業中心3樓24室",
+    "officialKey": "GYM115"
+  },
+  {
+    "name": "This Card",
+    "district": "tai_po",
+    "region": "new_territories",
+    "area": "大埔",
+    "address": "大埔懷仁街47號泰和樓閣樓",
+    "officialKey": "GYM006"
+  },
+  {
+    "name": "卡部屋遊戲社",
+    "district": "tai_po",
+    "region": "new_territories",
+    "aliases": [
+      "卡部屋"
+    ],
+    "area": "大埔",
+    "address": "大埔普益街25號地舖",
+    "officialKey": "GYM31"
+  },
+  {
+    "name": "PLAY CARD CHILL",
+    "district": "tai_po",
+    "region": "new_territories",
+    "area": "大埔",
+    "address": "九龍新蒲崗五芳街26號榮盛工業大廈15樓B06室",
+    "officialKey": "GYM054"
+  },
+  {
+    "name": "9sss",
+    "district": "yuen_long",
+    "region": "new_territories",
+    "area": "元朗",
+    "address": "元朗鳳攸北街益發大廈1樓12號舖",
+    "officialName": "(user-provided)"
+  },
+  {
+    "name": "Card Hunter",
+    "district": "yuen_long",
+    "region": "new_territories",
+    "area": "元朗",
+    "address": "元朗宏業東街22號安勁工業大廈6樓E室",
+    "officialKey": "GYM33"
+  },
+  {
+    "name": "大細路工作室",
+    "district": "tuen_mun",
+    "region": "new_territories",
+    "area": "屯門",
+    "address": "屯門建榮商業大廈5樓508室",
+    "officialKey": "GYM064"
+  },
+  {
+    "name": "247 Pokestop",
+    "district": "tsuen_wan",
+    "region": "new_territories",
+    "area": "荃灣",
+    "address": "荃灣荃運工業中心一期12樓B室",
+    "officialKey": "GYM090"
+  },
+  {
+    "name": "MSTCG",
+    "district": "kwai_tsing",
+    "region": "new_territories",
+    "area": "葵芳",
+    "address": "葵芳金龍工業中心第三座17樓J室",
+    "officialKey": "GYM22"
+  },
+  {
+    "name": "CC TCG 集換式卡牌",
+    "district": "mo_macau",
+    "region": "macau",
+    "aliases": [
+      "CC TCG"
+    ],
+    "area": "黑沙環",
+    "address": "澳門黑沙環馬路百佳同創匯一樓CICJ舖",
+    "officialName": "(user-provided)"
+  },
+  {
+    "name": "紙世代",
+    "district": "mo_taipa",
+    "region": "macau",
+    "area": "氹仔",
+    "address": "澳門海灣南街122號信和廣場012舖",
+    "officialKey": "GYM59"
+  },
+  {
+    "name": "小黑屋 x Black Zone",
+    "district": "mo_macau",
+    "region": "macau",
+    "aliases": [
+      "小黑屋",
+      "Black Zone"
+    ],
+    "area": "羅神父街",
+    "address": "澳門羅神父街43號時代工業大廈1樓B1室",
+    "officialKey": "GYM68"
+  },
+  {
+    "name": "賢者模型工作室",
+    "district": "mo_macau",
+    "region": "macau",
+    "aliases": [
+      "賢者模型"
+    ],
+    "area": "慕拉士街",
+    "address": "澳門慕拉士街南方工業大廈一期一座12樓A",
+    "officialKey": "Gym77"
+  },
+  {
+    "name": "童趣同樂",
+    "district": "mo_macau",
+    "region": "macau",
+    "address": "澳門噶地利亞街和樂大廈地下A鋪",
+    "area": "澳門噶地",
+    "officialKey": "GYM14"
+  },
+  {
+    "name": "智競 TCG",
+    "district": "mo_macau",
+    "region": "macau",
+    "aliases": [
+      "智競"
+    ],
+    "address": "澳⾨勞動節⼤⾺路161-253號廣福祥花園1樓FJ座",
+    "area": "澳⾨勞動",
+    "officialKey": "Gym78"
+  },
+  {
+    "name": "金星玩具店",
+    "district": "mo_macau",
+    "region": "macau",
+    "address": "澳門黑沙環生果街第2街販攤檔27號",
+    "area": "澳門黑沙",
+    "officialKey": "GYM19"
+  },
+  {
+    "name": "課金達人",
+    "district": "mo_macau",
+    "region": "macau",
+    "address": "澳門黑沙環第七街7號福祥樓地下 D 座",
+    "area": "澳門黑沙",
+    "officialKey": "GYM13"
+  },
+  {
+    "name": "澳資私恆星玩具精品",
+    "district": "mo_macau",
+    "region": "macau",
+    "aliases": [
+      "澳資私恆星"
+    ],
+    "address": "澳門僑樂新街啟榮大廈3號A地下",
+    "area": "澳門僑樂新",
+    "officialKey": "GYM21"
+  },
+  {
+    "name": "櫻吹雪",
+    "district": "mo_macau",
+    "region": "macau",
+    "address": "黑沙環馬路龍園-百佳同創匯 地面層BJ舖",
+    "area": "黑沙環",
+    "officialName": "(user-provided)"
+  },
+  {
+    "name": "黃鈺玩具精品",
+    "district": "mo_macau",
+    "region": "macau",
+    "aliases": [
+      "黃鈺玩具"
+    ],
+    "address": "澳門祐漢新村第五街49號牡丹樓地鋪",
+    "area": "澳門祐漢",
+    "officialKey": "GYM001"
+  },
+  {
+    "name": "COMBO",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "荔枝角嘉名",
+    "address": "荔枝角嘉名工廠大廈6樓B座5室",
+    "officialKey": "GYM023"
+  },
+  {
+    "name": "nsew 啟德體育園 分店",
+    "district": "kowloon_city",
+    "region": "kowloon",
+    "area": "啟德啟德",
+    "address": "啟德啟德體育園啟德零售館2, 1樓 M2-111號舖",
+    "officialKey": "GYM061"
+  },
+  {
+    "name": "彩虹島",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "深水埗西",
+    "address": "深水埗西九龍中心7樓7090AB鋪",
+    "officialKey": "GYM09"
+  },
+  {
+    "name": "電電屋",
+    "district": "kwun_tong",
+    "region": "kowloon",
+    "area": "凱旋工商",
+    "address": "凱旋工商中心第一期民裕街41號13樓F2室",
+    "officialKey": "GYM10"
+  },
+  {
+    "name": "卡中游卡遊社",
+    "district": "mo_macau",
+    "region": "macau",
+    "area": "黑沙環馬",
+    "address": "澳門半島 黑沙環馬路 44-F號 百佳同創匯一樓 CI＆CJ鋪",
+    "officialKey": "GYM108"
+  },
+  {
+    "name": "home-run FABulous card shop",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "area": "太子彌敦",
+    "address": "太子彌敦道749A愛都婚紗中心 10樓",
+    "officialKey": "GYM114"
+  },
+  {
+    "name": "大木研究所",
+    "district": "wong_tai_sin",
+    "region": "kowloon",
+    "area": "新蒲崗六合",
+    "address": "新蒲崗六合街25號 嘉時工業大廈 1樓128室",
+    "officialKey": "GYM116"
+  },
+  {
+    "name": "Card Collection",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "長沙灣元州",
+    "address": "長沙灣元州街162-188號天悅廣場176號舖",
+    "officialKey": "GYM16"
+  },
+  {
+    "name": "星光之都",
+    "district": "tuen_mun",
+    "region": "new_territories",
+    "area": "屯門震寰",
+    "address": "屯門震寰路9號好收成工業大廈7樓14室",
+    "officialKey": "GYM38"
+  },
+  {
+    "name": "League Castle",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "area": "旺角廣東",
+    "address": "旺角廣東道1125-1127號廣建中心6樓",
+    "officialKey": "GYM57"
+  },
+  {
+    "name": "SBT",
+    "district": "tuen_mun",
+    "region": "new_territories",
+    "area": "屯門德榮",
+    "address": "屯門德榮工業大廈3樓C2室",
+    "officialKey": "Gym61"
+  },
+  {
+    "name": "MAD MAX TOYS",
+    "district": "yau_tsim_mong",
+    "region": "kowloon",
+    "area": "旺角太子",
+    "address": "旺角太子道西193號MOKO 新世紀廣場3樓310-311號舖",
+    "officialKey": "GYM66"
+  },
+  {
+    "name": "K TCG Store-澳門卡牌專門店",
+    "district": "mo_macau",
+    "region": "macau",
+    "area": "澳門興隆",
+    "address": "澳門興隆街興隆樓44號地鋪",
+    "officialKey": "Gym72"
+  },
+  {
+    "name": "Boss's Orders TCG",
+    "district": "eastern",
+    "region": "hk_island",
+    "area": "荃灣柴灣角",
+    "address": "荃灣柴灣角街95號華俊工業中心16樓2B室",
+    "officialKey": "Gym73"
+  },
+  {
+    "name": "道樂殿堂Doraku Palace",
+    "district": "sham_shui_po",
+    "region": "kowloon",
+    "area": "荔枝角青山",
+    "address": "荔枝角青山道688-690號嘉名工廠大廈C座5樓02室",
+    "officialKey": "Gym74"
+  }
+]
