@@ -6821,6 +6821,11 @@ body.projector-mode .pairing-help-btn { display: none; }
 .host-publish-state.is-muted {
     color: var(--color-text-muted);
 }
+.host-publish-state.is-pending {
+    background: rgba(120, 144, 255, 0.10);
+    border-color: rgba(120, 144, 255, 0.4);
+    color: #C7D2FE;
+}
 
 
 /* Success-state CTA pair — funnel the player back to TopCut HK so they can

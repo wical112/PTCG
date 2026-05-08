@@ -458,12 +458,19 @@ window.hostApp = (() => {
         const deleteRow = document.getElementById('host-delete-event-row');
         if (deleteRow) deleteRow.hidden = eventData.phase !== 'signup';
 
-        // Publish state — drives the publish cluster in the save row.
+        // Publish state — three branches drive the cluster:
+        //   1. published=true + complete (name+date filled) → 🟢 live on TopCut
+        //   2. published=true + incomplete card           → 📝 待填寫，自動發佈
+        //   3. published=false                              → ⚪ 草稿（手動發佈）
+        // Branch (2) was added 2026-05-09 after the auto-publish flip
+        // (cloud.js) — without it new events show «已發佈» before the
+        // form has anything to broadcast, which reads as a bug to hosts.
         const publishBtn = document.getElementById('btn-publish-event');
         const unpublishBtn = document.getElementById('btn-unpublish-event');
         const stateBadge = document.getElementById('host-publish-state');
         const tt = window.t || ((k, f) => f);
-        if (eventData.published === true) {
+        const cardComplete = !!(eventData.meta && eventData.meta.name && eventData.meta.date);
+        if (eventData.published === true && cardComplete) {
             publishBtn.textContent = tt('publish.updateBtn', '✅ 已發佈 — 更新');
             publishBtn.classList.remove('btn-primary');
             publishBtn.classList.add('btn-secondary');
@@ -473,13 +480,25 @@ window.hostApp = (() => {
                 ? tt('publish.mutedBadge', '🔇 同步已停用')
                 : tt('publish.liveBadge', '🟢 已發佈到 TopCut HK');
             stateBadge.className = 'host-publish-state ' + (eventData.syncToTopCut === false ? 'is-muted' : 'is-live');
+        } else if (eventData.published === true && !cardComplete) {
+            // Auto-publish flag is on but the post hasn't materialised yet
+            // because buildEventCard() returns null without name+date.
+            // Encourage the host to finish the form — first save with both
+            // fields populated triggers the actual broadcast.
+            publishBtn.textContent = tt('publish.fillFirstBtn', '📝 填埋資料先');
+            publishBtn.classList.add('btn-primary');
+            publishBtn.classList.remove('btn-secondary');
+            unpublishBtn.hidden = false;
+            stateBadge.hidden = false;
+            stateBadge.textContent = tt('publish.pendingBadge', '📝 待填寫資料 — 完成後自動發佈到 TopCut');
+            stateBadge.className = 'host-publish-state is-pending';
         } else {
             publishBtn.textContent = tt('publish.publishBtn', '📣 發佈活動');
             publishBtn.classList.add('btn-primary');
             publishBtn.classList.remove('btn-secondary');
             unpublishBtn.hidden = true;
             stateBadge.hidden = false;
-            stateBadge.textContent = tt('publish.draftBadge', '⚪ 未發佈（草稿）');
+            stateBadge.textContent = tt('publish.draftBadge', '⚪ 未發佈（已暫停）');
             stateBadge.className = 'host-publish-state is-draft';
         }
 
