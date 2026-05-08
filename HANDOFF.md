@@ -391,6 +391,12 @@ node test-capacity-e2e.mjs
 
 ## Recent sessions
 
+### 2026-05-09 — Auto-publish flip + cross-project sync hardening + host editor third state
+
+1. **Default-publish every new event** (`cloud.js:300`) — flipped `published: false` → `published: true` in `defaultEventDoc()`. Every successfully-hosted event now auto-broadcasts to TopCut feed. Empty fresh drafts still don't post because `buildEventCard()` (in `functions/src/index.ts`) returns null when `meta.name` / `meta.date` are blank. Hosts can still pause via «↩ 取消發佈» which sets `published: false`.
+2. **Cross-project sync `ignoreUndefinedProperties`** (`functions/src/topcutSync.ts:45`) — secondary admin app for `tournamet-platform` now matches the primary app's tolerance. Without it, the moment a host left an optional field (`desc`/`time`/`contact`) blank the Firestore client rejected the card write. Surfaced as «sync failed for A3J4LK Cannot use undefined». A3J4LK was retroactively published + bumped to force re-sync; mirror post `xEebKdc2QLsBDZzXDgS5` confirmed live on TopCut.
+3. **Host editor third state for auto-publish flow** (`host/host.js:466-503`, `style.css:6824`) — added a fork between «published=true + complete» (live to TopCut) and «published=true + incomplete» (post not yet broadcast because name/date blank). New badge: «📝 待填寫資料 — 完成後自動發佈到 TopCut» + button copy «📝 填埋資料先». New `is-pending` CSS class with indigo tint. Without this, fresh events showed «🟢 已發佈到 TopCut HK» before anything was actually posted, which read as a bug.
+
 ### 2026-05-08 — Capacity + self-report + wheel broadcast + HK-shop autocomplete + SEO
 1. **Hosted-event registration cap** (Phase 0) — host editor input + «不設上限» checkbox; `withinCapacity` rule + `onSignupWritten` trigger; race-aware modal error on TopCut.
 2. **Player self-report scoring** (Phase 1) — submitMatchReport callable, matchReports subcollection, viewer pin self-report buttons, pass-the-phone signature, owner auto-apply listener, dispute red flag.
