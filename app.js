@@ -1965,8 +1965,8 @@ const app = (() => {
             // (bo3 / spin paths handle their own override entry points).
             const selfReportBadge = !viewOnly && (pairing.disputed || pairing.selfReportedAt)
                 ? (pairing.disputed
-                    ? `<div class="pairing-self-report-flag pairing-self-report-disputed" title="玩家自報但對家不同意 — 點擊任何結果鍵覆寫">⚠ 玩家自報分歧</div>`
-                    : `<div class="pairing-self-report-flag pairing-self-report-confirmed" title="玩家自報並雙方確認">✓ 玩家自報</div>`)
+                    ? `<div class="pairing-self-report-flag pairing-self-report-disputed" onclick="event.stopPropagation(); app.openDisputeReview(${pIdx})" title="玩家自報但對家不同意 — 點擊查看詳情">⚠ 玩家自報分歧（點擊查看）</div>`
+                    : `<div class="pairing-self-report-flag pairing-self-report-confirmed" onclick="event.stopPropagation(); app.openDisputeReview(${pIdx})" title="玩家自報並雙方確認 — 點擊查看簽名">✓ 玩家自報</div>`)
                 : '';
 
             if (state.gameType === 'spin-battle') {
@@ -2364,6 +2364,121 @@ const app = (() => {
             _selfReportSheet.parentNode.removeChild(_selfReportSheet);
         }
         _selfReportSheet = null;
+    }
+
+    /* Owner-side dispute / audit review modal. Triggered when the organizer
+       taps the «⚠ 玩家自報分歧» or «✓ 玩家自報» chip on a round-view row.
+       Surfaces the original matchReports doc (reporter identity + claimed
+       result + signature image / dispute reason) so the organizer can make
+       an informed override. Confirmed reports show the opponent's signature
+       as audit evidence; disputed reports show «對家不同意» banner. */
+    function openDisputeReview(pairingIndex) {
+        if (viewOnly) return;
+        const round = state.rounds && state.rounds[state.currentRound];
+        if (!round) return;
+        const pairing = round.pairings && round.pairings[pairingIndex];
+        if (!pairing) return;
+        const reportId = pairing.disputeReportId
+            || matchReports.find(r => r.roundIndex === state.currentRound && r.pairingIndex === pairingIndex)?.id;
+        const report = matchReports.find(r => r.id === reportId)
+            || matchReports.find(r => r.roundIndex === state.currentRound && r.pairingIndex === pairingIndex);
+        if (!report) {
+            showToast('搵唔到報告紀錄');
+            return;
+        }
+        const pa = getPlayer(pairing.playerA);
+        const pb = pairing.playerB ? getPlayer(pairing.playerB) : null;
+        const reporterName = report.reporterSide === 'a'
+            ? (pa ? pa.name : 'A')
+            : (pb ? pb.name : 'B');
+        const reportedOutcome = report.result === 'draw'
+            ? '平手'
+            : report.result === 'a'
+                ? `${pa ? escapeHtml(pa.name) : 'A'} 勝`
+                : `${pb ? escapeHtml(pb.name) : 'B'} 勝`;
+        const isDispute = report.status === 'disputed';
+
+        if (_selfReportSheet) closeSelfReport();
+        const sheet = document.createElement('div');
+        sheet.className = 'self-report-overlay';
+        sheet.innerHTML = `
+          <div class="self-report-sheet" role="dialog" aria-modal="true">
+            <div class="self-report-head">
+              <strong>${isDispute ? '⚠ 玩家自報分歧' : '✓ 玩家自報紀錄'}</strong>
+              <button type="button" class="self-report-close" aria-label="Close">✕</button>
+            </div>
+            <div class="self-report-body">
+              <p class="self-report-summary">
+                <strong>${escapeHtml(reporterName)}</strong> 報咗：${reportedOutcome}
+              </p>
+              ${isDispute
+                ? `<div class="self-report-error" style="display:block">
+                    對家不同意呢個結果。主辦可選擇採用報告嘅結果，或者用下方按鈕自行裁決。
+                  </div>`
+                : (report.confirmSig
+                    ? `<p class="self-report-instruction">對家簽名確認：</p>
+                       <div class="dispute-sig-wrap">
+                         <img src="${escapeHtml(report.confirmSig)}" alt="opponent signature" class="dispute-sig-img">
+                       </div>`
+                    : `<p class="self-report-instruction">已雙方確認（無簽名紀錄）。</p>`)
+              }
+              <p class="self-report-hint">
+                報告 ID: <code>${escapeHtml(report.id)}</code><br>
+                Reporter trainer: <code>${escapeHtml(report.reporterTrainerId || '—')}</code>
+              </p>
+            </div>
+            <div class="self-report-actions">
+              <button type="button" class="btn btn-secondary self-report-close-btn">關閉</button>
+              ${isDispute
+                ? `<button type="button" class="btn btn-primary self-report-accept">✓ 採用報告嘅結果</button>`
+                : `<button type="button" class="btn btn-danger self-report-revert">✗ 撤銷此自報</button>`
+              }
+            </div>
+          </div>`;
+        document.body.appendChild(sheet);
+        _selfReportSheet = sheet;
+        sheet.querySelector('.self-report-close').addEventListener('click', closeSelfReport);
+        sheet.querySelector('.self-report-close-btn').addEventListener('click', closeSelfReport);
+
+        const acceptBtn = sheet.querySelector('.self-report-accept');
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', () => {
+                // Apply the reporter's claimed result + clear dispute. setResult
+                // would toggle, so we set the field directly and re-render.
+                pairing.result = report.result;
+                pairing.disputed = false;
+                pairing.disputeReportId = null;
+                pairing.disputeResult = null;
+                pairing.organizerOverrode = false;
+                pairing.selfReportedAt = (report.createdAt && report.createdAt.seconds)
+                    ? report.createdAt.seconds * 1000 : Date.now();
+                pairing.selfReportedBy = report.reporterTrainerId || '';
+                saveState();
+                renderRound();
+                if (window.cloud && window.cloud.isReady && window.cloud.isReady()) {
+                    window.cloud.syncState(state);
+                }
+                closeSelfReport();
+                showToast('已採用玩家報告嘅結果');
+            });
+        }
+
+        const revertBtn = sheet.querySelector('.self-report-revert');
+        if (revertBtn) {
+            revertBtn.addEventListener('click', () => {
+                if (!confirm('撤銷會清除呢場嘅結果，主辦需要重新入分。確定？')) return;
+                pairing.result = null;
+                pairing.selfReportedAt = null;
+                pairing.selfReportedBy = null;
+                saveState();
+                renderRound();
+                if (window.cloud && window.cloud.isReady && window.cloud.isReady()) {
+                    window.cloud.syncState(state);
+                }
+                closeSelfReport();
+                showToast('已撤銷自報結果');
+            });
+        }
     }
 
     /* Vanilla-JS signature canvas. Returns { isEmpty, clear, toDataURL }.
@@ -5151,8 +5266,14 @@ const app = (() => {
 
         // Viewer-side: kick off the synced animation if owner has just
         // emitted a wheelSpin envelope and we're not already running one.
+        // Skip stale envelopes — if the owner blurred their tab mid-spin
+        // and never flushed the cleanup, late-arriving viewers shouldn't
+        // loop a phantom animation past its expected end.
         if (viewOnly && state.wheelSpin && !wheelSpinning) {
-            startSyncedSpinAnimation(state.wheelSpin);
+            const env = state.wheelSpin;
+            const ageMs = Date.now() - (env.startedAt || 0);
+            const stale = ageMs > (env.durationMs || 6000) + 5000;
+            if (!stale) startSyncedSpinAnimation(env);
         }
     }
 
@@ -5336,7 +5457,40 @@ const app = (() => {
             return 1 - Math.pow(1 - t, 3);
         }
 
+        // Compute the final winner from the wheel's resting angle. Pulled out
+        // so both the RAF terminal branch AND the safety setTimeout below
+        // can settle the spin identically.
+        let settled = false;
+        function settleSpin() {
+            if (settled) return;
+            settled = true;
+            wheelSpinning = false;
+            const btn = document.getElementById('btn-spin');
+            if (btn) btn.disabled = false;
+            // Snap to the deterministic end angle so viewers who animated
+            // alongside us land on the exact same wheel position regardless
+            // of any RAF throttling on either side.
+            wheelAngle = startAngle + totalRotation;
+            drawWheel(ctx, canvas.width, canvas.height, names, wheelAngle);
+            // Spin done — clear envelope, persist final angle so viewers
+            // who join between spins still render the correct snapshot.
+            state.wheelSpin = null;
+            state.wheelAngle = wheelAngle;
+            if (window.cloud && window.cloud.isReady && window.cloud.isReady()) {
+                saveState();
+                window.cloud.syncState(state);
+                if (window.cloud.flush) window.cloud.flush();
+            }
+            // The pointer is at the top of the canvas (12 o'clock = -PI/2).
+            const pointerAngle = -Math.PI / 2;
+            const offset = ((pointerAngle - wheelAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            const winnerIndex = Math.floor(offset / sliceAngle) % names.length;
+            const winner = names[winnerIndex];
+            showWinner(winner);
+        }
+
         function animate(now) {
+            if (settled) return;        // safety setTimeout already fired
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const eased = easeOutCubic(progress);
@@ -5347,36 +5501,19 @@ const app = (() => {
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
-                wheelSpinning = false;
-                document.getElementById('btn-spin').disabled = false;
-                // Spin done — clear envelope, persist final angle so viewers
-                // who join between spins still render the correct snapshot.
-                state.wheelSpin = null;
-                state.wheelAngle = wheelAngle;
-                if (window.cloud && window.cloud.isReady && window.cloud.isReady()) {
-                    saveState();
-                    window.cloud.syncState(state);
-                    if (window.cloud.flush) window.cloud.flush();
-                }
-
-                // The pointer is at the top of the canvas (12 o'clock = -PI/2).
-                // Each slice i starts at: wheelAngle + i * sliceAngle
-                // We need to find which slice contains the angle -PI/2 (top).
-                // Normalize: find the effective angle at the pointer
-                const pointerAngle = -Math.PI / 2;
-                // The start of slice i relative to fixed coordinates is: wheelAngle + i * sliceAngle
-                // We need: wheelAngle + i * sliceAngle <= pointerAngle < wheelAngle + (i+1) * sliceAngle
-                // Rearranging: i * sliceAngle <= (pointerAngle - wheelAngle) < (i+1) * sliceAngle
-                // Normalize (pointerAngle - wheelAngle) to [0, 2*PI)
-                let offset = ((pointerAngle - wheelAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-                const winnerIndex = Math.floor(offset / sliceAngle) % names.length;
-                const winner = names[winnerIndex];
-
-                showWinner(winner);
+                settleSpin();
             }
         }
 
         requestAnimationFrame(animate);
+        // Safety net — if the owner blurs the wheel tab mid-spin, RAF
+        // pauses (browsers throttle hidden-tab RAF) and the terminal
+        // branch never fires. Without this fallback the cloud envelope
+        // (state.wheelSpin) would stay live indefinitely and viewers
+        // who arrive after the real winner is already shown would loop
+        // through a phantom animation. setTimeout still fires in hidden
+        // tabs (just rate-limited), so we always reach settleSpin().
+        setTimeout(settleSpin, duration + 200);
     }
 
     // FIX #6: Remove winner by index, not by name (handles duplicates)
@@ -6453,6 +6590,7 @@ const app = (() => {
         viewerShareCopy,
         openSelfReport,
         closeSelfReport,
+        openDisputeReview,
         updateTournamentMeta,
         toggleScoringDrawBonus,
         toggleBestOfThree,

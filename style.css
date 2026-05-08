@@ -7300,4 +7300,33 @@ body.projector-mode .pairing-help-btn { display: none; }
 .pairing-row-selfreported .pairing-player-name::before {
     content: '';
 }
+/* Dispute / audit review modal — reuses .self-report-overlay shell. The
+   chip pointer is a hint that the badge is now interactive. */
+.pairing-self-report-flag {
+    cursor: pointer;
+}
+.pairing-self-report-flag:hover {
+    filter: brightness(1.15);
+}
+.dispute-sig-wrap {
+    margin-top: 0.4rem;
+    background: var(--color-bg-base, #0a0e27);
+    border: 1px solid var(--color-border-soft, rgba(255,255,255,0.12));
+    border-radius: 0.6rem;
+    padding: 0.4rem;
+    text-align: center;
+}
+.dispute-sig-img {
+    max-width: 100%;
+    max-height: 180px;
+    background: #fff;
+    border-radius: 0.35rem;
+    image-rendering: -webkit-optimize-contrast;
+}
+.self-report-hint code {
+    background: var(--color-bg-base, rgba(0,0,0,0.3));
+    padding: 0.05rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+}
 
