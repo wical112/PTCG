@@ -41,6 +41,11 @@ function initTopCut(serviceAccountJson: string): admin.app.App {
     },
     'topcut',
   );
+  // Mirror the primary app's tolerance: cards built from sparse hosts
+  // legitimately carry undefined optional fields (desc, time, contact).
+  // Without this the secondary Firestore client throws on the first
+  // write and breaks every event broadcast.
+  topcutApp.firestore().settings({ ignoreUndefinedProperties: true });
   return topcutApp;
 }
 

@@ -291,7 +291,13 @@ window.cloud = (() => {
                     imageStoragePath: null,
                     tournamentId: null,
                     syncToTopCut: true,           // organizer can opt out via host editor
-                    published: false,             // explicit publish gate — TopCut sync skipped while false
+                    // Flipped 2026-05-08 from opt-in to opt-out: every new
+                    // event auto-broadcasts to TopCut feed for traffic. The
+                    // onEventWritten trigger's buildEventCard() returns null
+                    // when meta.name/date missing, so empty fresh drafts
+                    // don't post until the host fills the form. Host can
+                    // still hit «🔇 暫停發佈» on the editor to opt out.
+                    published: true,
                     topcutPostId: null,
                     topcutResultPostId: null,
                     publishedAt: firebase.firestore.FieldValue.serverTimestamp(),
