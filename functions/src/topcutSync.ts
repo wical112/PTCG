@@ -194,7 +194,23 @@ export async function syncEventPost(
     logger.warn(`[topcutSync] existing postId ${existingPostId} missing — recreating`);
   }
 
-  const ref = db.collection('posts').doc();
+  // Deterministic doc id keyed on eventId so concurrent invocations of
+  // syncEventPost for the same event converge on the SAME doc id.
+  // Prevents the race where two onEventWritten triggers fire in parallel
+  // before the first one has written topcutPostId back to the source
+  // event doc. Length cap: Firestore doc IDs allow ≤1500 bytes; our
+  // eventIds are ~6 chars so plenty of headroom for the «gse-» prefix.
+  const ref = db.collection('posts').doc(`gse-${card.eventId}`);
+  // If a prior call already created this deterministic-id doc (with the
+  // event-doc's topcutPostId field still missing — happens on the
+  // racing-second-write path), fall back to update instead of overwriting
+  // engagement counters via .set().
+  const existing = await ref.get();
+  if (existing.exists) {
+    await ref.update(baseUpdate);
+    logger.info(`[topcutSync] updated existing event post ${ref.id} (deterministic path)`);
+    return ref.id;
+  }
   const doc: PostDoc = {
     postId: ref.id,
     authorUid: systemUid,
@@ -251,7 +267,18 @@ export async function syncResultPost(
     }
   }
 
-  const ref = db.collection('posts').doc();
+  // Deterministic doc id keyed on eventId — same race-prevention story
+  // as syncEventPost above. The bug that motivated this: client fires
+  // publishEventResultIfNeeded from 3+ trigger points (wheel-end,
+  // page-exit, manual button) and the «check existingResultId then
+  // create» path raced, producing duplicate posts on TopCut.
+  const ref = db.collection('posts').doc(`gsr-${card.eventId}`);
+  const existing = await ref.get();
+  if (existing.exists) {
+    await ref.update(baseUpdate);
+    logger.info(`[topcutSync] updated existing result post ${ref.id} (deterministic path)`);
+    return ref.id;
+  }
   const doc: PostDoc = {
     postId: ref.id,
     authorUid: systemUid,
