@@ -391,6 +391,25 @@ node test-capacity-e2e.mjs
 
 ## Recent sessions
 
+### 2026-05-15 — Trainer-ID leak fix (parse-time split + display-time sanitize)
+
+**Trigger:** organisers paste rosters as `Name hk12345678` (space, not pipe), so trainer IDs end up baked into `player.name`. Result: spectators see other players' trainer IDs everywhere — pairings, standings, viewer mode, TopCut sync. Confirmed on E6C2WF (24/24 players) and 9KRV7V via Firestore inspection.
+
+**Fix:** two-layer compatibility (no organiser re-education).
+
+1. **Parse-time auto-split** (`splitNameAndTrainerId` helper in `app.js`). Three entry points refactored — `bulkAddPlayers`, `editPlayerName`, standings inline-rename. Falls back to regex `^(.+?)\s+(hk\d{8})$` (case-insensitive) when no `|` separator. New tournaments never get poisoned again.
+2. **Display-time sanitize** (`displayName(p)` helper). Swapped at ~26 render sites — pairing rows (Swiss / Bo3 / spin / pinned), standings table, trainer-card header + timeline, deck title, wheel pick, datalist suggestions, knockout labels, drop / champion confirm dialogs, self-report sheet. Historical poisoned data (E6C2WF, 9KRV7V, etc.) renders clean immediately.
+3. **Cloud sync sanitize** (`cleanState` + `extractRosterSnapshot` in `cloud.js`). Strips trailing trainer ID before publishing to Firestore so spectators / TopCut sync / Telegram alerts read clean names. Trainer ID is moved to the proper `trainerId` field if it was empty.
+4. **Outbound payload sanitize** — TopCut feed deck-% aggregation (`sendDeckBreakdown`) and event result snapshot (`publishEventResult`) both apply `splitNameAndTrainerId` so external systems never see the leak.
+
+**Tests:** `tests/trainerIdSanitize.test.mjs` (Node `node:test`, 18 cases). Covers pipe / space / uppercase / unicode / emoji / U+2060 invisible / multi-word / hk-in-middle (must not strip) / wrong digit count / pipe priority. Run with `npm test`.
+
+**Verified offline:** all 24 E6C2WF poisoned names sanitize correctly, no false-strip.
+
+**Not changed:** registration list still shows the `.trainer-id-tag` chip beside the name (organiser-only view; opt-in informational, not a leak).
+
+**Risk:** edit-prompt's `currentValue` (`Name | trainerId`) preserved by design — organisers editing in-place still see their canonical roster format.
+
 ### 2026-05-09 — Auto-publish flip + cross-project sync hardening + host editor third state
 
 1. **Default-publish every new event** (`cloud.js:300`) — flipped `published: false` → `published: true` in `defaultEventDoc()`. Every successfully-hosted event now auto-broadcasts to TopCut feed. Empty fresh drafts still don't post because `buildEventCard()` (in `functions/src/index.ts`) returns null when `meta.name` / `meta.date` are blank. Hosts can still pause via «↩ 取消發佈» which sets `published: false`.

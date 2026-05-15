@@ -66,7 +66,23 @@ window.cloud = (() => {
         return s;
     }
 
-    /* Strip per-device-only fields before sending to cloud. */
+    /* Trailing HK PTCG trainer ID baked into name field (organiser pasted
+       "Name hk12345678" without the pipe separator). Strip before publish
+       so spectators never see other players' trainer IDs in pairings /
+       standings, and move it into the trainerId field if empty. */
+    const TRAINER_TRAILING_RE = /^([\s\S]*\S)\s+(hk\d{8})\s*$/i;
+    function sanitizePlayerNameTid(p) {
+        if (!p || !p.name) return p;
+        const m = String(p.name).match(TRAINER_TRAILING_RE);
+        if (!m || !m[1].trim()) return p;
+        return Object.assign({}, p, {
+            name: m[1].trim(),
+            trainerId: p.trainerId || m[2].toLowerCase()
+        });
+    }
+
+    /* Strip per-device-only fields before sending to cloud. Also sanitize
+       any poisoned player names (legacy paste-without-pipe). */
     function cleanState(state) {
         if (!state) return state;
         const clone = { ...state };
@@ -74,7 +90,27 @@ window.cloud = (() => {
         delete clone.compactMode;
         delete clone.currentView;   // viewer chooses their own view
         delete clone.timerMuted;    // local audio pref
+        if (Array.isArray(clone.players)) {
+            clone.players = clone.players.map(sanitizePlayerNameTid);
+        }
         return clone;
+    }
+
+    /* Denormalized roster snapshot stored alongside `state` on the published
+       doc. Lets Advanced Rebuild pull just the roster (by tournament ID)
+       without needing the full state — useful when the live state is gone
+       but the publish doc still exists. */
+    function extractRosterSnapshot(state) {
+        if (!state || !Array.isArray(state.players)) return [];
+        return state.players.map(p => {
+            const sanitized = sanitizePlayerNameTid(p) || p;
+            return {
+                name: sanitized && sanitized.name ? String(sanitized.name) : '',
+                trainerId: sanitized && sanitized.trainerId ? String(sanitized.trainerId) : '',
+                deckSpecies1: sanitized && sanitized.deckSpecies1 ? String(sanitized.deckSpecies1) : '',
+                deckSpecies2: sanitized && sanitized.deckSpecies2 ? String(sanitized.deckSpecies2) : ''
+            };
+        }).filter(p => p.name);
     }
 
     async function publish(state) {
@@ -89,6 +125,7 @@ window.cloud = (() => {
                 await ref.set({
                     ownerUid: currentUid,
                     state: cleanState(state),
+                    rosterSnapshot: extractRosterSnapshot(state),
                     publishedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     expiresAt: ttlTimestamp()
@@ -125,6 +162,7 @@ window.cloud = (() => {
         try {
             await db.collection(COLLECTION).doc(activeTournamentId).update({
                 state: stateToSend,
+                rosterSnapshot: extractRosterSnapshot(stateToSend),
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 expiresAt: ttlTimestamp()
             });
@@ -151,6 +189,21 @@ window.cloud = (() => {
         const snap = await db.collection(COLLECTION).doc(tid).get();
         if (!snap.exists) throw new Error('not_found');
         return snap.data();
+    }
+
+    /* Pulls just the denormalized roster from a published tournament doc.
+       Falls back to deriving from `state.players` for legacy docs that
+       predate the rosterSnapshot field. Returns array of
+       {name, trainerId, deckSpecies1, deckSpecies2}. */
+    async function fetchRosterSnapshot(tid) {
+        if (!db) throw new Error('not_initialized');
+        const snap = await db.collection(COLLECTION).doc(tid).get();
+        if (!snap.exists) throw new Error('not_found');
+        const data = snap.data() || {};
+        if (Array.isArray(data.rosterSnapshot) && data.rosterSnapshot.length > 0) {
+            return data.rosterSnapshot;
+        }
+        return extractRosterSnapshot(data.state);
     }
 
     function subscribeView(tid, onUpdate, onError) {
@@ -406,13 +459,27 @@ window.cloud = (() => {
         }
 
         const ref = signupsCol.doc(trainerId);
-        // Direct setDoc instead of a runTransaction-with-tx.get duplicate
-        // check: the Firestore read rule on signups is owner-only (PII),
-        // so anonymous tx.get always returns permission-denied. We rely
-        // on Firestore's create-vs-update split for duplicate detection
-        // — a second submission lands on the update rule (owner-only)
-        // and surfaces as permission-denied, which the caller maps to
-        // "already signed up".
+        // Two duplicate-detection paths because the read rule is owner-only:
+        //   * Anonymous signup: tx.get permission-denies, so we rely on
+        //     Firestore's create-vs-update split — a second submission
+        //     hits the update rule (owner-only) and surfaces as
+        //     permission-denied.
+        //   * Owner walk-in (host UI): owner CAN read AND update, so the
+        //     create-vs-update split would silently overwrite the existing
+        //     online signup. We must explicitly read-then-throw.
+        try {
+            const existing = await ref.get();
+            if (existing.exists) {
+                const err = new Error('TRAINER_ID_ALREADY_SIGNED_UP');
+                err.code = 'already-exists';
+                throw err;
+            }
+        } catch (e) {
+            if (e && e.code === 'already-exists') throw e;
+            // permission-denied on the read is expected for anonymous
+            // online signups — fall through to set() and let the rule
+            // engine catch dups via create-vs-update.
+        }
         try {
             await ref.set(data);
             return ref.id;
@@ -569,7 +636,7 @@ window.cloud = (() => {
         init, isConfigured, isReady,
         publish, attachExisting, getActiveTournamentId,
         syncState, flush, unpublish,
-        fetchOnce,
+        fetchOnce, fetchRosterSnapshot,
         subscribeView, unsubscribeView,
         buildViewUrl,
         // Hosted events

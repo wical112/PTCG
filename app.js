@@ -113,6 +113,12 @@ const app = (() => {
             'timer.up': 'Time is up!',
             'timer.compact': 'Compact',
             'timer.expand': 'Expand',
+            'timer.stateIdle': 'READY',
+            'timer.stateRunning': 'RUNNING',
+            'timer.statePaused': 'PAUSED',
+            'timer.stateWarning': 'FINAL 5 MIN',
+            'timer.stateDanger': 'FINAL MIN',
+            'timer.stateTimeup': 'TIME UP',
             'standings.final': 'Final Standings (After {n} Round)',
             'standings.final_plural': 'Final Standings (After {n} Rounds)',
             'standings.afterRound': 'Standings After Round {n}',
@@ -277,6 +283,21 @@ const app = (() => {
             'adv.saveRoster': 'Save Roster',
             'adv.rosterCount': '{n} player in roster',
             'adv.rosterCount_plural': '{n} players in roster',
+            'adv.importLocalBtn': 'Load from local backup',
+            'adv.importTidLabel': 'Or load roster by published Tournament ID:',
+            'adv.importTidPlaceholder': 'ABC123',
+            'adv.importTidBtn': 'Load Roster',
+            'adv.importLoading': 'Loading…',
+            'adv.importNoLocal': 'No local roster backup found on this device.',
+            'adv.importTidNeeded': 'Enter the 6-character Tournament ID first.',
+            'adv.importTidNotFound': 'Tournament ID not found.',
+            'adv.importTidFailed': 'Failed to load roster — check the ID and try again.',
+            'adv.importReplaceConfirm': 'This will replace the current staging roster and clear entered round pairings. Continue?',
+            'adv.importEmpty': 'No players found in the imported roster.',
+            'adv.importLoaded': 'Loaded {n} players from {source}.',
+            'adv.sourceLocal': 'local backup',
+            'adv.sourceCloud': 'Tournament {tid}',
+            'adv.cloudUnavailable': 'Cloud is not available right now.',
             'adv.step2': 'Past Rounds',
             'adv.addRound': '+ Add Round',
             'adv.roundsInfo': '{n} round entered',
@@ -453,6 +474,12 @@ const app = (() => {
             'timer.projector': '投影模式',
             'timer.exitProjector': '退出投影',
             'timer.up': '時間到!',
+            'timer.stateIdle': '待開始',
+            'timer.stateRunning': '進行中',
+            'timer.statePaused': '已暫停',
+            'timer.stateWarning': '最後 5 分鐘',
+            'timer.stateDanger': '最後 1 分鐘',
+            'timer.stateTimeup': '時間到',
             'timer.compact': '精簡',
             'timer.expand': '放大',
             'standings.final': '最終排名(共 {n} 輪)',
@@ -619,6 +646,21 @@ const app = (() => {
             'adv.saveRoster': '儲存名單',
             'adv.rosterCount': '名單中有 {n} 位玩家',
             'adv.rosterCount_plural': '名單中有 {n} 位玩家',
+            'adv.importLocalBtn': '由本機備份載入',
+            'adv.importTidLabel': '或者輸入已發佈嘅賽事 ID 載入名單:',
+            'adv.importTidPlaceholder': 'ABC123',
+            'adv.importTidBtn': '載入名單',
+            'adv.importLoading': '載入中…',
+            'adv.importNoLocal': '本機未搵到名單備份。',
+            'adv.importTidNeeded': '請先輸入 6 位數嘅賽事 ID。',
+            'adv.importTidNotFound': '搵唔到呢個賽事 ID。',
+            'adv.importTidFailed': '載入失敗 — 請檢查 ID 後再試。',
+            'adv.importReplaceConfirm': '會取代目前嘅名單草稿,並清除已輸入嘅輪次對戰。確認繼續?',
+            'adv.importEmpty': '匯入嘅名單係空嘅。',
+            'adv.importLoaded': '已由{source}載入 {n} 位玩家。',
+            'adv.sourceLocal': '本機備份',
+            'adv.sourceCloud': '賽事 {tid}',
+            'adv.cloudUnavailable': '雲端目前唔可用。',
             'adv.step2': '過往輪次',
             'adv.addRound': '+ 新增輪次',
             'adv.roundsInfo': '已輸入 {n} 輪',
@@ -888,9 +930,47 @@ const app = (() => {
     function saveState() {
         if (viewOnly) return; // viewers never write
         localStorage.setItem('ptcg_state', JSON.stringify(state));
+        saveRosterBackup();
         // Mirror to cloud if this tournament is published
         if (state.publishedTournamentId && window.cloud && window.cloud.isReady()) {
             window.cloud.syncState(state);
+        }
+    }
+
+    // ---- ROSTER BACKUP ----
+    // Separate localStorage key so a state-reset / end-tournament click
+    // doesn't blow the roster away. Survives until the user clears storage.
+    const ROSTER_BACKUP_KEY = 'gameset_roster_backup';
+
+    function saveRosterBackup() {
+        if (viewOnly) return;
+        if (!state.players || state.players.length === 0) return; // don't overwrite with empty
+        const players = state.players.map(p => ({
+            name: p.name || '',
+            trainerId: p.trainerId || '',
+            deckSpecies1: p.deckSpecies1 || '',
+            deckSpecies2: p.deckSpecies2 || ''
+        })).filter(p => p.name);
+        if (players.length === 0) return;
+        try {
+            localStorage.setItem(ROSTER_BACKUP_KEY, JSON.stringify({
+                savedAt: Date.now(),
+                players
+            }));
+        } catch (e) {
+            console.warn('[roster-backup] save failed', e);
+        }
+    }
+
+    function loadRosterBackup() {
+        try {
+            const saved = localStorage.getItem(ROSTER_BACKUP_KEY);
+            if (!saved) return null;
+            const parsed = JSON.parse(saved);
+            if (!parsed || !Array.isArray(parsed.players) || parsed.players.length === 0) return null;
+            return parsed;
+        } catch (e) {
+            return null;
         }
     }
 
@@ -1013,6 +1093,7 @@ const app = (() => {
         if (view === 'wheel') renderWheel();
         if (view === 'advanced') renderAdvanced();
         showView(view);
+        if (view !== 'round') hideStickyTimer();
         updateViewerTabs();
     }
 
@@ -1061,16 +1142,7 @@ const app = (() => {
         const lines = textarea.value.split('\n');
         let added = 0;
         lines.forEach(line => {
-            const trimmed = line.trim();
-            if (!trimmed) return;
-            let name, trainerId = '';
-            if (trimmed.includes('|')) {
-                const parts = trimmed.split('|');
-                name = parts[0].trim();
-                trainerId = parts[1].trim();
-            } else {
-                name = trimmed;
-            }
+            const { name, trainerId } = splitNameAndTrainerId(line);
             if (name && !state.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
                 state.players.push(createPlayer(name, trainerId));
                 added++;
@@ -1117,13 +1189,11 @@ const app = (() => {
         const currentValue = player.trainerId ? `${player.name} | ${player.trainerId}` : player.name;
         const newName = prompt(t('reg.editPrompt'), currentValue);
         if (newName && newName.trim()) {
-            let trimmed = newName.trim();
-            let trainerId = player.trainerId || '';
-            if (trimmed.includes('|')) {
-                const parts = trimmed.split('|');
-                trimmed = parts[0].trim();
-                trainerId = parts[1].trim();
-            }
+            const parsed = splitNameAndTrainerId(newName);
+            const trimmed = parsed.name;
+            if (!trimmed) return;
+            // Keep existing trainerId if the new input didn't carry one.
+            const trainerId = parsed.trainerId || player.trainerId || '';
             // Check for duplicate
             if (state.players.some((p, i) => i !== index && p.name.toLowerCase() === trimmed.toLowerCase())) {
                 alert(t('reg.dupName'));
@@ -1177,7 +1247,7 @@ const app = (() => {
                 deckBtn = `<button class="deck-btn ${cls}" onclick="app.openDeckEditor('${p.id}')" title="${t('deck.edit')}">${icon} ${t('deck.short')}</button>`;
             }
             li.innerHTML = `
-                <span class="player-name" ${!locked ? `ondblclick="app.editPlayerName(${i})" title="Double-click to edit"` : ''}>${escapeHtml(p.name)}${trainerTag}</span>
+                <span class="player-name" ${!locked ? `ondblclick="app.editPlayerName(${i})" title="Double-click to edit"` : ''}>${escapeHtml(displayName(p))}${trainerTag}</span>
                 ${deckBtn}
                 ${!locked ? `<button class="btn-delete" onclick="app.deletePlayer(${i})" title="Remove">&times;</button>` : ''}
             `;
@@ -1936,7 +2006,7 @@ const app = (() => {
                 row.innerHTML = `
                     <div class="table-number">${t('round.bye')}</div>
                     <div>
-                        <span class="pairing-player" onclick="app.showTrainerCard('${pairing.playerA}')">${escapeHtml(playerA.name)}</span>
+                        <span class="pairing-player" onclick="app.showTrainerCard('${pairing.playerA}')">${escapeHtml(displayName(playerA))}</span>
                         <span class="bye-tag">${t('round.byeWin')}</span>
                     </div>
                 `;
@@ -2043,14 +2113,14 @@ const app = (() => {
                     <div class="spin-scoreboard">
                         <div ${sideAttrs('a', sideAOpen)}>
                             ${infoBtn(pairing.playerA)}
-                            <div class="spin-name">${beysWarn(playerA)}${escapeHtml(playerA.name)}</div>
+                            <div class="spin-name">${beysWarn(playerA)}${escapeHtml(displayName(playerA))}</div>
                             <div class="spin-points"><span class="spin-points-num">${pa}</span><span class="spin-points-target">/${target}</span></div>
                             ${sideAOpen ? (spinPendingFinish ? beyPickerFor() : crossFor('a')) : ''}
                         </div>
                         <div class="spin-vs">vs</div>
                         <div ${sideAttrs('b', sideBOpen)}>
                             ${infoBtn(pairing.playerB)}
-                            <div class="spin-name">${beysWarn(playerB)}${escapeHtml(playerB.name)}</div>
+                            <div class="spin-name">${beysWarn(playerB)}${escapeHtml(displayName(playerB))}</div>
                             <div class="spin-points"><span class="spin-points-num">${pb}</span><span class="spin-points-target">/${target}</span></div>
                             ${sideBOpen ? (spinPendingFinish ? beyPickerFor() : crossFor('b')) : ''}
                         </div>
@@ -2089,9 +2159,9 @@ const app = (() => {
                         <div class="bo3-status ${matchLockedClass}">${pairing.result ? t('bo3.matchScore', { a: gA, b: gB }) : t('bo3.firstTo2')}</div>
                     </div>
                     <div class="bo3-players">
-                        <div class="pairing-player side-a ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')"><span class="pairing-player-name">${escapeHtml(playerA.name)}</span></div>
+                        <div class="pairing-player side-a ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')"><span class="pairing-player-name">${escapeHtml(displayName(playerA))}</span></div>
                         <div class="bo3-vs"><span class="bo3-score-a">${gA}</span> – <span class="bo3-score-b">${gB}</span></div>
-                        <div class="pairing-player side-b ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right"><span class="pairing-player-name">${escapeHtml(playerB.name)}</span></div>
+                        <div class="pairing-player side-b ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right"><span class="pairing-player-name">${escapeHtml(displayName(playerB))}</span></div>
                     </div>
                     <div class="bo3-games">
                         ${gameRow(0)}
@@ -2106,7 +2176,7 @@ const app = (() => {
             row.innerHTML = `
                 ${selfReportBadge}
                 <div class="table-number">T${pairing.table}</div>
-                <div class="pairing-player side-a ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')"><span class="pairing-player-name">${escapeHtml(playerA.name)}</span></div>
+                <div class="pairing-player side-a ${playerAClass}" onclick="app.showTrainerCard('${pairing.playerA}')"><span class="pairing-player-name">${escapeHtml(displayName(playerA))}</span></div>
                 <div class="result-buttons" ${disabled}>
                     <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}"
                         onclick="app.setResult(${pIdx}, 'a')">${t('round.aWins')}</button>
@@ -2115,7 +2185,7 @@ const app = (() => {
                     <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}"
                         onclick="app.setResult(${pIdx}, 'b')">${t('round.bWins')}</button>
                 </div>
-                <div class="pairing-player side-b ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right"><span class="pairing-player-name">${escapeHtml(playerB.name)}</span></div>
+                <div class="pairing-player side-b ${playerBClass}" onclick="app.showTrainerCard('${pairing.playerB}')" style="text-align:right"><span class="pairing-player-name">${escapeHtml(displayName(playerB))}</span></div>
             `;
             container.appendChild(row);
         });
@@ -2257,8 +2327,8 @@ const app = (() => {
 
         // Decide who won (by player name) so the opponent sees an unambiguous summary.
         let outcomeLabel;
-        const meName = escapeHtml(ctx.me.name);
-        const oppName = escapeHtml(ctx.opp.name);
+        const meName = escapeHtml(displayName(ctx.me));
+        const oppName = escapeHtml(displayName(ctx.opp));
         if (result === 'draw') {
             outcomeLabel = `<strong>${meName}</strong> 同 <strong>${oppName}</strong> 平手`;
         } else if ((result === 'a' && ctx.side === 'a') || (result === 'b' && ctx.side === 'b')) {
@@ -2389,13 +2459,13 @@ const app = (() => {
         const pa = getPlayer(pairing.playerA);
         const pb = pairing.playerB ? getPlayer(pairing.playerB) : null;
         const reporterName = report.reporterSide === 'a'
-            ? (pa ? pa.name : 'A')
-            : (pb ? pb.name : 'B');
+            ? (pa ? displayName(pa) : 'A')
+            : (pb ? displayName(pb) : 'B');
         const reportedOutcome = report.result === 'draw'
             ? '平手'
             : report.result === 'a'
-                ? `${pa ? escapeHtml(pa.name) : 'A'} 勝`
-                : `${pb ? escapeHtml(pb.name) : 'B'} 勝`;
+                ? `${pa ? escapeHtml(displayName(pa)) : 'A'} 勝`
+                : `${pb ? escapeHtml(displayName(pb)) : 'B'} 勝`;
         const isDispute = report.status === 'disputed';
 
         if (_selfReportSheet) closeSelfReport();
@@ -2575,7 +2645,7 @@ const app = (() => {
         const dl = document.getElementById('viewer-pin-names');
         if (dl) {
             dl.innerHTML = (state.players || [])
-                .map(p => `<option value="${escapeHtml(p.name)}"></option>`)
+                .map(p => `<option value="${escapeHtml(displayName(p))}"></option>`)
                 .join('');
         }
 
@@ -2617,7 +2687,7 @@ const app = (() => {
             html += `<div class="pairing-row bye-row pinned">
                 <div class="table-number">${t('round.bye')}</div>
                 <div>
-                    <span class="pairing-player" data-player-id="${escapeHtml(pairing.playerA)}">${escapeHtml(pa.name)}</span>
+                    <span class="pairing-player" data-player-id="${escapeHtml(pairing.playerA)}">${escapeHtml(displayName(pa))}</span>
                     <span class="bye-tag">${t('round.byeWin')}</span>
                 </div>
             </div>`;
@@ -2634,12 +2704,12 @@ const app = (() => {
                 </div>
                 <div class="spin-scoreboard">
                     <div class="spin-side spin-side-a spin-side-locked ${aWin ? 'winner' : ''}" data-player-id="${escapeHtml(pairing.playerA)}">
-                        <div class="spin-name">${escapeHtml(pa.name)}</div>
+                        <div class="spin-name">${escapeHtml(displayName(pa))}</div>
                         <div class="spin-points"><span class="spin-points-num">${ptsA}</span><span class="spin-points-target">/${target}</span></div>
                     </div>
                     <div class="spin-vs">vs</div>
                     <div class="spin-side spin-side-b spin-side-locked ${bWin ? 'winner' : ''}" data-player-id="${escapeHtml(pairing.playerB)}">
-                        <div class="spin-name">${escapeHtml(pb.name)}</div>
+                        <div class="spin-name">${escapeHtml(displayName(pb))}</div>
                         <div class="spin-points"><span class="spin-points-num">${ptsB}</span><span class="spin-points-target">/${target}</span></div>
                     </div>
                 </div>
@@ -2682,13 +2752,13 @@ const app = (() => {
 
             html += `<div class="pairing-row pinned">
                 <div class="table-number">T${pairing.table}</div>
-                <div class="pairing-player side-a ${aClass}" data-player-id="${escapeHtml(pairing.playerA)}">${escapeHtml(pa.name)}</div>
+                <div class="pairing-player side-a ${aClass}" data-player-id="${escapeHtml(pairing.playerA)}">${escapeHtml(displayName(pa))}</div>
                 <div ${btnsStyle}>
                     <button class="result-btn ${pairing.result === 'a' ? 'selected-win-a' : ''}" ${btnAttr('a')}>${t('round.aWins')}</button>
                     <button class="result-btn ${pairing.result === 'draw' ? 'selected-draw' : ''}" ${btnAttr('draw')}>${t('round.draw')}</button>
                     <button class="result-btn ${pairing.result === 'b' ? 'selected-win-b' : ''}" ${btnAttr('b')}>${t('round.bWins')}</button>
                 </div>
-                <div class="pairing-player side-b ${bClass}" data-player-id="${escapeHtml(pairing.playerB)}" style="text-align:right">${escapeHtml(pb.name)}</div>
+                <div class="pairing-player side-b ${bClass}" data-player-id="${escapeHtml(pairing.playerB)}" style="text-align:right">${escapeHtml(displayName(pb))}</div>
             </div>${statusNote}`;
         }
         result.innerHTML = html;
@@ -2758,8 +2828,8 @@ const app = (() => {
                 const aWin = pairing.result === 'a';
                 const bWin = pairing.result === 'b';
                 const isCurrent = r === state.currentRound && !pairing.result && !isBye;
-                const aLabel = pa ? escapeHtml(pa.name) : '—';
-                const bLabel = isBye ? escapeHtml(t('round.bye')) : (pb ? escapeHtml(pb.name) : '—');
+                const aLabel = pa ? escapeHtml(displayName(pa)) : '—';
+                const bLabel = isBye ? escapeHtml(t('round.bye')) : (pb ? escapeHtml(displayName(pb)) : '—');
                 const aClick = pa ? `onclick="app.showTrainerCard('${escapeHtml(pa.id)}')"` : '';
                 const bClick = pb ? `onclick="app.showTrainerCard('${escapeHtml(pb.id)}')"` : '';
                 matches.push(`
@@ -3263,7 +3333,7 @@ const app = (() => {
             if (winners.length <= 1) {
                 // Champion reached.
                 const champ = winners.length === 1 ? getPlayer(winners[0]) : null;
-                if (champ && confirm(t('ko.champConfirm', { name: champ.name }))) {
+                if (champ && confirm(t('ko.champConfirm', { name: displayName(champ) }))) {
                     state.tournamentEnded = true;
                     stopTimer();
                     saveState();
@@ -3380,10 +3450,11 @@ const app = (() => {
             const standings = getStandings();
             const ranked = standings.map((p, i) => {
                 const player = state.players.find(pp => pp.id === p.id) || {};
+                const split = splitNameAndTrainerId(p.name);
                 return {
                     rank: i + 1,
-                    name: p.name,
-                    trainerId: player.trainerId || '',
+                    name: split.name || p.name,
+                    trainerId: player.trainerId || split.trainerId || '',
                     record: p.record,
                     points: p.matchPoints || 0,
                     deckSpecies1: player.deckSpecies1 || '',
@@ -3752,7 +3823,7 @@ const app = (() => {
             </div>
         ` : '';
         body.innerHTML = `
-            <h3>${t('deck.title', { name: escapeHtml(player.name) })}</h3>
+            <h3>${t('deck.title', { name: escapeHtml(displayName(player)) })}</h3>
             <p class="info-text deck-rules-hint">${t('deck.rulesHint')}</p>
             <div class="deck-grid">
                 <div class="deck-bey-header">
@@ -4057,8 +4128,8 @@ const app = (() => {
                           data-pid="${p.id}"
                           contenteditable="plaintext-only"
                           spellcheck="false"
-                          title="${t('standings.tapToRename')}">${escapeHtml(p.name)}</span>${droppedTag}`
-                : `${escapeHtml(p.name)}${droppedTag}`;
+                          title="${t('standings.tapToRename')}">${escapeHtml(displayName(p))}</span>${droppedTag}`
+                : `${escapeHtml(displayName(p))}${droppedTag}`;
             // Column 7 swaps based on mode:
             //   spin-battle → BattlePts (sum scored across matches)
             //   tcg + bestOfThree → GW-GL (per-game record)
@@ -4094,7 +4165,11 @@ const app = (() => {
                     if (!next || next === original) { el.textContent = original; return; }
                     const player = getPlayer(pid);
                     if (!player) return;
-                    player.name = next;
+                    const parsed = splitNameAndTrainerId(next);
+                    if (!parsed.name) { el.textContent = original; return; }
+                    player.name = parsed.name;
+                    if (parsed.trainerId) player.trainerId = parsed.trainerId;
+                    el.textContent = parsed.name;
                     saveState();
                     // Renaming may shuffle equal-rank rows since name isn't a
                     // sort key, but it does invalidate the result snapshot —
@@ -4302,21 +4377,24 @@ const app = (() => {
             tournamentDate: state.tournamentDate || '',
             tournamentType: state.tournamentType || 'swiss',
             totalRounds: state.rounds.filter(r => r.resultsSubmitted).length,
-            standings: standings.map((p, i) => ({
-                rank: i + 1,
-                name: p.name,
-                trainerId: p.trainerId || '',
-                record: p.record,
-                matchPoints: p.matchPoints,
-                wins: p.wins,
-                losses: p.losses,
-                draws: p.draws,
-                owp: p.owp,
-                oomw: p.oomw,
-                woscore: p.woscore,
-                byes: p.byes,
-                dropped: !!p.dropped,
-            })),
+            standings: standings.map((p, i) => {
+                const split = splitNameAndTrainerId(p.name);
+                return {
+                    rank: i + 1,
+                    name: split.name || p.name,
+                    trainerId: p.trainerId || split.trainerId || '',
+                    record: p.record,
+                    matchPoints: p.matchPoints,
+                    wins: p.wins,
+                    losses: p.losses,
+                    draws: p.draws,
+                    owp: p.owp,
+                    oomw: p.oomw,
+                    woscore: p.woscore,
+                    byes: p.byes,
+                    dropped: !!p.dropped,
+                };
+            }),
             rounds,
         };
         const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
@@ -4365,7 +4443,7 @@ const app = (() => {
                 const isA = pairing.playerA === playerId;
                 const oppId = isA ? pairing.playerB : pairing.playerA;
                 const opp = getPlayer(oppId);
-                const oppName = opp ? opp.name : 'Unknown';
+                const oppName = opp ? displayName(opp) : 'Unknown';
 
                 let resultText = '';
                 let resultClass = '';
@@ -4414,7 +4492,7 @@ const app = (() => {
         });
 
         body.innerHTML = `
-            <h3>${escapeHtml(player.name)}</h3>
+            <h3>${escapeHtml(displayName(player))}</h3>
             <div class="trainer-stats">
                 <div class="stat-box">
                     <div class="stat-label">${t('trainer.points')}</div>
@@ -4492,7 +4570,7 @@ const app = (() => {
         const player = getPlayer(playerId);
         if (!player) return;
         if (!player.dropped) {
-            if (!confirm(t('trainer.confirmDrop', { name: player.name }))) return;
+            if (!confirm(t('trainer.confirmDrop', { name: displayName(player) }))) return;
             player.dropped = true;
             // In knockout, auto-award the current-round match to their opponent.
             if (state.tournamentType === 'knockout') {
@@ -4532,20 +4610,74 @@ const app = (() => {
         const mins = Math.floor(Math.abs(state.timerSeconds) / 60);
         const secs = Math.abs(state.timerSeconds) % 60;
         const prefix = state.timerSeconds < 0 ? '-' : '';
-        display.textContent = `${prefix}${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        const timeStr = `${prefix}${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        display.textContent = timeStr;
+
+        // Tone state derived from remaining seconds
+        let tone = 'normal';
+        if (state.timerSeconds <= 0) tone = 'danger';
+        else if (state.timerSeconds <= 60) tone = 'danger';
+        else if (state.timerSeconds <= 300) tone = 'warning';
 
         display.classList.remove('warning', 'danger');
-        if (state.timerSeconds <= 0) {
-            display.classList.add('danger');
-        } else if (state.timerSeconds <= 60) {
-            display.classList.add('danger');
-        } else if (state.timerSeconds <= 300) {
-            display.classList.add('warning');
+        if (tone === 'warning') display.classList.add('warning');
+        if (tone === 'danger') display.classList.add('danger');
+
+        // Compute badge state (combines tone + running/paused/timeup)
+        let badgeState = 'idle';
+        let badgeKey = 'timer.stateIdle';
+        if (state.timerSeconds <= 0 && state.timerDefault > 0) {
+            badgeState = 'timeup';
+            badgeKey = 'timer.stateTimeup';
+        } else if (state.timerRunning) {
+            if (tone === 'danger') { badgeState = 'danger'; badgeKey = 'timer.stateDanger'; }
+            else if (tone === 'warning') { badgeState = 'warning'; badgeKey = 'timer.stateWarning'; }
+            else { badgeState = 'running'; badgeKey = 'timer.stateRunning'; }
+        } else if (state.timerSeconds !== state.timerDefault) {
+            badgeState = 'paused';
+            badgeKey = 'timer.statePaused';
         }
+
+        const badge = document.getElementById('timer-state-badge');
+        if (badge) {
+            badge.className = `timer-badge ${badgeState}`;
+            badge.textContent = t(badgeKey);
+        }
+
+        const muteIndicator = document.getElementById('timer-mute-indicator');
+        if (muteIndicator) muteIndicator.hidden = !state.timerMuted;
 
         const toggleBtn = document.getElementById('btn-timer-toggle');
         if (toggleBtn) {
-            toggleBtn.textContent = state.timerRunning ? t('timer.pause') : t('timer.start');
+            const label = toggleBtn.querySelector('.btn-timer-hero-label');
+            const labelText = state.timerRunning ? t('timer.pause') : t('timer.start');
+            if (label) label.textContent = labelText;
+            else toggleBtn.textContent = labelText;
+            toggleBtn.classList.toggle('running', !!state.timerRunning);
+            toggleBtn.classList.toggle('danger', tone === 'danger' && state.timerRunning);
+            toggleBtn.setAttribute('aria-label', labelText);
+        }
+
+        // Sticky compact bar mirror
+        const stTime = document.getElementById('timer-sticky-time');
+        if (stTime) {
+            stTime.textContent = timeStr;
+            stTime.classList.remove('warning', 'danger');
+            if (tone === 'warning') stTime.classList.add('warning');
+            if (tone === 'danger') stTime.classList.add('danger');
+        }
+        const stState = document.getElementById('timer-sticky-state');
+        if (stState) {
+            stState.className = `timer-sticky-state ${badgeState}`;
+            stState.textContent = t(badgeKey);
+        }
+        const stToggle = document.getElementById('timer-sticky-toggle');
+        if (stToggle) {
+            const stLabel = stToggle.querySelector('.timer-sticky-toggle-label');
+            const stText = state.timerRunning ? t('timer.pause') : t('timer.start');
+            if (stLabel) stLabel.textContent = stText;
+            stToggle.classList.toggle('running', !!state.timerRunning);
+            stToggle.setAttribute('aria-label', stText);
         }
     }
 
@@ -4632,9 +4764,14 @@ const app = (() => {
     function updateMuteButton() {
         const btn = document.getElementById('btn-timer-mute');
         if (btn) {
-            btn.textContent = state.timerMuted ? t('timer.unmute') : t('timer.mute');
+            const label = state.timerMuted ? t('timer.unmute') : t('timer.mute');
+            btn.classList.toggle('muted', state.timerMuted);
             btn.classList.toggle('btn-active', state.timerMuted);
+            btn.setAttribute('aria-label', label);
+            btn.setAttribute('title', label);
         }
+        const ind = document.getElementById('timer-mute-indicator');
+        if (ind) ind.hidden = !state.timerMuted;
     }
 
     function toggleCompactMode() {
@@ -4670,31 +4807,66 @@ const app = (() => {
             btn.classList.toggle('btn-active', state.projectorMode);
         }
         document.body.classList.toggle('projector-mode', state.projectorMode);
+        if (state.projectorMode) hideStickyTimer();
+    }
+
+    function hideStickyTimer() {
+        const sticky = document.getElementById('timer-sticky');
+        if (!sticky) return;
+        sticky.classList.remove('visible');
+        sticky.hidden = true;
+        sticky.setAttribute('aria-hidden', 'true');
+    }
+
+    function setupStickyTimer() {
+        const sticky = document.getElementById('timer-sticky');
+        const target = document.querySelector('.timer-block');
+        if (!sticky || !target || !('IntersectionObserver' in window)) return;
+
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((e) => {
+                const inRound = document.getElementById('view-round')?.classList.contains('active');
+                const projector = document.body.classList.contains('projector-mode');
+                const visible = !e.isIntersecting && inRound && !projector;
+                sticky.hidden = !visible;
+                sticky.classList.toggle('visible', visible);
+                sticky.setAttribute('aria-hidden', visible ? 'false' : 'true');
+            });
+        }, { root: null, threshold: 0, rootMargin: '-56px 0px 0px 0px' });
+        io.observe(target);
     }
 
     function playBeep() {
+        // Tournament bell: 6 alternating tones over ~5 seconds.
+        // Pattern designed so judge can hear it from across the hall + recognise
+        // the cadence as "round over" vs ambient phone noise.
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = 880;
-            osc.type = 'square';
-            gain.gain.value = 0.3;
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
-            setTimeout(() => {
-                const osc2 = ctx.createOscillator();
-                const gain2 = ctx.createGain();
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.frequency.value = 880;
-                osc2.type = 'square';
-                gain2.gain.value = 0.3;
-                osc2.start();
-                osc2.stop(ctx.currentTime + 0.5);
-            }, 600);
+            const pattern = [
+                { freq: 880,  dur: 0.55, gap: 0.18 },
+                { freq: 1100, dur: 0.55, gap: 0.18 },
+                { freq: 880,  dur: 0.55, gap: 0.35 },
+                { freq: 880,  dur: 0.55, gap: 0.18 },
+                { freq: 1100, dur: 0.55, gap: 0.18 },
+                { freq: 1320, dur: 1.0,  gap: 0    }
+            ];
+            let cursor = ctx.currentTime + 0.02;
+            pattern.forEach(({ freq, dur, gap }) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'square';
+                // Soft attack/release to avoid clicks
+                gain.gain.setValueAtTime(0, cursor);
+                gain.gain.linearRampToValueAtTime(0.32, cursor + 0.025);
+                gain.gain.setValueAtTime(0.32, cursor + dur - 0.08);
+                gain.gain.linearRampToValueAtTime(0, cursor + dur);
+                osc.start(cursor);
+                osc.stop(cursor + dur + 0.02);
+                cursor += dur + gap;
+            });
         } catch (e) { /* Audio not available */ }
     }
 
@@ -4879,9 +5051,9 @@ const app = (() => {
             const row = document.createElement('label');
             row.className = 'wheel-pick-row';
             row.innerHTML = `
-                <input type="checkbox" class="wheel-pick-cb" data-name="${escapeHtml(p.name)}" checked>
+                <input type="checkbox" class="wheel-pick-cb" data-name="${escapeHtml(displayName(p))}" checked>
                 <span class="wheel-pick-rank">${t('wheel.pickRank', { n: i + 1 })}</span>
-                <span class="wheel-pick-name">${escapeHtml(p.name)}</span>
+                <span class="wheel-pick-name">${escapeHtml(displayName(p))}</span>
                 <span class="wheel-pick-record">${p.record}</span>
             `;
             list.appendChild(row);
@@ -5590,7 +5762,7 @@ const app = (() => {
         // Restore roster textarea if staging has names
         const rosterInput = document.getElementById('adv-roster-input');
         if (rosterInput && advancedStaging.players.length > 0 && rosterInput.value.trim() === '') {
-            rosterInput.value = advancedStaging.players.map(p => p.name).join('\n');
+            rosterInput.value = advancedStaging.players.map(p => p.trainerId ? `${displayName(p)} | ${p.trainerId}` : displayName(p)).join('\n');
         }
         renderAdvancedRosterCount();
         renderAdvancedRounds();
@@ -5607,9 +5779,11 @@ const app = (() => {
     function advancedSetRoster() {
         const textarea = document.getElementById('adv-roster-input');
         const lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l);
-        // Preserve existing tempIds where the name already matches, so rounds keep working
+        // Preserve existing rows (tempId + trainerId + species) where the name
+        // matches — so a roster typed-after-import keeps the imported metadata
+        // and round pairings keep working.
         const existingByName = {};
-        advancedStaging.players.forEach(p => { existingByName[p.name.toLowerCase()] = p.tempId; });
+        advancedStaging.players.forEach(p => { existingByName[p.name.toLowerCase()] = p; });
 
         const seen = new Set();
         const next = [];
@@ -5617,9 +5791,13 @@ const app = (() => {
             const key = name.toLowerCase();
             if (seen.has(key)) return;
             seen.add(key);
+            const prev = existingByName[key];
             next.push({
                 name,
-                tempId: existingByName[key] || newTempId()
+                tempId: (prev && prev.tempId) || newTempId(),
+                trainerId: (prev && prev.trainerId) || '',
+                deckSpecies1: (prev && prev.deckSpecies1) || '',
+                deckSpecies2: (prev && prev.deckSpecies2) || ''
             });
         });
 
@@ -5635,6 +5813,82 @@ const app = (() => {
         saveAdvancedStaging();
         renderAdvanced();
         showToast(t('adv.rosterSet', { n: next.length }));
+    }
+
+    /* Roster import paths — populate advancedStaging.players from a backup
+       source (local JSON, cloud rosterSnapshot). Both reset rounds because
+       imported rosters can't share tempIds with whatever was staged before. */
+    function advancedApplyImportedRoster(roster, sourceLabel) {
+        if (!Array.isArray(roster) || roster.length === 0) {
+            alert(t('adv.importEmpty'));
+            return;
+        }
+        if (advancedStaging.players.length > 0 || advancedStaging.rounds.some(r => r.pairings.length > 0)) {
+            if (!confirm(t('adv.importReplaceConfirm'))) return;
+        }
+        const seen = new Set();
+        const next = [];
+        roster.forEach(r => {
+            const name = (r && r.name ? String(r.name) : '').trim();
+            if (!name) return;
+            const key = name.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            next.push({
+                name,
+                tempId: newTempId(),
+                trainerId: r.trainerId || '',
+                deckSpecies1: r.deckSpecies1 || '',
+                deckSpecies2: r.deckSpecies2 || ''
+            });
+        });
+        advancedStaging.players = next;
+        // Stale pairings reference gone tempIds — drop them
+        advancedStaging.rounds.forEach(round => {
+            round.pairings = [];
+        });
+        saveAdvancedStaging();
+        // Refresh textarea so user sees the loaded names
+        const textarea = document.getElementById('adv-roster-input');
+        if (textarea) textarea.value = next.map(p => p.trainerId ? `${displayName(p)} | ${p.trainerId}` : displayName(p)).join('\n');
+        renderAdvanced();
+        showToast(t('adv.importLoaded', { n: next.length, source: sourceLabel }));
+    }
+
+    function advancedLoadRosterFromLocal() {
+        const backup = loadRosterBackup();
+        if (!backup) {
+            alert(t('adv.importNoLocal'));
+            return;
+        }
+        advancedApplyImportedRoster(backup.players, t('adv.sourceLocal'));
+    }
+
+    async function advancedLoadRosterFromCloud() {
+        const input = document.getElementById('adv-roster-tid-input');
+        const tid = (input && input.value || '').trim().toUpperCase();
+        if (!tid || !/^[A-Z0-9]{6}$/.test(tid)) {
+            alert(t('adv.importTidNeeded'));
+            return;
+        }
+        if (!window.cloud) {
+            alert(t('adv.cloudUnavailable'));
+            return;
+        }
+        const btn = document.getElementById('adv-roster-load-cloud-btn');
+        if (btn) { btn.disabled = true; btn.textContent = t('adv.importLoading'); }
+        try {
+            if (!window.cloud.isReady()) await window.cloud.init();
+            const roster = await window.cloud.fetchRosterSnapshot(tid);
+            advancedApplyImportedRoster(roster, t('adv.sourceCloud', { tid }));
+            if (input) input.value = '';
+        } catch (e) {
+            console.error('[adv] cloud roster fetch failed', e);
+            const msg = /not_found/.test(e && e.message || '') ? t('adv.importTidNotFound') : t('adv.importTidFailed');
+            alert(msg);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = t('adv.importTidBtn'); }
+        }
     }
 
     function advancedAddRound() {
@@ -5778,7 +6032,7 @@ const app = (() => {
         let opts = `<option value="">${t('adv.select')}</option>`;
         advancedStaging.players.forEach(p => {
             const sel = p.tempId === currentVal ? 'selected' : '';
-            opts += `<option value="${p.tempId}" ${sel}>${escapeHtml(p.name)}</option>`;
+            opts += `<option value="${p.tempId}" ${sel}>${escapeHtml(displayName(p))}</option>`;
         });
         return `<select class="adv-player-select" onchange="app.advancedUpdatePairing(${roundIdx}, ${pIdx}, '${field}', this.value)">${opts}</select>`;
     }
@@ -5881,7 +6135,7 @@ const app = (() => {
         Object.entries(byeCount).forEach(([tempId, c]) => {
             if (c > 1) {
                 const p = advancedStaging.players.find(pp => pp.tempId === tempId);
-                warnings.push(t('val.tooManyByes', { name: p ? p.name : '?', n: c }));
+                warnings.push(t('val.tooManyByes', { name: p ? displayName(p) : '?', n: c }));
             }
         });
 
@@ -6052,7 +6306,10 @@ const app = (() => {
         // 1. Build fresh real players from staging
         const tempIdToRealId = {};
         state.players = advancedStaging.players.map(sp => {
-            const real = createPlayer(sp.name, sp.trainerId);
+            const real = createPlayer(sp.name, sp.trainerId, {
+                deckSpecies1: sp.deckSpecies1,
+                deckSpecies2: sp.deckSpecies2
+            });
             tempIdToRealId[sp.tempId] = real.id;
             return real;
         });
@@ -6249,6 +6506,36 @@ const app = (() => {
         return div.innerHTML;
     }
 
+    // HK PTCG trainer ID is `hk` + 8 digits. Two scenarios these helpers cover:
+    //   - splitNameAndTrainerId: organiser pastes a roster — line may be
+    //     "Name | hk12345678" (canonical) OR "Name hk12345678" (common
+    //     paste mistake). Both resolve to {name, trainerId}.
+    //   - displayName: poison-tolerant render — if name still has trailing
+    //     " hk12345678" from legacy state, strip for display so players never
+    //     see other players' trainer IDs in pairings / standings.
+    const TRAINER_TRAILING_RE = /^([\s\S]*\S)\s+(hk\d{8})\s*$/i;
+
+    function splitNameAndTrainerId(raw) {
+        const trimmed = (raw == null ? '' : String(raw)).trim();
+        if (!trimmed) return { name: '', trainerId: '' };
+        if (trimmed.includes('|')) {
+            const parts = trimmed.split('|');
+            return { name: parts[0].trim(), trainerId: (parts[1] || '').trim().toLowerCase() };
+        }
+        const m = trimmed.match(TRAINER_TRAILING_RE);
+        if (m && m[1].trim()) {
+            return { name: m[1].trim(), trainerId: m[2].toLowerCase() };
+        }
+        return { name: trimmed, trainerId: '' };
+    }
+
+    function displayName(p) {
+        const raw = p && p.name ? p.name : '';
+        if (!raw) return '';
+        const m = raw.match(TRAINER_TRAILING_RE);
+        return (m && m[1].trim()) ? m[1].trim() : raw;
+    }
+
     // FIX #8: Keyboard handler for modals
     function handleKeydown(e) {
         if (e.key === 'Escape') {
@@ -6357,6 +6644,9 @@ const app = (() => {
 
         // Keyboard events
         document.addEventListener('keydown', handleKeydown);
+
+        // Sticky compact timer — show when main timer block scrolls out of view
+        setupStickyTimer();
 
         // VIEW MODE first — if a tournament ID is in the URL, this tab is a read-only
         // viewer. Skip every owner-side bootstrap path (SHOWDOWN import, resume, etc.)
@@ -6608,6 +6898,8 @@ const app = (() => {
         wheelReset,
         spinWheel,
         advancedSetRoster,
+        advancedLoadRosterFromLocal,
+        advancedLoadRosterFromCloud,
         advancedAddRound,
         advancedRemoveRound,
         advancedAddPairing,
