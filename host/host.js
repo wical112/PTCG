@@ -1276,7 +1276,11 @@ window.hostApp = (() => {
             renderWalkinSlots();
             showToast('✅ 已加入清單');
         } catch (e) {
-            showWalkinError('加入失敗：' + (e.message || e));
+            if (e && (e.code === 'already-exists' || /already_signed_up/i.test(e.message || ''))) {
+                showWalkinError(`Trainer ID ${trainerFull} 已經喺報名清單入面 — 唔好覆蓋舊資料，請喺下面表內 check 返佢。`);
+            } else {
+                showWalkinError('加入失敗：' + (e.message || e));
+            }
         } finally {
             btn.disabled = false;
             btn.textContent = '+ 加入清單';

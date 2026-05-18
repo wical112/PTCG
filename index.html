@@ -49,7 +49,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js" defer></script>
     <script src="firebase-config.js" defer></script>
-    <script src="cloud.js?v=20260508o" defer></script>
+    <script src="cloud.js?v=20260512a" defer></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-44W3GZTCS4"></script>
     <script>
@@ -352,6 +352,15 @@
             <span data-i18n="timer.exitProjector">Exit Projector</span>
         </button>
         <section id="view-round" class="view">
+            <div id="timer-sticky" class="timer-sticky" hidden aria-hidden="true">
+                <span id="timer-sticky-state" class="timer-sticky-state idle" data-i18n="timer.stateIdle">READY</span>
+                <span id="timer-sticky-time" class="timer-sticky-time">25:00</span>
+                <button id="timer-sticky-toggle" class="timer-sticky-toggle" type="button" onclick="app.timerToggle()" aria-label="Start timer">
+                    <svg class="icon-play" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="icon-pause" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+                    <span class="timer-sticky-toggle-label" data-i18n="timer.start">Start</span>
+                </button>
+            </div>
             <div id="round-panel" class="panel">
                 <div class="round-actions">
                     <div class="round-actions-left">
@@ -412,13 +421,30 @@
                             <path d="M14 14h3v3h-3zM20 14v3M14 20h3M17 17v4M20 20h1"/>
                         </svg>
                     </button>
-                    <div id="timer-display" class="timer">25:00</div>
-                    <div class="timer-controls">
-                        <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(-60)">-1m</button>
-                        <button id="btn-timer-toggle" class="btn btn-small btn-primary" onclick="app.timerToggle()" data-i18n="timer.start">Start</button>
-                        <button class="btn btn-small btn-secondary" onclick="app.timerReset()" data-i18n="common.reset">Reset</button>
-                        <button class="btn btn-small btn-secondary" onclick="app.timerAdjust(60)">+1m</button>
-                        <button id="btn-timer-mute" class="btn btn-small btn-secondary" onclick="app.toggleTimerMute()" data-i18n="timer.mute">Mute</button>
+                    <div class="timer-block">
+                        <div class="timer-display-row">
+                            <span id="timer-state-badge" class="timer-badge idle" data-i18n="timer.stateIdle">READY</span>
+                            <div id="timer-display" class="timer">25:00</div>
+                            <span id="timer-mute-indicator" class="timer-mute-indicator" aria-hidden="true" hidden>
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                            </span>
+                        </div>
+                        <div class="timer-controls">
+                            <button id="btn-timer-toggle" class="btn-timer-hero" onclick="app.timerToggle()" aria-label="Start timer">
+                                <svg class="icon-play" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                                <svg class="icon-pause" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+                                <span class="btn-timer-hero-label" data-i18n="timer.start">Start</span>
+                            </button>
+                            <div class="timer-wing">
+                                <button class="btn-timer-wing" onclick="app.timerAdjust(-60)" aria-label="Minus one minute">−1m</button>
+                                <button class="btn-timer-wing" onclick="app.timerAdjust(60)" aria-label="Plus one minute">+1m</button>
+                                <button class="btn-timer-wing" onclick="app.timerReset()" data-i18n="common.reset" aria-label="Reset timer">Reset</button>
+                                <button id="btn-timer-mute" class="btn-timer-wing btn-timer-wing-icon" onclick="app.toggleTimerMute()" aria-label="Mute" data-i18n-title="timer.mute" title="Mute">
+                                    <svg class="icon-sound-on" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+                                    <svg class="icon-sound-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div id="share-panel" class="share-panel" style="display:none;">
@@ -602,7 +628,13 @@
                     <span class="info-text input-hint" data-i18n-html="adv.rosterHint">Enter the FULL roster in exactly the original join order. Order matters — used for reproducible tiebreaker fallback.</span>
                     <div class="adv-row-actions">
                         <button class="btn btn-primary btn-small" onclick="app.advancedSetRoster()" data-i18n="adv.saveRoster">Save Roster</button>
+                        <button class="btn btn-secondary btn-small" onclick="app.advancedLoadRosterFromLocal()" data-i18n="adv.importLocalBtn">Load from local backup</button>
                         <span id="adv-roster-count" class="info-text"></span>
+                    </div>
+                    <div class="adv-row-actions" style="margin-top: 0.5rem; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                        <label for="adv-roster-tid-input" class="info-text" data-i18n="adv.importTidLabel">Or load roster by published Tournament ID:</label>
+                        <input id="adv-roster-tid-input" type="text" maxlength="6" data-i18n-placeholder="adv.importTidPlaceholder" placeholder="ABC123" style="text-transform: uppercase; max-width: 8rem;">
+                        <button id="adv-roster-load-cloud-btn" class="btn btn-secondary btn-small" onclick="app.advancedLoadRosterFromCloud()" data-i18n="adv.importTidBtn">Load Roster</button>
                     </div>
                 </div>
 
@@ -755,6 +787,6 @@
         <p class="footer-note">&copy; 2026 GameSet HK &mdash; All rights reserved.</p>
     </footer>
 
-    <script src="app.js?v=20260508u"></script>
+    <script src="app.js?v=20260512a"></script>
 </body>
 </html>

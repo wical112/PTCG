@@ -474,6 +474,294 @@ textarea:focus {
     flex-wrap: wrap;
 }
 
+/* ===== TIMER BLOCK (redesigned) ===== */
+.timer-block {
+    max-width: 480px;
+    margin: 0.5rem auto 0;
+}
+
+.timer-block .timer-controls {
+    display: block;
+    flex-wrap: initial;
+}
+
+.timer-display-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.timer-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-dim);
+    white-space: nowrap;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.timer-badge.running {
+    background: rgba(46, 196, 182, 0.18);
+    color: var(--green);
+    box-shadow: 0 0 0 1px rgba(46, 196, 182, 0.4);
+}
+
+.timer-badge.paused {
+    background: rgba(255, 214, 10, 0.18);
+    color: var(--yellow);
+    box-shadow: 0 0 0 1px rgba(255, 214, 10, 0.4);
+}
+
+.timer-badge.warning {
+    background: rgba(255, 214, 10, 0.2);
+    color: var(--yellow);
+}
+
+.timer-badge.danger {
+    background: rgba(230, 57, 70, 0.2);
+    color: var(--red);
+    animation: badge-pulse 1s ease-in-out infinite alternate;
+}
+
+.timer-badge.timeup {
+    background: var(--red);
+    color: #fff;
+    animation: badge-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes badge-pulse {
+    from { opacity: 1; }
+    to { opacity: 0.55; }
+}
+
+.timer-mute-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--red);
+    opacity: 0.75;
+}
+
+.btn-timer-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    min-height: 56px;
+    margin: 0.85rem 0 0.5rem;
+    padding: 0.85rem 1.2rem;
+    border: none;
+    border-radius: 12px;
+    background: var(--blue);
+    color: #001018;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 180, 216, 0.28);
+    transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-timer-hero:hover {
+    background: #2ac1e4;
+}
+
+.btn-timer-hero:active {
+    transform: scale(0.98);
+}
+
+.btn-timer-hero .icon-play { display: inline-block; }
+.btn-timer-hero .icon-pause { display: none; }
+
+.btn-timer-hero.running {
+    background: var(--yellow);
+    color: #1a1a00;
+    box-shadow: 0 4px 14px rgba(255, 214, 10, 0.3);
+}
+
+.btn-timer-hero.running .icon-play { display: none; }
+.btn-timer-hero.running .icon-pause { display: inline-block; }
+
+.btn-timer-hero.danger {
+    background: var(--red);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(230, 57, 70, 0.35);
+}
+
+.timer-wing {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.45rem;
+}
+
+.btn-timer-wing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.55rem 0.4rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-timer-wing:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-accent);
+}
+
+.btn-timer-wing:active { transform: scale(0.96); }
+
+.btn-timer-wing-icon { padding: 0.5rem; }
+.btn-timer-wing-icon .icon-sound-on { display: inline-block; }
+.btn-timer-wing-icon .icon-sound-off { display: none; }
+.btn-timer-wing-icon.muted {
+    color: var(--red);
+    border-color: rgba(230, 57, 70, 0.45);
+    background: rgba(230, 57, 70, 0.08);
+}
+.btn-timer-wing-icon.muted .icon-sound-on { display: none; }
+.btn-timer-wing-icon.muted .icon-sound-off { display: inline-block; }
+
+/* ===== STICKY COMPACT TIMER ===== */
+.timer-sticky {
+    position: fixed;
+    top: 56px; /* sit just below app-header */
+    left: 0;
+    right: 0;
+    z-index: 99;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    min-height: 56px;
+    background: rgba(10, 14, 39, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    transform: translateY(-110%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.timer-sticky.visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.timer-sticky[hidden] { display: none; }
+
+body.projector-mode .timer-sticky { display: none !important; }
+
+.timer-sticky-state {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-dim);
+}
+.timer-sticky-state.running { background: rgba(46, 196, 182, 0.18); color: var(--green); }
+.timer-sticky-state.paused { background: rgba(255, 214, 10, 0.18); color: var(--yellow); }
+.timer-sticky-state.warning { background: rgba(255, 214, 10, 0.2); color: var(--yellow); }
+.timer-sticky-state.danger,
+.timer-sticky-state.timeup { background: rgba(230, 57, 70, 0.22); color: var(--red); }
+
+.timer-sticky-time {
+    font-size: 1.55rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+.timer-sticky-time.warning { color: var(--yellow); }
+.timer-sticky-time.danger { color: var(--red); }
+
+.timer-sticky-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 10px;
+    background: var(--blue);
+    color: #001018;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+.timer-sticky-toggle:active { transform: scale(0.96); }
+.timer-sticky-toggle .icon-play { display: inline-block; }
+.timer-sticky-toggle .icon-pause { display: none; }
+.timer-sticky-toggle.running { background: var(--yellow); color: #1a1a00; }
+.timer-sticky-toggle.running .icon-play { display: none; }
+.timer-sticky-toggle.running .icon-pause { display: inline-block; }
+
+@media (max-width: 430px) {
+    .timer-sticky { top: 50px; padding: 0.4rem 0.75rem; gap: 0.5rem; }
+    .timer-sticky-time { font-size: 1.35rem; }
+    .timer-sticky-state { font-size: 0.6rem; padding: 0.2rem 0.45rem; }
+    .timer-sticky-toggle { padding: 0.45rem 0.75rem; font-size: 0.88rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .timer-sticky { transition: opacity 0.2s ease; }
+    .timer-badge.danger,
+    .timer-badge.timeup { animation: none; }
+}
+
+/* ===== ROUND ACTIONS — visual hierarchy ===== */
+.round-actions-right .btn-action {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    color: var(--text);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.round-actions-right .btn-action:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-accent);
+}
+.round-actions-right .btn-action.btn-active {
+    background: rgba(0, 180, 216, 0.18);
+    border-color: var(--blue);
+    color: var(--blue);
+}
+.round-actions-right .btn-action.btn-action-primary {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #001018;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 180, 216, 0.25);
+}
+.round-actions-right .btn-action.btn-action-primary:hover {
+    background: #2ac1e4;
+    border-color: #2ac1e4;
+}
+
 /* ===== PAIRINGS ===== */
 .pairings-container {
     margin-bottom: 1.5rem;
@@ -1128,6 +1416,9 @@ body.projector-mode .timer-controls {
         font-size: 0.8rem;
     }
 
+    .timer-block .timer-wing { gap: 0.4rem; }
+    .timer-block .btn-timer-wing { font-size: 0.85rem; }
+
     .round-footer {
         justify-content: center;
     }
@@ -1206,7 +1497,7 @@ body.projector-mode .timer-controls {
 
     /* Timer */
     .timer {
-        font-size: 3.2rem;
+        font-size: 3.4rem;
         margin: 0.3rem 0;
     }
     .timer-controls {
@@ -1219,6 +1510,22 @@ body.projector-mode .timer-controls {
         width: 100%;
         padding: 0.45rem 0.3rem;
         font-size: 0.75rem;
+    }
+    /* Override for new timer-block layout (Pattern A) */
+    .timer-block .timer-controls {
+        display: block;
+    }
+    .timer-block .btn-timer-hero {
+        min-height: 56px;
+        font-size: 1.05rem;
+    }
+    .timer-block .timer-wing {
+        gap: 0.35rem;
+    }
+    .timer-block .btn-timer-wing {
+        font-size: 0.82rem;
+        padding: 0.5rem 0.25rem;
+        min-height: 44px;
     }
 
     /* Pairings — card layout for phone */
@@ -1406,7 +1713,7 @@ body.projector-mode .timer-controls {
 
     /* Timer — optimized for 375px */
     .timer {
-        font-size: 3rem;
+        font-size: 3.1rem;
         letter-spacing: 1px;
     }
     .timer-controls {
@@ -1418,6 +1725,19 @@ body.projector-mode .timer-controls {
         padding: 0.4rem 0.2rem;
         font-size: 0.72rem;
         letter-spacing: 0;
+    }
+    /* Override for new timer-block layout */
+    .timer-block .timer-controls { display: block; padding: 0; }
+    .timer-block .btn-timer-hero {
+        min-height: 54px;
+        font-size: 1rem;
+        margin: 0.7rem 0 0.45rem;
+    }
+    .timer-block .timer-wing { gap: 0.3rem; }
+    .timer-block .btn-timer-wing {
+        font-size: 0.78rem;
+        padding: 0.5rem 0.2rem;
+        min-height: 44px;
     }
 
     /* Pairings — tighter card */

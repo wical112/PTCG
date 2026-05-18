@@ -35,6 +35,13 @@ service cloud.firestore {
       }
     }
 
+    // ── Deferred Telegram-alert queue (Admin SDK only). ────────────────────
+    // onTournamentStarted writes here; processAlertQueue scheduled function
+    // drains it. No client should read or write these docs.
+    match /alertQueue/{aid} {
+      allow read, write: if false;
+    }
+
     // ── NEW: hosted PTCG events (registration before tournament start) ──────
     // Public meta is readable by anyone (drives the participant signup page).
     // Sensitive fields (signups with phone / deck) live in `private/` sub-doc
