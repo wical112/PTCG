@@ -75,21 +75,18 @@ async function sendTelegramMessage(token: string, chatId: string, text: string) 
   }
 }
 
-/* Start-alert pipeline.
+/* Start-alert pipeline (synchronous).
 
-   Originally the Telegram alert fired synchronously from a Firestore
-   trigger on `tournaments/{tid}` the moment `state.tournamentStarted`
-   flipped false→true. In practice many owners would Publish (creating
-   the doc with started=true) and seconds later hit «Stop Sharing»,
-   which deletes the doc — leaving a Telegram message whose link goes
-   to «此賽事已不再開放».
+   HOTFIX 2026-05-18: reverted from the deferred alertQueue + cron design
+   back to a direct synchronous send. The queued design's processAlertQueue
+   query (status== + sendAfter<=) needed an alertQueue composite index that
+   was never declared in firestore.indexes.json / deployed, so the cron
+   threw FAILED_PRECONDITION every run and NO start alerts were delivered.
+   Sync send is the known-good prior behaviour with the fewest deploy deps.
 
-   Fix: defer the send by 60s. The trigger now enqueues a job in
-   `alertQueue/{tid}`; a cron sweep re-reads the tournament 60s+ later
-   and only sends if the doc still exists and isn't ended. Using `tid`
-   as the queue doc id naturally collapses rapid re-publishes into a
-   single eventual send. */
-const ALERT_DELAY_MS = 60 * 1000;
+   KNOWN TRADE-OFF (re-introduce properly later): a Publish-then-quick-
+   Stop-Sharing still leaves a Telegram message whose link 404s. Track as
+   follow-up — any re-defer must ship WITH its composite index. */
 
 function buildStartAlertMessage(id: string, s: TournamentState): string {
   const name = escapeHtml(s.tournamentName || '(no name)');
@@ -129,6 +126,7 @@ export const onTournamentStarted = onDocumentWritten(
   {
     document: 'tournaments/{tournamentId}',
     region: REGION,
+    secrets: [TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID],
   },
   async (event) => {
     const before = event.data?.before?.data() as TournamentDoc | undefined;
@@ -140,73 +138,26 @@ export const onTournamentStarted = onDocumentWritten(
     if (wasStarted || !isStarted) return; // only fire on false→true edge
 
     const id = event.params.tournamentId;
-    const sendAfter = admin.firestore.Timestamp.fromMillis(Date.now() + ALERT_DELAY_MS);
-    await admin.firestore().doc(`alertQueue/${id}`).set({
-      tournamentId: id,
-      sendAfter,
-      status: 'pending',
-      enqueuedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
-    logger.info(`Queued start alert for ${id} (sendAfter=${sendAfter.toDate().toISOString()})`);
-  }
-);
-
-/* processAlertQueue — every minute, look for due alerts and send if
-   the underlying tournament is still alive. Each job carries the
-   tournament id so we re-read fresh state at send time. */
-const ALERT_BATCH = 20;
-
-export const processAlertQueue = onSchedule(
-  {
-    schedule: 'every 1 minutes',
-    region: REGION,
-    timeoutSeconds: 120,
-    secrets: [TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID],
-  },
-  async () => {
-    const now = admin.firestore.Timestamp.now();
-    const snap = await admin.firestore().collection('alertQueue')
-      .where('status', '==', 'pending')
-      .where('sendAfter', '<=', now)
-      .limit(ALERT_BATCH)
-      .get();
-    if (snap.empty) return;
-
-    logger.info(`[alertQueue] processing ${snap.size} due job(s)`);
-    const token = TELEGRAM_BOT_TOKEN.value();
-    const chatId = TELEGRAM_ADMIN_CHAT_ID.value();
-
-    for (const job of snap.docs) {
-      const tid = (job.data().tournamentId as string) || job.id;
-      const tDoc = await admin.firestore().doc(`tournaments/${tid}`).get();
-      if (!tDoc.exists) {
-        logger.info(`[alertQueue] skip ${tid}: tournament deleted before alert window`);
-        await job.ref.delete();
-        continue;
-      }
-      const t = tDoc.data() as TournamentDoc;
-      const s = t.state || {};
-      if (!s.tournamentStarted) {
-        logger.info(`[alertQueue] skip ${tid}: tournamentStarted=false at send time`);
-        await job.ref.delete();
-        continue;
-      }
-      if (s.tournamentEnded) {
-        logger.info(`[alertQueue] skip ${tid}: tournament already ended at send time`);
-        await job.ref.delete();
-        continue;
-      }
-      try {
-        await sendTelegramMessage(token, chatId, buildStartAlertMessage(tid, s));
-        logger.info(`[alertQueue] sent start alert for ${tid}`);
-        await job.ref.delete();
-      } catch (e) {
-        logger.error(`[alertQueue] send failed for ${tid}`, e);
-        // leave the job in place; next cron run will retry.
-      }
+    const s = after.state || ({} as TournamentState);
+    try {
+      await sendTelegramMessage(
+        TELEGRAM_BOT_TOKEN.value(),
+        TELEGRAM_ADMIN_CHAT_ID.value(),
+        buildStartAlertMessage(id, s),
+      );
+      logger.info(`Sent start alert for tournament ${id}`);
+    } catch (e) {
+      logger.error(`Failed to send start alert for ${id}`, e);
     }
   }
 );
+
+/* processAlertQueue REMOVED (HOTFIX 2026-05-18): the deferred-send cron is
+   dead now that onTournamentStarted sends synchronously. It also had no
+   composite index, so leaving it would keep erroring every minute. Deploy
+   with `firebase deploy --only functions` will delete the live function.
+   Stale `alertQueue/{id}` docs (if any) are now orphaned & harmless (rules
+   lock all client access); a one-off manual purge can clean them later. */
 
 /* ────────────────────────────────────────────────────────────────────────────
    Hosted-event syndication to TopCut HK feed.
